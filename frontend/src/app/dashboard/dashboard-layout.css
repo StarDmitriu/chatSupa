@@ -64,6 +64,12 @@
   align-items: flex-start;
   gap: 6px;
 }
+.dashboard-layout .tpl-header__brandRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
 .dashboard-layout .tpl-header__pageTitle {
   font-size: 13px;
   font-weight: 600;

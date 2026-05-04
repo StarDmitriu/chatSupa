@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
-import Cookies from 'js-cookie'
 import { usePathname, useRouter } from 'next/navigation'
 import { useGlobalLoader } from '@/ui/loader/LoaderProvider'
 import { ChannelIcon } from '@/components/ChannelIcon'
 import { AppBurgerButton } from '@/components/AppBurgerButton'
+import Image from 'next/image'
+import Cookies from 'js-cookie'
 
 const NAV_ITEMS: { path: string; label: string; icon?: 'wa' | 'tg' }[] = [
   { path: '/dashboard/campaigns', label: 'Рассылки' },
@@ -51,7 +51,6 @@ export function DashboardHeader() {
       tgSelectedCount == null
         ? ''
         : ` ${pluralRu(tgSelectedCount, 'группа', 'группы', 'групп')}`
-
     const waBase = waCountText ? `WhatsApp: ${waCountText}${waSuffix}` : 'WhatsApp'
     const tgBase = tgCountText ? `Telegram: ${tgCountText}${tgSuffix}` : 'Telegram'
 
@@ -83,21 +82,28 @@ export function DashboardHeader() {
       wa: `${waBase} · ${waStatusText}`,
       tg: `${tgBase} · ${tgStatusText}`,
     }
-  }, [waSelectedCount, tgSelectedCount, waStatus, waRetryAttempt, waRetryMax, tgStatus])
+  }, [
+    waSelectedCount,
+    tgSelectedCount,
+    waStatus,
+    waRetryAttempt,
+    waRetryMax,
+    tgStatus,
+  ])
 
   useEffect(() => {
     if (!pathname.startsWith('/dashboard')) return
 
-    const safeJson = async (res: Response): Promise<any | null> => {
-      try {
-        if (!res.ok) return null
-        return await res.json().catch(() => null)
-      } catch {
-        return null
-      }
-    }
+		const safeJson = async (res: Response): Promise<any | null> => {
+			try {
+				if (!res.ok) return null
+				return await res.json().catch(() => null)
+			} catch {
+				return null
+			}
+		}
 
-    const run = async () => {
+		const run = async () => {
       const token = Cookies.get('token') || ''
       if (!token) return
 
@@ -112,41 +118,47 @@ export function DashboardHeader() {
         const userId = String(meJson?.user?.id || '')
         if (!userId) return
 
-        const [waRes, tgRes, waStatusRes, tgStatusRes] = await Promise.all([
-          fetch(`${backendUrl}/whatsapp/groups/${userId}/count`, {
-            cache: 'no-store',
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          }),
-          fetch(`${backendUrl}/telegram/groups/${userId}/count`, {
-            cache: 'no-store',
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          }),
-          fetch(`${backendUrl}/whatsapp/status/${userId}?_=${Date.now()}`, {
-            cache: 'no-store',
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          }),
-          fetch(`${backendUrl}/telegram/qr/status/${userId}?_=${Date.now()}`, {
-            cache: 'no-store',
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          }),
-        ])
+			const [waRes, tgRes, waStatusRes, tgStatusRes] = await Promise.all([
+				fetch(`${backendUrl}/whatsapp/groups/${userId}/count`, {
+					cache: 'no-store',
+					headers: token ? { Authorization: `Bearer ${token}` } : {},
+				}),
+				fetch(`${backendUrl}/telegram/groups/${userId}/count`, {
+					cache: 'no-store',
+					headers: token ? { Authorization: `Bearer ${token}` } : {},
+				}),
+				fetch(`${backendUrl}/whatsapp/status/${userId}?_=${Date.now()}`, {
+					cache: 'no-store',
+					headers: token ? { Authorization: `Bearer ${token}` } : {},
+				}),
+				fetch(`${backendUrl}/telegram/qr/status/${userId}?_=${Date.now()}`, {
+					cache: 'no-store',
+					headers: token ? { Authorization: `Bearer ${token}` } : {},
+				}),
+			])
 
-        const waJson: any = await safeJson(waRes)
-        const tgJson: any = await safeJson(tgRes)
-        const waStatusJson: any = await safeJson(waStatusRes)
-        const tgStatusJson: any = await safeJson(tgStatusRes)
+			const waJson: any = await safeJson(waRes)
+			const tgJson: any = await safeJson(tgRes)
+			const waStatusJson: any = await safeJson(waStatusRes)
+			const tgStatusJson: any = await safeJson(tgStatusRes)
 
         if (waJson?.success) setWaSelectedCount(Number(waJson?.selected || 0))
         if (tgJson?.success) setTgSelectedCount(Number(tgJson?.selected || 0))
         if (waStatusJson?.success) {
           const st = waStatusJson?.status
           setWaStatus(typeof st?.status === 'string' ? st.status : null)
-          setWaRetryAttempt(typeof st?.retryAttempt === 'number' ? Number(st.retryAttempt) : null)
-          setWaRetryMax(typeof st?.retryMax === 'number' ? Number(st.retryMax) : null)
+          setWaRetryAttempt(
+            typeof st?.retryAttempt === 'number' ? Number(st.retryAttempt) : null,
+          )
+          setWaRetryMax(
+            typeof st?.retryMax === 'number' ? Number(st.retryMax) : null,
+          )
         }
         if (tgStatusJson?.success) {
           setTgStatus(typeof tgStatusJson?.status === 'string' ? tgStatusJson.status : null)
         }
+      } catch {
+        // Не ломаем страницу: если запросы упали — просто оставим стандартные лейблы.
       } finally {
         setIsRefreshing(false)
       }
@@ -170,13 +182,7 @@ export function DashboardHeader() {
   const navDotColor = (icon?: 'wa' | 'tg') => {
     if (icon === 'wa') {
       if (waStatus === 'connected') return '#16a34a'
-      if (
-        waStatus === 'temporary_network_issue' ||
-        waStatus === 'connecting' ||
-        waStatus === 'pending_qr'
-      ) {
-        return '#d97706'
-      }
+      if (waStatus === 'temporary_network_issue' || waStatus === 'connecting' || waStatus === 'pending_qr') return '#d97706'
       if (waStatus === 'error') return '#dc2626'
       return '#9ca3af'
     }
@@ -192,11 +198,9 @@ export function DashboardHeader() {
   const navLabelNode = (label: string, icon?: 'wa' | 'tg'): ReactNode => {
     const text = navLabel(label, icon)
     if (!icon) return text
-
     const parts = text.split(' · ')
     const base = parts[0] ?? text
     const status = parts[1] ?? ''
-
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
         <span>{base}</span>
@@ -205,7 +209,7 @@ export function DashboardHeader() {
             <span>·</span>
             <span
               aria-hidden
-              className={isRefreshing ? 'tpl-header__statusDot--refreshing' : undefined}
+          className={isRefreshing ? 'tpl-header__statusDot--refreshing' : undefined}
               style={{
                 width: 8,
                 height: 8,
@@ -241,18 +245,18 @@ export function DashboardHeader() {
   }, [pathname])
 
   const isCampaignProgressPage = pathname === '/dashboard/campaign'
-  const hideCampaignsNavItem = pathname === '/dashboard/campaigns' || isCampaignProgressPage
-  const hideTemplatesNavItem = pathname === '/dashboard/templates'
-  const navItems =
-    hideCampaignsNavItem || hideTemplatesNavItem
-      ? NAV_ITEMS.filter((item) => {
-          if (hideCampaignsNavItem && item.path === '/dashboard/campaigns') return false
-          if (hideTemplatesNavItem && item.path === '/dashboard/templates') return false
-          return true
-        })
-      : NAV_ITEMS
+  const hideCampaignsNavItem =
+    pathname === '/dashboard/campaigns' || isCampaignProgressPage || pathname === '/dashboard/templates'
+	const hideTemplatesNavItem = pathname === '/dashboard/templates'
+	const navItems = (hideCampaignsNavItem || hideTemplatesNavItem)
+		? NAV_ITEMS.filter((item) => {
+				if (hideCampaignsNavItem && item.path === '/dashboard/campaigns') return false
+				if (hideTemplatesNavItem && item.path === '/dashboard/templates') return false
+				return true
+			})
+		: NAV_ITEMS
 
-  const createTemplateButton = (
+  const createTemplateButton = pathname === '/dashboard/templates' ? (
     <button
       type="button"
       className="tpl-header__pill ui-action-btn ui-header-btn tpl-header__pill--primary"
@@ -264,26 +268,28 @@ export function DashboardHeader() {
     >
       Создать шаблон
     </button>
-  )
-
+  ) : null
   return (
     <header className="tpl-header" role="banner">
       <div className="tpl-header__container">
         <div className="tpl-header__row">
           <div className="tpl-header__logoWrap">
             <div className="tpl-header__pageTitle">{currentPageTitle}</div>
-            <Link href="/" className="tpl-header__logo" aria-label="ЧатРассылка — на главную">
-              <Image
-                src="/logo-heart.png"
-                alt=""
-                width={54}
-                height={54}
-                className="tpl-header__logo-icon"
-                priority
-              />
-              <span className="tpl-header__logo-chat">Чат</span>
-              <span className="tpl-header__logo-accent">Рассылка</span>
-            </Link>
+            <div className="tpl-header__brandRow">
+              <Link href="/" className="tpl-header__logo" aria-label="ЧатРассылка — на главную">
+                <Image
+                  src="/logo-heart.png"
+                  alt=""
+                  width={54}
+                  height={54}
+                  className="tpl-header__logo-icon"
+                  priority
+                />
+                <span className="tpl-header__logo-chat">Чат</span>
+                <span className="tpl-header__logo-accent">Рассылка</span>
+              </Link>
+              {createTemplateButton}
+            </div>
           </div>
           {!isCampaignProgressPage ? (
             <AppBurgerButton
@@ -303,13 +309,13 @@ export function DashboardHeader() {
             >
               ← В кабинет
             </button>
-            {pathname === '/dashboard/templates' ? createTemplateButton : null}
             {navItems.map(({ path, label, icon }) => {
               const isActive =
                 path === '/dashboard/groups'
                   ? pathname === '/dashboard/groups'
                   : pathname === path ||
-                    (path !== '/dashboard/campaigns' && pathname.startsWith(path + '/'))
+                    (path !== '/dashboard/campaigns' &&
+                      pathname.startsWith(path + '/'))
 
               const computedLabel = navLabel(label, icon)
 
@@ -331,20 +337,28 @@ export function DashboardHeader() {
                 </button>
               )
             })}
+            {pathname === '/dashboard/templates' ? (
+              <button
+                type="button"
+                className="tpl-header__pill ui-action-btn ui-header-btn"
+                onClick={() => {
+                  setMenuOpen(false)
+                  loader.show('Переходим к рассылкам…')
+                  router.push('/dashboard/campaigns')
+                }}
+              >
+                Рассылки →
+              </button>
+            ) : null}
           </nav>
         </div>
       </div>
       <div className={`tpl-header__mobile-panel ${menuOpen ? 'tpl-header__mobile-panel--open' : ''}`}>
         <div className="tpl-header__mobile-backdrop" onClick={() => setMenuOpen(false)} aria-hidden />
         <div className="tpl-header__mobile-nav">
-          <button
-            type="button"
-            className="tpl-header__pill ui-action-btn ui-header-btn"
-            onClick={() => go('/cabinet', 'кабинет')}
-          >
+          <button type="button" className="tpl-header__pill ui-action-btn ui-header-btn" onClick={() => go('/cabinet', 'кабинет')}>
             ← В кабинет
           </button>
-          {pathname === '/dashboard/templates' ? createTemplateButton : null}
           {navItems.map(({ path, label, icon }) => (
             <button
               key={path}
@@ -360,6 +374,22 @@ export function DashboardHeader() {
               {navLabelNode(label, icon)}
             </button>
           ))}
+          {pathname === '/dashboard/templates' ? (
+            <>
+              {createTemplateButton}
+              <button
+                type="button"
+                className="tpl-header__pill ui-action-btn ui-header-btn"
+                onClick={() => {
+                  setMenuOpen(false)
+                  loader.show('Переходим к рассылкам…')
+                  router.push('/dashboard/campaigns')
+                }}
+              >
+                Рассылки →
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
     </header>

@@ -63,7 +63,7 @@ function hmToDayjsValue(s: string) {
 	const h = Number(hRaw)
 	const m = Number(mRaw)
 	if (!Number.isFinite(h) || !Number.isFinite(m)) return null
-	// antd TimePicker РѕР¶РёРґР°РµС‚ dayjs-РѕР±СЉРµРєС‚, РЅРѕ Сѓ РЅР°СЃ СѓР¶Рµ РµСЃС‚СЊ dayjs РІ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РїСЂРѕРµРєС‚Р° С‡РµСЂРµР· antd.
+	// antd TimePicker ожидает dayjs-объект, но у нас уже есть dayjs в зависимости проекта через antd.
 	// eslint-disable-next-line @typescript-eslint/no-var-requires
 	const dayjs = require('dayjs')
 	return dayjs().hour(h).minute(m).second(0).millisecond(0)
@@ -90,13 +90,13 @@ export default function CampaignsHomePage() {
 	const [waFinishAt, setWaFinishAt] = useState<number | null>(null)
 	const [tgFinishAt, setTgFinishAt] = useState<number | null>(null)
 
-	// вњ… Р’РђР–РќРћ: РЅР° РїРµСЂРІРѕРј СЂРµРЅРґРµСЂРµ СЃС‚Р°РІРёРј Р”Р•Р¤РћР›Рў (С‡С‚РѕР±С‹ СЃРѕРІРїР°Р»Рѕ СЃ SSR)
+	// ✅ ВАЖНО: на первом рендере ставим ДЕФОЛТ (чтобы совпало с SSR)
 	const [{ timeFrom, timeTo }, setTimeWindow] = useState({
 		timeFrom: '00:00',
 		timeTo: '23:59',
 	})
 
-	// вњ… С„Р»Р°Рі, С‡С‚Рѕ РјС‹ СѓР¶Рµ РЅР° РєР»РёРµРЅС‚Рµ (РїРѕСЃР»Рµ mount)
+	// ✅ флаг, что мы уже на клиенте (после mount)
 	const [mounted, setMounted] = useState(false)
 
 	const [adv, setAdv] = useState<AdvSettings>({ repeatEnabled: true })
@@ -105,7 +105,7 @@ export default function CampaignsHomePage() {
 	const skipSaveTimeRef = useRef(false)
 	const skipSaveAdvRef = useRef(false)
 
-	// вњ… РїРѕСЃР»Рµ mount С‡РёС‚Р°РµРј localStorage Рё РїСЂРёРјРµРЅСЏРµРј (РѕРґРёРЅ СЂР°Р·)
+	// ✅ после mount читаем localStorage и применяем (один раз)
 	useEffect(() => {
 		setMounted(true)
 		try {
@@ -125,7 +125,7 @@ export default function CampaignsHomePage() {
 		setStartMode(readTimingStartMode())
 	}, [])
 
-	// вњ… СЃРѕС…СЂР°РЅСЏРµРј Р»СЋР±С‹Рµ РёР·РјРµРЅРµРЅРёСЏ (С‚РѕР»СЊРєРѕ РєРѕРіРґР° СѓР¶Рµ mounted)
+	// ✅ сохраняем любые изменения (только когда уже mounted)
 	useEffect(() => {
 		if (!mounted) return
 		if (skipSaveTimeRef.current) {
@@ -154,7 +154,7 @@ export default function CampaignsHomePage() {
 		}
 	}, [mounted, adv])
 
-	// вњ… СЃРёРЅС…СЂРѕРЅРёР·РёСЂСѓРµРј РЅР°СЃС‚СЂРѕР№РєРё РёР· РїСЂР°РІРѕР№ РїР°РЅРµР»Рё (TimingHubDrawer)
+	// ✅ синхронизируем настройки из правой панели (TimingHubDrawer)
 	useEffect(() => {
 		if (!mounted) return
 
@@ -197,7 +197,7 @@ export default function CampaignsHomePage() {
 		}
 	}, [activeData])
 
-	// вЂњР’Рѕ СЃРєРѕР»СЊРєРѕ Р·Р°РєРѕРЅС‡РёС‚СЃСЏвЂќ РґР»СЏ Р°РєС‚РёРІРЅС‹С… СЂР°СЃСЃС‹Р»РѕРє
+	// “Во сколько закончится” для активных рассылок
 	useEffect(() => {
 		let cancelled = false
 		let t: number | null = null
@@ -219,9 +219,9 @@ export default function CampaignsHomePage() {
 				if (waProg?.success) {
 					const p = waProg as ProgressOk
 					setWaFinishAt(estimateCampaignFinishAt(p.jobs, !!p.done))
-				// 'done' РѕР±С‹С‡РЅРѕ СЃРѕРІРїР°РґР°РµС‚ СЃ Р»РѕРіРёС‡РµСЃРєРёРј Р·Р°РІРµСЂС€РµРЅРёРµРј, РЅРѕ РЅР° РїСЂР°РєС‚РёРєРµ
-				// РїСЂРё Р°РІС‚Рѕ-РѕСЃС‚Р°РЅРѕРІРєРµ РёРЅРѕРіРґР° СѓРґРѕР±РЅРµРµ РѕСЂРёРµРЅС‚РёСЂРѕРІР°С‚СЊСЃСЏ РµС‰С‘ Рё РЅР° РѕС‚СЃСѓС‚СЃС‚РІРёРµ
-				// pending/processing Р·Р°РґР°С‡.
+				// 'done' обычно совпадает с логическим завершением, но на практике
+				// при авто-остановке иногда удобнее ориентироваться ещё и на отсутствие
+				// pending/processing задач.
 				if (
 					p.done ||
 					(p.jobs?.length ?? 0) > 0 &&
@@ -246,8 +246,8 @@ export default function CampaignsHomePage() {
 					setTgFinishAt(null)
 				}
 
-			// Р•СЃР»Рё РІРѕСЂРєРµСЂ СѓР¶Рµ РѕС‚РјРµС‚РёР» СЂР°СЃСЃС‹Р»РєСѓ РєР°Рє Р·Р°РІРµСЂС€С‘РЅРЅСѓСЋ вЂ” РїРѕРґРіСЂСѓР¶Р°РµРј /campaigns/active,
-			// С‡С‚РѕР±С‹ iframe-РїСЂРѕРіСЂРµСЃСЃ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РёСЃС‡РµР· Р±РµР· refresh.
+			// Если воркер уже отметил рассылку как завершённую — подгружаем /campaigns/active,
+			// чтобы iframe-прогресс автоматически исчез без refresh.
 			if (didRefreshActive) loadActive()
 			} catch {
 				// ignore
@@ -299,7 +299,7 @@ export default function CampaignsHomePage() {
 			
 			const userId = meData.user.id
 			
-			// РЎС‡РёС‚Р°РµРј РІС‹Р±СЂР°РЅРЅС‹Рµ РіСЂСѓРїРїС‹ Рё С€Р°Р±Р»РѕРЅС‹ С‡РµСЂРµР· count API (Р±РµР· РїР°РіРёРЅР°С†РёРё)
+			// Считаем выбранные группы и шаблоны через count API (без пагинации)
 			const [waCountRes, tgCountRes, templatesRes, waInfoRes, tgQrRes] = await Promise.all([
 				fetch(`${backendUrl}/whatsapp/groups/${userId}/count`, { cache: 'no-store', headers: { Authorization: `Bearer ${token}` } }),
 				fetch(`${backendUrl}/telegram/groups/${userId}/count`, { cache: 'no-store', headers: { Authorization: `Bearer ${token}` } }),
@@ -321,7 +321,7 @@ export default function CampaignsHomePage() {
 				setTgSelectedCount(tgCountData.selected)
 			}
 			setWaConnected(waInfoData?.success ? (waInfoData.connected === true) : false)
-			// РЎРёРЅС…СЂРѕРЅРёР·РёСЂРѕРІР°РЅРѕ СЃ TelegramQrConnect: "РїРѕРґРєР»СЋС‡С‘РЅ" С‚РѕР»СЊРєРѕ РєРѕРіРґР° qr/status СЂРµР°Р»СЊРЅРѕ connected.
+			// Синхронизировано с TelegramQrConnect: "подключён" только когда qr/status реально connected.
 			setTgConnected(tgQrData?.success && tgQrData?.status === 'connected')
 			if (templatesData?.success) {
 				const rows = (templatesData.templates || []) as { enabled?: boolean }[]
@@ -335,18 +335,18 @@ export default function CampaignsHomePage() {
 		}
 	}
 
-	// РЎСЂР°Р·Сѓ СЃРЅРёРјР°РµРј РїРѕР»РЅРѕСЌРєСЂР°РЅРЅС‹Р№ loader, РµСЃР»Рё РїРµСЂРµС€Р»Рё СЃ РґСЂСѓРіРѕР№ СЃС‚СЂР°РЅРёС†С‹ (С€Р°Р±Р»РѕРЅС‹, Р°РЅР°Р»РёС‚РёРєР°)
+	// Сразу снимаем полноэкранный loader, если перешли с другой страницы (шаблоны, аналитика)
 	useEffect(() => {
 		loader.hide()
 	}, [loader])
 
-	// Р—Р°РіСЂСѓР¶Р°РµРј Р±РµР· РїРѕР»РЅРѕСЌРєСЂР°РЅРЅРѕРіРѕ loader вЂ” СЃС‚СЂР°РЅРёС†Р° РѕС‚РєСЂС‹РІР°РµС‚СЃСЏ СЃСЂР°Р·Сѓ; active РёР· SWR, РѕСЃС‚Р°Р»СЊРЅРѕРµ РїРѕ Р·Р°РїСЂРѕСЃСѓ
+	// Загружаем без полноэкранного loader — страница открывается сразу; active из SWR, остальное по запросу
 	useEffect(() => {
 		Promise.all([loadPauseState(), loadStats()]).catch(() => {})
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
-	// РђРІС‚Рѕ-РїРѕРґС‚СЏРіРёРІР°РЅРёРµ СЃС‚Р°С‚СѓСЃР° WA/TG: РїРѕРІС‚РѕСЂ С‡РµСЂРµР· 2 Рё 5 СЃ, РµСЃР»Рё РµС‰С‘ null (РЅР°РїСЂРёРјРµСЂ, РїРµСЂРІС‹Р№ Р·Р°РїСЂРѕСЃ Р±С‹Р» РјРµРґР»РµРЅРЅС‹Р№ РёР»Рё РїРѕСЃР»Рµ РІРѕР·РІСЂР°С‚Р° РёР· РєР°Р±РёРЅРµС‚Р°)
+	// Авто-подтягивание статуса WA/TG: повтор через 2 и 5 с, если ещё null (например, первый запрос был медленный или после возврата из кабинета)
 	useEffect(() => {
 		const t1 = setTimeout(() => {
 			if (waConnected === null || tgConnected === null) loadStats()
@@ -361,7 +361,7 @@ export default function CampaignsHomePage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [waConnected, tgConnected])
 
-	// РџСЂРё РІРѕР·РІСЂР°С‚Рµ РЅР° РІРєР»Р°РґРєСѓ вЂ” РѕР±РЅРѕРІРёС‚СЊ СЃС‚Р°С‚СѓСЃ РїРѕРґРєР»СЋС‡РµРЅРёР№ Рё РїР°СѓР·С‹ (С‡С‚РѕР±С‹ В«СЃР»РѕРІРёР»РёСЃСЊВ» РїРѕСЃР»Рµ РєР°Р±РёРЅРµС‚Р°)
+	// При возврате на вкладку — обновить статус подключений и паузы (чтобы «словились» после кабинета)
 	useEffect(() => {
 		const onFocus = () => {
 			loadPauseState()
@@ -392,7 +392,7 @@ export default function CampaignsHomePage() {
 		if (tgCampaignId) qs.set('tg', tgCampaignId)
 		const q = qs.toString()
 		if (!q) return ''
-		// Р’РЅСѓС‚СЂРё iframe РЅРµ РЅСѓР¶РЅР° РїРѕРІС‚РѕСЂРЅР°СЏ С€Р°РїРєР° РґР°С€Р±РѕСЂРґР°.
+		// Внутри iframe не нужна повторная шапка дашборда.
 		qs.set('embed', '1')
 		return `/dashboard/campaign?${qs.toString()}`
 	}, [waCampaignId, tgCampaignId])
@@ -419,7 +419,7 @@ export default function CampaignsHomePage() {
 		})) as StartMultiResponse
 
 		if (!data || !data.success) {
-			// РџСЂРѕР±СЂР°СЃС‹РІР°РµРј РєРѕРґ РѕС€РёР±РєРё, С‡С‚РѕР±С‹ РЅРёР¶Рµ РјРѕР¶РЅРѕ Р±С‹Р»Рѕ РїРѕРєР°Р·Р°С‚СЊ С‡РµР»РѕРІРµРєРѕвЂ‘С‡РёС‚Р°РµРјРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ.
+			// Пробрасываем код ошибки, чтобы ниже можно было показать человеко‑читаемое сообщение.
 			const code = String(data?.message || 'start_failed')
 			throw new Error(code)
 		}
@@ -431,8 +431,8 @@ export default function CampaignsHomePage() {
 	}
 
 	const startSelected = async () => {
-		// Р“Р°СЂР°РЅС‚РёСЂСѓРµРј, С‡С‚Рѕ СЃС‚Р°СЂС‚РѕРІС‹Рµ РїР°СЂР°РјРµС‚СЂС‹ РІСЃРµРіРґР° СЃРѕРІРїР°РґР°СЋС‚ СЃ С‚РµРј, С‡С‚Рѕ СЃРµР№С‡Р°СЃ РЅР° СЌРєСЂР°РЅРµ:
-		// СЃРёРЅС…СЂРѕРЅРЅРѕ РїРёС€РµРј РІ localStorage, Р° Р·Р°С‚РµРј С‡РёС‚Р°РµРј РѕР±СЂР°С‚РЅРѕ.
+		// Гарантируем, что стартовые параметры всегда совпадают с тем, что сейчас на экране:
+		// синхронно пишем в localStorage, а затем читаем обратно.
 		if (mounted) {
 			try {
 				localStorage.setItem(LS_KEY_CAMPAIGN_TIME_WINDOW, JSON.stringify({ timeFrom, timeTo }))
@@ -442,7 +442,7 @@ export default function CampaignsHomePage() {
 			}
 		}
 
-		// РќР° СЃР»СѓС‡Р°Р№ РѕС‡РµРЅСЊ Р±С‹СЃС‚СЂРѕРіРѕ РєР»РёРєР° РїРѕСЃР»Рµ РїСЂР°РІРѕРє (drawer / РїРѕР»Р·СѓРЅРєРё) вЂ” РїРµСЂРµС‡РёС‚Р°РµРј РёР· localStorage.
+		// На случай очень быстрого клика после правок (drawer / ползунки) — перечитаем из localStorage.
 		let payload = { timeFrom, timeTo, adv }
 		try {
 			payload = { ...readSavedWindow(), adv: readSavedAdvSettings() }
@@ -451,12 +451,12 @@ export default function CampaignsHomePage() {
 		}
 
 		setLoading(true)
-		loader.show('Р—Р°РїСѓСЃРєР°РµРј СЂР°СЃСЃС‹Р»РєСѓвЂ¦')
+		loader.show('Запускаем рассылку…')
 		try {
 			if (startMode === 'wa') {
 				const wa = await startOne('wa', payload)
 				setWaCampaignId(wa.cid)
-				message.success(wa.alreadyRunning ? 'WA СѓР¶Рµ Р·Р°РїСѓС‰РµРЅР°' : 'WA Р·Р°РїСѓС‰РµРЅР°')
+				message.success(wa.alreadyRunning ? 'WA уже запущена' : 'WA запущена')
 				loadActive()
 				loadPauseState()
 				loadStats()
@@ -466,7 +466,7 @@ export default function CampaignsHomePage() {
 			if (startMode === 'tg') {
 				const tg = await startOne('tg', payload)
 				setTgCampaignId(tg.cid)
-				message.success(tg.alreadyRunning ? 'TG СѓР¶Рµ Р·Р°РїСѓС‰РµРЅР°' : 'TG Р·Р°РїСѓС‰РµРЅР°')
+				message.success(tg.alreadyRunning ? 'TG уже запущена' : 'TG запущена')
 				loadActive()
 				loadPauseState()
 				loadStats()
@@ -479,7 +479,7 @@ export default function CampaignsHomePage() {
 			setWaCampaignId(wa.cid)
 			setTgCampaignId(tg.cid)
 
-			message.success('Р—Р°РїСѓС‰РµРЅС‹ WA + TG')
+			message.success('Запущены WA + TG')
 			loadActive()
 			loadPauseState()
 			loadStats()
@@ -490,27 +490,27 @@ export default function CampaignsHomePage() {
 			const mapErrorMessage = (code: string): string => {
 				switch (code) {
 					case 'no_groups':
-						return 'РќРµС‚ РІС‹Р±СЂР°РЅРЅС‹С… РіСЂСѓРїРї РґР»СЏ СЂР°СЃСЃС‹Р»РєРё. Р—Р°Р№РґРёС‚Рµ РІ СЂР°Р·РґРµР» РіСЂСѓРїРї WA/TG, РѕС‚РјРµС‚СЊС‚Рµ РЅСѓР¶РЅС‹Рµ РіСЂСѓРїРїС‹ Рё РїРѕРїСЂРѕР±СѓР№С‚Рµ СЃРЅРѕРІР°.'
+						return 'Нет выбранных групп для рассылки. Зайдите в раздел групп WA/TG, отметьте нужные группы и попробуйте снова.'
 					case 'no_templates':
-						return 'РќРµС‚ РІРєР»СЋС‡С‘РЅРЅС‹С… С€Р°Р±Р»РѕРЅРѕРІ СЃРѕРѕР±С‰РµРЅРёР№. Р”РѕР±Р°РІСЊС‚Рµ Рё РІРєР»СЋС‡РёС‚Рµ С…РѕС‚СЏ Р±С‹ РѕРґРёРЅ С€Р°Р±Р»РѕРЅ РІ СЂР°Р·РґРµР»Рµ В«РЁР°Р±Р»РѕРЅС‹В».'
+						return 'Нет включённых шаблонов сообщений. Добавьте и включите хотя бы один шаблон в разделе «Шаблоны».'
 					case 'no_targets_for_templates':
-						return 'Р”Р»СЏ РІРєР»СЋС‡С‘РЅРЅС‹С… С€Р°Р±Р»РѕРЅРѕРІ РЅРµ РІС‹Р±СЂР°РЅС‹ РіСЂСѓРїРїС‹-РїРѕР»СѓС‡Р°С‚РµР»Рё. РћС‚РєСЂРѕР№С‚Рµ С€Р°Р±Р»РѕРЅС‹, РІРѕ РІРєР»Р°РґРєР°С… WA Рё TG РѕС‚РјРµС‚СЊС‚Рµ РіСЂСѓРїРїС‹ Рё РїРѕРїСЂРѕР±СѓР№С‚Рµ СЃРЅРѕРІР°.'
+						return 'Для включённых шаблонов не выбраны группы-получатели. Откройте шаблоны, во вкладках WA и TG отметьте группы и попробуйте снова.'
 					case 'template_between_groups_required':
-						return 'РЈ С€Р°Р±Р»РѕРЅР°, РєРѕС‚РѕСЂС‹Р№ СѓС‡Р°СЃС‚РІСѓРµС‚ РІ СЂР°СЃСЃС‹Р»РєРµ, РЅРµ Р·Р°РґР°РЅ РёРЅС‚РµСЂРІР°Р» В«РїР°СѓР·Р° РјРµР¶РґСѓ РіСЂСѓРїРїР°РјРёВ» РґР»СЏ СЌС‚РѕРіРѕ РєР°РЅР°Р»Р° (WA РёР»Рё TG). РћС‚РєСЂРѕР№С‚Рµ С€Р°Р±Р»РѕРЅ РІ СЂР°Р·РґРµР»Рµ В«РЁР°Р±Р»РѕРЅС‹В», РІС‹СЃС‚Р°РІСЊС‚Рµ РїРѕР»Р·СѓРЅРєРё РїР°СѓР·С‹ Рё СЃРѕС…СЂР°РЅРёС‚Рµ. Р•СЃР»Рё РЅРµРґР°РІРЅРѕ РґРѕР±Р°РІР»СЏР»Рё С€Р°Р±Р»РѕРЅС‹ РёР· С‚Р°Р±Р»РёС†С‹ вЂ” РІС‹РїРѕР»РЅРёС‚Рµ SQL РјРёРіСЂР°С†РёСЋ РєРѕР»РѕРЅРѕРє РїР°СѓР· РІ Supabase.'
+						return 'У шаблона, который участвует в рассылке, не задан интервал «пауза между группами» для этого канала (WA или TG). Откройте шаблон в разделе «Шаблоны», выставьте ползунки паузы и сохраните. Если недавно добавляли шаблоны из таблицы — выполните SQL миграцию колонок пауз в Supabase.'
 					case 'no_jobs':
-						return 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃС„РѕСЂРјРёСЂРѕРІР°С‚СЊ Р·Р°РґР°С‡Рё СЂР°СЃСЃС‹Р»РєРё. РџСЂРѕРІРµСЂСЊС‚Рµ, С‡С‚Рѕ РµСЃС‚СЊ РІРєР»СЋС‡С‘РЅРЅС‹Рµ С€Р°Р±Р»РѕРЅС‹ Рё РІС‹Р±СЂР°РЅРЅС‹Рµ РіСЂСѓРїРїС‹ РґР»СЏ WA/TG.'
+						return 'Не удалось сформировать задачи рассылки. Проверьте, что есть включённые шаблоны и выбранные группы для WA/TG.'
 					case 'supabase_campaign_insert_error':
-						return 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ РєР°РјРїР°РЅРёСЋ РІ Р±Р°Р·Рµ. Р’ Supabase в†’ SQL Editor РІС‹РїРѕР»РЅРёС‚Рµ СЃРєСЂРёРїС‚ backend/migrations/fix_campaigns_start_multi_supabase.sql (РёР»Рё РѕР±РЅРѕРІР»С‘РЅРЅС‹Р№ Р±Р»РѕРє campaigns РІ backend/migrations/RUN_IN_SUPABASE.sql), Р·Р°С‚РµРј СЃРЅРѕРІР° РЅР°Р¶РјРёС‚Рµ В«Р—Р°РїСѓСЃС‚РёС‚СЊВ».'
+						return 'Не удалось создать кампанию в базе. В Supabase → SQL Editor выполните скрипт backend/migrations/fix_campaigns_start_multi_supabase.sql (или обновлённый блок campaigns в backend/migrations/RUN_IN_SUPABASE.sql), затем снова нажмите «Запустить».'
 					case 'whatsapp_not_connected':
 					case 'wa_not_connected':
-						return 'WhatsApp РЅРµ РїРѕРґРєР»СЋС‡С‘РЅ. РџРѕРґРєР»СЋС‡РёС‚Рµ WhatsApp РІ Р»РёС‡РЅРѕРј РєР°Р±РёРЅРµС‚Рµ.'
+						return 'WhatsApp не подключён. Подключите WhatsApp в личном кабинете.'
 					case 'telegram_not_connected':
 					case 'tg_not_connected':
-						return 'Telegram РЅРµ РїРѕРґРєР»СЋС‡С‘РЅ. РџРѕРґРєР»СЋС‡РёС‚Рµ Telegram РІ Р»РёС‡РЅРѕРј РєР°Р±РёРЅРµС‚Рµ.'
+						return 'Telegram не подключён. Подключите Telegram в личном кабинете.'
 					case 'waiting_reconnect':
-						return 'РљР°РЅР°Р» РІСЂРµРјРµРЅРЅРѕ РЅРµ РІ СЃРѕСЃС‚РѕСЏРЅРёРё open/connected. РљР°РјРїР°РЅРёСЏ РїРѕСЃС‚Р°РІР»РµРЅР° РІ РѕР¶РёРґР°РЅРёРµ РїРµСЂРµРїРѕРґРєР»СЋС‡РµРЅРёСЏ.'
+						return 'Канал временно не в состоянии open/connected. Кампания поставлена в ожидание переподключения.'
 					default:
-						return `РћС€РёР±РєР° СЃС‚Р°СЂС‚Р°: ${code}`
+						return `Ошибка старта: ${code}`
 				}
 			}
 			if (
@@ -523,14 +523,14 @@ export default function CampaignsHomePage() {
 				message.error({
 					content: (
 						<span>
-							Р”Р»СЏ Р·Р°РїСѓСЃРєР° СЂР°СЃСЃС‹Р»РєРё РЅСѓР¶РЅР° Р°РєС‚РёРІРЅР°СЏ РїРѕРґРїРёСЃРєР° РёР»Рё РїСЂРѕР±РЅС‹Р№ РїРµСЂРёРѕРґ.{' '}
+							Для запуска рассылки нужна активная подписка или пробный период.{' '}
 							<Button
 								type='link'
 								size='small'
 								style={{ padding: 0, height: 'auto' }}
 								onClick={() => router.push('/cabinet/subscription')}
 							>
-								РћС„РѕСЂРјРёС‚СЊ РїРѕРґРїРёСЃРєСѓ РёР»Рё РЅР°С‡Р°С‚СЊ РїСЂРѕР±РЅС‹Р№ РїРµСЂРёРѕРґ в†’
+								Оформить подписку или начать пробный период →
 							</Button>
 						</span>
 					),
@@ -553,7 +553,7 @@ export default function CampaignsHomePage() {
 								style={{ padding: 0, height: 'auto' }}
 								onClick={() => router.push(isWa ? '/cabinet#whatsapp' : '/cabinet#telegram')}
 							>
-								РџРµСЂРµР№С‚Рё Рє РїРѕРґРєР»СЋС‡РµРЅРёСЋ в†’
+								Перейти к подключению →
 							</Button>
 						</span>
 					),
@@ -589,12 +589,12 @@ export default function CampaignsHomePage() {
 			if (!json?.success) throw new Error(json?.message || 'requeue_failed')
 			const n = Number(json?.enqueued ?? 0)
 			message.success(
-				`${label}: РїРµСЂРµР·Р°РїСѓС‰РµРЅРѕ ${n} Р·Р°РґР°С‡ (${statuses.join('+')}).`,
+				`${label}: перезапущено ${n} задач (${statuses.join('+')}).`,
 			)
 			loadActive()
 		} catch (e: any) {
 			console.error(e)
-			message.error(`${label}: ${e?.message || 'РќРµ СѓРґР°Р»РѕСЃСЊ РїРµСЂРµР·Р°РїСѓСЃС‚РёС‚СЊ Р·Р°РґР°С‡Рё'}`)
+			message.error(`${label}: ${e?.message || 'Не удалось перезапустить задачи'}`)
 		} finally {
 			setLoading(false)
 			loader.hide()
@@ -606,12 +606,12 @@ export default function CampaignsHomePage() {
 		try {
 			const json: any = await apiPost('/campaigns/set-pause', { channel, paused: false })
 			if (!json?.success) throw new Error(json?.message || 'set_pause_failed')
-			message.success(channel === 'wa' ? 'WA: СЂР°СЃСЃС‹Р»РєР° РїСЂРѕРґРѕР»Р¶РµРЅР°' : 'TG: СЂР°СЃСЃС‹Р»РєР° РїСЂРѕРґРѕР»Р¶РµРЅР°')
+			message.success(channel === 'wa' ? 'WA: рассылка продолжена' : 'TG: рассылка продолжена')
 			loadActive()
 			loadPauseState()
 		} catch (e: any) {
 			console.error(e)
-			message.error(e?.message || 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃРЅСЏС‚СЊ РїР°СѓР·Сѓ')
+			message.error(e?.message || 'Не удалось снять паузу')
 		} finally {
 			setLoading(false)
 			loader.hide()
@@ -623,8 +623,8 @@ export default function CampaignsHomePage() {
 		setLoading(true)
 		try {
 			await stopOne(waCampaignId)
-			message.success('WA РѕСЃС‚Р°РЅРѕРІР»РµРЅР°')
-			// РЎСЂР°Р·Сѓ РѕР±РЅСѓР»СЏРµРј finish/iframe-РєР°РЅР°Р», С‡С‚РѕР±С‹ РЅРµ РїРѕРєР°Р·С‹РІР°С‚СЊ "С…РІРѕСЃС‚С‹"
+			message.success('WA остановлена')
+			// Сразу обнуляем finish/iframe-канал, чтобы не показывать "хвосты"
 			setWaFinishAt(null)
 			setWaCampaignId('')
 			await loadActive()
@@ -643,7 +643,7 @@ export default function CampaignsHomePage() {
 		setLoading(true)
 		try {
 			await stopOne(tgCampaignId)
-			message.success('TG РѕСЃС‚Р°РЅРѕРІР»РµРЅР°')
+			message.success('TG остановлена')
 			setTgFinishAt(null)
 			setTgCampaignId('')
 			await loadActive()
@@ -677,7 +677,7 @@ export default function CampaignsHomePage() {
 			<div className='camp__wrap'>
 				<div className='camp__one'>
 					<section className='camp__one-section camp__one-section--summary'>
-						<h2 className='camp__sectionTitle'>Р§С‚Рѕ Р±СѓРґРµС‚ РѕС‚РїСЂР°РІР»РµРЅРѕ</h2>
+						<h2 className='camp__sectionTitle'>Что будет отправлено</h2>
 						<div
 							style={{
 								marginBottom: 12,
@@ -688,9 +688,9 @@ export default function CampaignsHomePage() {
 							}}
 						>
 							<div style={{ fontSize: 12, lineHeight: 1.45, opacity: 0.9 }}>
-								РџР°СѓР·С‹ РјРµР¶РґСѓ РѕС‚РїСЂР°РІРєР°РјРё вЂ” РїРѕР»Р·СѓРЅРєРё TG/WA РІ РєР°СЂС‚РѕС‡РєРµ С€Р°Р±Р»РѕРЅР°. РЎРєРѕР»СЊРєРѕ СѓР№РґС‘С‚ РІ РІРѕР»РЅРµ Р·Р°РІРёСЃРёС‚ РѕС‚ РіСЂСѓРїРї,
-								РѕС‚РјРµС‡РµРЅРЅС‹С… РІРЅСѓС‚СЂРё РєР°Р¶РґРѕРіРѕ С€Р°Р±Р»РѕРЅР°, Р° РЅРµ РѕС‚ СЃС‡С‘С‚С‡РёРєРѕРІ TG/WA РІС‹С€Рµ (СЌС‚Рѕ РІСЃРµ РІС‹Р±СЂР°РЅРЅС‹Рµ РіСЂСѓРїРїС‹ РєР°РЅР°Р»Р°).
-								РўРѕС‡РЅРѕРµ С‡РёСЃР»Рѕ Рё РІСЂРµРјСЏ РѕРєРѕРЅС‡Р°РЅРёСЏ вЂ” РІ В«РџСЂРѕРіСЂРµСЃСЃ СЂР°СЃСЃС‹Р»РєРёВ» РїРѕСЃР»Рµ Р·Р°РїСѓСЃРєР°.
+								Паузы между отправками — ползунки TG/WA в карточке шаблона. Сколько уйдёт в волне зависит от групп,
+								отмеченных внутри каждого шаблона, а не от счётчиков TG/WA выше (это все выбранные группы канала).
+								Точное число и время окончания — в «Прогресс рассылки» после запуска.
 							</div>
 						</div>
 						<div
@@ -704,14 +704,14 @@ export default function CampaignsHomePage() {
 							}}
 						>
 							<div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-								<span style={{ opacity: 0.88 }}>РћРєРЅРѕ:</span>
+								<span style={{ opacity: 0.88 }}>Окно:</span>
 								<Popover
 									trigger='click'
 									overlayClassName='camp__timeWindowPopover'
 									content={
 										<div className='camp__timeWindowPopContent'>
 											<div className='camp__timeWindowPopRow'>
-												<div className='camp__timeWindowPopLabel'>РЎ</div>
+												<div className='camp__timeWindowPopLabel'>С</div>
 												<TimePicker
 													format='HH:mm'
 													minuteStep={1}
@@ -725,7 +725,7 @@ export default function CampaignsHomePage() {
 												/>
 											</div>
 											<div className='camp__timeWindowPopRow'>
-												<div className='camp__timeWindowPopLabel'>Р”Рѕ</div>
+												<div className='camp__timeWindowPopLabel'>До</div>
 												<TimePicker
 													format='HH:mm'
 													minuteStep={1}
@@ -739,13 +739,13 @@ export default function CampaignsHomePage() {
 												/>
 											</div>
 											<div className='camp__timeWindowPopHint'>
-												РЎРѕС…СЂР°РЅСЏРµС‚СЃСЏ РІ Р±СЂР°СѓР·РµСЂРµ. Р”Р»СЏ Р°РєС‚РёРІРЅРѕР№ СЂР°СЃСЃС‹Р»РєРё вЂ” СЃС‚РѕРї, Р·Р°С‚РµРј Р·Р°РїСѓСЃРє СЃРЅРѕРІР°.
+												Сохраняется в браузере. Для активной рассылки — стоп, затем запуск снова.
 											</div>
 										</div>
 									}
 								>
-									<button type='button' className='camp__timeWindowBtn' aria-label='РР·РјРµРЅРёС‚СЊ РѕРєРЅРѕ СЃСѓС‚РѕРє'>
-										{mounted ? `${timeFrom}вЂ”${timeTo}` : '00:00вЂ”23:59'}
+									<button type='button' className='camp__timeWindowBtn' aria-label='Изменить окно суток'>
+										{mounted ? `${timeFrom}—${timeTo}` : '00:00—23:59'}
 									</button>
 								</Popover>
 							</div>
@@ -754,16 +754,16 @@ export default function CampaignsHomePage() {
 									checked={adv.repeatEnabled}
 									onChange={(v) => setAdv((a) => ({ ...a, repeatEnabled: v }))}
 								/>
-								<span style={{ opacity: 0.88 }} title='РЎР»РµРґСѓСЋС‰Р°СЏ РІРѕР»РЅР° вЂ” РЅР° СЃР»РµРґСѓСЋС‰РёР№ РєР°Р»РµРЅРґР°СЂРЅС‹Р№ РґРµРЅСЊ РІ РЅР°С‡Р°Р»Рµ РѕРєРЅР°'>
-									Р•Р¶РµРґРЅРµРІРЅРѕ РїРѕРІС‚РѕСЂСЏС‚СЊ СЂР°СЃСЃС‹Р»РєРё
+								<span style={{ opacity: 0.88 }} title='Следующая волна — на следующий календарный день в начале окна'>
+									Ежедневно повторять рассылки
 								</span>
 							</div>
 						</div>
 						<div style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 10, opacity: 0.9 }}>
-							<b>{templatesCount}</b> С€Р°Р±Р». В· TG <b>{tgConnected === false ? 0 : tgSelectedCount}</b> В· WA{' '}
+							<b>{templatesCount}</b> шабл. · TG <b>{tgConnected === false ? 0 : tgSelectedCount}</b> · WA{' '}
 							<b>{waConnected === false ? 0 : waSelectedCount}</b>
 						</div>
-						{/* РџСЂРѕРіСЂРµСЃСЃ РґРѕСЃС‚СѓРїРµРЅ РІ В«Р”РµР№СЃС‚РІРёСЏВ» РІ Р±Р»РѕРєРµ Р·Р°РїСѓСЃРєР° */}
+						{/* Прогресс доступен в «Действия» в блоке запуска */}
 						{(() => {
 							const ready =
 								templatesCount > 0 &&
@@ -775,44 +775,44 @@ export default function CampaignsHomePage() {
 							if (ready) return null
 							let warnContent: ReactNode = ''
 							if (templatesCount === 0) {
-								warnContent = 'Р’РєР»СЋС‡РёС‚Рµ С…РѕС‚СЏ Р±С‹ РѕРґРёРЅ С€Р°Р±Р»РѕРЅ (РєРЅРѕРїРєР° РЁР°Р±Р»РѕРЅС‹ РІ С€Р°РїРєРµ).'
+								warnContent = 'Включите хотя бы один шаблон (кнопка Шаблоны в шапке).'
 							} else if (startMode === 'both') {
 								if (waConnected === false && tgConnected === false) {
-									warnContent = <>РџРѕРґРєР»СЋС‡РёС‚Рµ <Link href='/cabinet#whatsapp'>WhatsApp</Link> Рё <Link href='/cabinet#telegram'>Telegram</Link> РІ Р»РёС‡РЅРѕРј РєР°Р±РёРЅРµС‚Рµ.</>
+									warnContent = <>Подключите <Link href='/cabinet#whatsapp'>WhatsApp</Link> и <Link href='/cabinet#telegram'>Telegram</Link> в личном кабинете.</>
 								} else if (waConnected === false) {
-									warnContent = <>РџРѕРґРєР»СЋС‡РёС‚Рµ <Link href='/cabinet#whatsapp'>WhatsApp</Link> РІ Р»РёС‡РЅРѕРј РєР°Р±РёРЅРµС‚Рµ.</>
+									warnContent = <>Подключите <Link href='/cabinet#whatsapp'>WhatsApp</Link> в личном кабинете.</>
 								} else if (tgConnected === false) {
-									warnContent = <>РџРѕРґРєР»СЋС‡РёС‚Рµ <Link href='/cabinet#telegram'>Telegram</Link> РІ Р»РёС‡РЅРѕРј РєР°Р±РёРЅРµС‚Рµ.</>
+									warnContent = <>Подключите <Link href='/cabinet#telegram'>Telegram</Link> в личном кабинете.</>
 								} else if (waSelectedCount === 0 && tgSelectedCount === 0) {
-									warnContent = 'Р”Р»СЏ В«TG + WAВ» РЅСѓР¶РЅС‹ РіСЂСѓРїРїС‹ РІ РѕР±РѕРёС… РєР°РЅР°Р»Р°С… вЂ” РѕС‚РєСЂРѕР№С‚Рµ Р“СЂСѓРїРїС‹ WA Рё Р“СЂСѓРїРїС‹ TG РІ С€Р°РїРєРµ.'
+									warnContent = 'Для «TG + WA» нужны группы в обоих каналах — откройте Группы WA и Группы TG в шапке.'
 								} else if (waSelectedCount === 0) {
-									warnContent = 'Р”РѕР±Р°РІСЊС‚Рµ РіСЂСѓРїРїС‹ WA (РєРЅРѕРїРєР° РІ С€Р°РїРєРµ) РёР»Рё РїРµСЂРµРєР»СЋС‡РёС‚РµСЃСЊ РЅР° В«РўРѕР»СЊРєРѕ TGВ».'
+									warnContent = 'Добавьте группы WA (кнопка в шапке) или переключитесь на «Только TG».'
 								} else {
-									warnContent = 'Р”РѕР±Р°РІСЊС‚Рµ РіСЂСѓРїРїС‹ TG (РєРЅРѕРїРєР° РІ С€Р°РїРєРµ) РёР»Рё РїРµСЂРµРєР»СЋС‡РёС‚РµСЃСЊ РЅР° В«РўРѕР»СЊРєРѕ WAВ».'
+									warnContent = 'Добавьте группы TG (кнопка в шапке) или переключитесь на «Только WA».'
 								}
 							} else if (startMode === 'tg') {
 								if (tgConnected === false) {
-									warnContent = <>РџРѕРґРєР»СЋС‡РёС‚Рµ <Link href='/cabinet#telegram'>Telegram</Link> РІ Р»РёС‡РЅРѕРј РєР°Р±РёРЅРµС‚Рµ.</>
+									warnContent = <>Подключите <Link href='/cabinet#telegram'>Telegram</Link> в личном кабинете.</>
 								} else {
-									warnContent = 'Р’С‹Р±РµСЂРёС‚Рµ РіСЂСѓРїРїС‹ TG вЂ” РєРЅРѕРїРєР° В«Р“СЂСѓРїРїС‹ TGВ» РІ С€Р°РїРєРµ.'
+									warnContent = 'Выберите группы TG — кнопка «Группы TG» в шапке.'
 								}
 							} else {
 								if (waConnected === false) {
-									warnContent = <>РџРѕРґРєР»СЋС‡РёС‚Рµ <Link href='/cabinet#whatsapp'>WhatsApp</Link> РІ Р»РёС‡РЅРѕРј РєР°Р±РёРЅРµС‚Рµ.</>
+									warnContent = <>Подключите <Link href='/cabinet#whatsapp'>WhatsApp</Link> в личном кабинете.</>
 								} else {
-									warnContent = 'Р’С‹Р±РµСЂРёС‚Рµ РіСЂСѓРїРїС‹ WA вЂ” РєРЅРѕРїРєР° В«Р“СЂСѓРїРїС‹ WAВ» РІ С€Р°РїРєРµ.'
+									warnContent = 'Выберите группы WA — кнопка «Группы WA» в шапке.'
 								}
 							}
 							return (
 								<p className='camp__warnText'>
-									вљ пёЏ {warnContent}
+									⚠️ {warnContent}
 								</p>
 							)
 						})()}
 					</section>
 
 					<section className='camp__one-section'>
-						<h2 className='camp__sectionTitle'>Р—Р°РїСѓСЃРє</h2>
+						<h2 className='camp__sectionTitle'>Запуск</h2>
 						<div className='camp__cardInner camp__cardInner--actions'>
 							<div className='camp__launchToolbar'>
 								<div className='camp__launchToolbarChannels'>
@@ -827,8 +827,8 @@ export default function CampaignsHomePage() {
 										}}
 										options={[
 											{ label: <span className='camp__segmentedLabel'><ChannelIcon type='tg' size={14} /><ChannelIcon type='wa' size={14} /> TG + WA</span>, value: 'both' },
-											{ label: <span className='camp__segmentedLabel'><ChannelIcon type='tg' size={14} /> РўРѕР»СЊРєРѕ TG</span>, value: 'tg' },
-											{ label: <span className='camp__segmentedLabel'><ChannelIcon type='wa' size={14} /> РўРѕР»СЊРєРѕ WA</span>, value: 'wa' },
+											{ label: <span className='camp__segmentedLabel'><ChannelIcon type='tg' size={14} /> Только TG</span>, value: 'tg' },
+											{ label: <span className='camp__segmentedLabel'><ChannelIcon type='wa' size={14} /> Только WA</span>, value: 'wa' },
 										]}
 									/>
 								</div>
@@ -836,12 +836,12 @@ export default function CampaignsHomePage() {
 							<div className='camp__actionButtons camp__launchActions'>
 							<Button type='primary' size='large' className='camp__launchPrimary' onClick={startSelected} loading={loading}>
 								{noActiveCampaigns
-									? 'Р—Р°РїСѓСЃС‚РёС‚СЊ'
+									? 'Запустить'
 									: startMode === 'tg'
-										? 'Р—Р°РїСѓСЃС‚РёС‚СЊ TG'
+										? 'Запустить TG'
 										: startMode === 'wa'
-											? 'Р—Р°РїСѓСЃС‚РёС‚СЊ WA'
-											: 'Р—Р°РїСѓСЃС‚РёС‚СЊ TG + WA'}
+											? 'Запустить WA'
+											: 'Запустить TG + WA'}
 							</Button>
 							<Popover
 									trigger='click'
@@ -849,27 +849,27 @@ export default function CampaignsHomePage() {
 									content={(
 										<div style={{ display: 'grid', gap: 8, minWidth: 260 }}>
 											<Button danger block disabled={!tgCampaignId} onClick={stopTg} loading={loading}>
-												<ChannelIcon type='tg' size={16} /> РћСЃС‚Р°РЅРѕРІРёС‚СЊ TG
+												<ChannelIcon type='tg' size={16} /> Остановить TG
 											</Button>
 											{!tgCampaignId && (
 												<div style={{ fontSize: 11, opacity: 0.78, marginTop: -2 }}>
-													РћСЃС‚Р°РЅРѕРІРёС‚СЊ TG вЂ” С‚РѕР»СЊРєРѕ РµСЃР»Рё TG-СЂР°СЃСЃС‹Р»РєР° Р°РєС‚РёРІРЅР°.
+													Остановить TG — только если TG-рассылка активна.
 												</div>
 											)}
 											<Button danger block disabled={!waCampaignId} onClick={stopWa} loading={loading}>
-												<ChannelIcon type='wa' size={16} /> РћСЃС‚Р°РЅРѕРІРёС‚СЊ WA
+												<ChannelIcon type='wa' size={16} /> Остановить WA
 											</Button>
 											{!waCampaignId && (
 												<div style={{ fontSize: 11, opacity: 0.78, marginTop: -2 }}>
-													РћСЃС‚Р°РЅРѕРІРёС‚СЊ WA вЂ” С‚РѕР»СЊРєРѕ РµСЃР»Рё WA-СЂР°СЃСЃС‹Р»РєР° Р°РєС‚РёРІРЅР°.
+													Остановить WA — только если WA-рассылка активна.
 												</div>
 											)}
 											<Button block disabled={!waCampaignId && !tgCampaignId} onClick={openProgress}>
-												РџСЂРѕРіСЂРµСЃСЃ СЂР°СЃСЃС‹Р»РєРё в†’
+												Прогресс рассылки →
 											</Button>
 											{!waCampaignId && !tgCampaignId && (
 												<div style={{ fontSize: 11, opacity: 0.78, marginTop: -2 }}>
-													РџСЂРѕРіСЂРµСЃСЃ РїРѕСЏРІРёС‚СЃСЏ РїРѕСЃР»Рµ Р·Р°РїСѓСЃРєР° С…РѕС‚СЏ Р±С‹ РѕРґРЅРѕРіРѕ РєР°РЅР°Р»Р°.
+													Прогресс появится после запуска хотя бы одного канала.
 												</div>
 											)}
 											<Button
@@ -880,11 +880,11 @@ export default function CampaignsHomePage() {
 													void requeueOne(
 														waCampaignId,
 														'failed_pending',
-														'WA Р±С‹СЃС‚СЂС‹Р№ РїРµСЂРµР·Р°РїСѓСЃРє',
+														'WA быстрый перезапуск',
 													)
 												}
 											>
-												<ChannelIcon type='wa' size={16} /> Р‘С‹СЃС‚СЂС‹Р№ СЂРµСЃС‚Р°СЂС‚ failed+pending (WA)
+												<ChannelIcon type='wa' size={16} /> Быстрый рестарт failed+pending (WA)
 											</Button>
 											<Button
 												block
@@ -894,23 +894,23 @@ export default function CampaignsHomePage() {
 													void requeueOne(
 														tgCampaignId,
 														'failed_pending',
-														'TG Р±С‹СЃС‚СЂС‹Р№ РїРµСЂРµР·Р°РїСѓСЃРє',
+														'TG быстрый перезапуск',
 													)
 												}
 											>
-												<ChannelIcon type='tg' size={16} /> Р‘С‹СЃС‚СЂС‹Р№ СЂРµСЃС‚Р°СЂС‚ failed+pending (TG)
+												<ChannelIcon type='tg' size={16} /> Быстрый рестарт failed+pending (TG)
 											</Button>
 										</div>
 									)}
 								>
 									<Button size='large'>
-										Р”РµР№СЃС‚РІРёСЏ
+										Действия
 										{showActionsStatusBadge && (
 											<Tooltip
 												title={
 													disabledActionsCount === 0
-														? 'Р’СЃРµ РїСѓРЅРєС‚С‹ РјРµРЅСЋ РґРѕСЃС‚СѓРїРЅС‹'
-														: `${disabledActionsCount} РёР· 3 РЅРµРґРѕСЃС‚СѓРїРЅРѕ (СЃС‚РѕРї / РїСЂРѕРіСЂРµСЃСЃ)`
+														? 'Все пункты меню доступны'
+														: `${disabledActionsCount} из 3 недоступно (стоп / прогресс)`
 												}
 											>
 												<Tag
@@ -918,7 +918,7 @@ export default function CampaignsHomePage() {
 													className={disabledActionsCount >= 2 ? 'camp__actionsBadgePulse' : undefined}
 													style={{ marginInlineStart: 8, marginInlineEnd: 0, cursor: 'inherit' }}
 												>
-													{disabledActionsCount === 0 ? 'в—Џ' : disabledActionsCount}
+													{disabledActionsCount === 0 ? '●' : disabledActionsCount}
 												</Tag>
 											</Tooltip>
 										)}
@@ -928,7 +928,7 @@ export default function CampaignsHomePage() {
 							{noActiveCampaigns ? (
 								<div className='camp__statusRow camp__statusRow--compact'>
 									<span className='camp__statusCompactMuted'>
-										<ChannelIcon type='tg' size={16} /> TG В· <ChannelIcon type='wa' size={16} /> WA вЂ” РЅРµС‚ Р°РєС‚РёРІРЅС‹С… СЂР°СЃСЃС‹Р»РѕРє
+										<ChannelIcon type='tg' size={16} /> TG · <ChannelIcon type='wa' size={16} /> WA — нет активных рассылок
 									</span>
 								</div>
 							) : (
@@ -937,32 +937,32 @@ export default function CampaignsHomePage() {
 										<ChannelIcon type='tg' size={18} />
 										TG:{' '}
 										{tgCampaignId && !tgPaused ? (
-											<Tag color='green'>Р·Р°РїСѓС‰РµРЅР°</Tag>
+											<Tag color='green'>запущена</Tag>
 										) : tgCampaignId && tgPaused ? (
-											<Tag color='orange'>РЅР° РїР°СѓР·Рµ</Tag>
+											<Tag color='orange'>на паузе</Tag>
 										) : (
-											<Tag>РЅРµС‚</Tag>
+											<Tag>нет</Tag>
 										)}
 										{tgCampaignId && tgPaused && isPaywallReason(tgPauseReason) && (
 											<Tag color='red'>
-												РЅСѓР¶РЅР° РѕРїР»Р°С‚Р°{' '}
+												нужна оплата{' '}
 												<a
 													href='/cabinet/subscription'
 													style={{ color: 'inherit', textDecoration: 'underline' }}
 												>
-													РїРµСЂРµР№С‚Рё
+													перейти
 												</a>
 											</Tag>
 										)}
 										{tgCampaignId && tgPaused && (
 											<Button type='link' size='small' onClick={() => resumeChannel('tg')} loading={loading}>
-												РџСЂРѕРґРѕР»Р¶РёС‚СЊ СЂР°СЃСЃС‹Р»РєСѓ
+												Продолжить рассылку
 											</Button>
 										)}
 										{tgCampaignId && <code className='camp__statusId'>{tgCampaignId}</code>}
 										{tgFinishAt ? (
 											<span style={{ marginLeft: 10, fontSize: 12, opacity: 0.8 }}>
-												РѕРєРѕРЅС‡Р°РЅРёРµ: <b>{formatCampaignFinishAt(tgFinishAt)}</b>
+												окончание: <b>{formatCampaignFinishAt(tgFinishAt)}</b>
 											</span>
 										) : null}
 									</div>
@@ -970,32 +970,32 @@ export default function CampaignsHomePage() {
 										<ChannelIcon type='wa' size={18} />
 										WA:{' '}
 										{waCampaignId && !waPaused ? (
-											<Tag color='green'>Р·Р°РїСѓС‰РµРЅР°</Tag>
+											<Tag color='green'>запущена</Tag>
 										) : waCampaignId && waPaused ? (
-											<Tag color='orange'>РЅР° РїР°СѓР·Рµ</Tag>
+											<Tag color='orange'>на паузе</Tag>
 										) : (
-											<Tag>РЅРµС‚</Tag>
+											<Tag>нет</Tag>
 										)}
 										{waCampaignId && waPaused && isPaywallReason(waPauseReason) && (
 											<Tag color='red'>
-												РЅСѓР¶РЅР° РѕРїР»Р°С‚Р°{' '}
+												нужна оплата{' '}
 												<a
 													href='/cabinet/subscription'
 													style={{ color: 'inherit', textDecoration: 'underline' }}
 												>
-													РїРµСЂРµР№С‚Рё
+													перейти
 												</a>
 											</Tag>
 										)}
 										{waCampaignId && waPaused && (
 											<Button type='link' size='small' onClick={() => resumeChannel('wa')} loading={loading}>
-												РџСЂРѕРґРѕР»Р¶РёС‚СЊ СЂР°СЃСЃС‹Р»РєСѓ
+												Продолжить рассылку
 											</Button>
 										)}
 										{waCampaignId && <code className='camp__statusId'>{waCampaignId}</code>}
 										{waFinishAt ? (
 											<span style={{ marginLeft: 10, fontSize: 12, opacity: 0.8 }}>
-												РѕРєРѕРЅС‡Р°РЅРёРµ: <b>{formatCampaignFinishAt(waFinishAt)}</b>
+												окончание: <b>{formatCampaignFinishAt(waFinishAt)}</b>
 											</span>
 										) : null}
 									</div>
@@ -1004,15 +1004,14 @@ export default function CampaignsHomePage() {
 						</div>
 					</section>
 
-					{/* 3) РџСЂРѕРіСЂРµСЃСЃ СЂР°СЃСЃС‹Р»РєРё (РґРµС‚Р°Р»Рё) вЂ” РІРЅРёР·Сѓ РІ С‚РѕРј Р¶Рµ Р±Р»РѕРєРµ */}
+					{/* 3) Прогресс рассылки (детали) — внизу в том же блоке */}
 					{progressUrl ? (
 						<section className='camp__one-section camp__one-section--progress'>
-							<h2 className='camp__sectionTitle'>РџСЂРѕРіСЂРµСЃСЃ СЂР°СЃСЃС‹Р»РєРё</h2>
+							<h2 className='camp__sectionTitle'>Прогресс рассылки</h2>
 							<iframe src={progressUrl} className='camp__iframe' />
 						</section>
 					) : null}
 
-					{/* РСЃС‚РѕСЂРёСЏ Рё СЃРІРѕРґРєРё вЂ” РІ РСЃС‚РѕСЂРёРё */}
 				</div>
 			</div>
 		</div>
