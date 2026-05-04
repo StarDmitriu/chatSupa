@@ -95,7 +95,7 @@ function clampInt(n: unknown, lo: number, hi: number, def: number) {
 }
 
 function approxBetweenGroupsSeconds(baseMinSec: number, baseMaxSec: number, speedFactor: unknown) {
-	// speedFactor: 100 = базово; 200 = в 2 раза быстрее (пауза /2); 50 = в 2 раза медленнее (пауза *2)
+	// speedFactor: 100 = Р±Р°Р·РѕРІРѕ; 200 = РІ 2 СЂР°Р·Р° Р±С‹СЃС‚СЂРµРµ (РїР°СѓР·Р° /2); 50 = РІ 2 СЂР°Р·Р° РјРµРґР»РµРЅРЅРµРµ (РїР°СѓР·Р° *2)
 	const sf = clampInt(speedFactor, 10, 400, 100)
 	const k = 100 / sf
 	const minSec = Math.max(1, Math.round((Number(baseMinSec) || 0) * k))
@@ -105,15 +105,15 @@ function approxBetweenGroupsSeconds(baseMinSec: number, baseMaxSec: number, spee
 
 function labelSpeed(baseMinSec: number, baseMaxSec: number, speedFactor: unknown, channelLabel: string) {
 	const { minSec, maxSec, sf } = approxBetweenGroupsSeconds(baseMinSec, baseMaxSec, speedFactor)
-	if (sf === 100) return `${channelLabel}: базово (${minSec}–${maxSec}с)`
-	return `${channelLabel}: ${minSec}–${maxSec}с (×${(sf / 100).toFixed(2)})`
+	if (sf === 100) return `${channelLabel}: Р±Р°Р·РѕРІРѕ (${minSec}вЂ“${maxSec}СЃ)`
+	return `${channelLabel}: ${minSec}вЂ“${maxSec}СЃ (Г—${(sf / 100).toFixed(2)})`
 }
 
-/** Короткая подпись паузы для компактной мобильной таблицы */
+/** РљРѕСЂРѕС‚РєР°СЏ РїРѕРґРїРёСЃСЊ РїР°СѓР·С‹ РґР»СЏ РєРѕРјРїР°РєС‚РЅРѕР№ РјРѕР±РёР»СЊРЅРѕР№ С‚Р°Р±Р»РёС†С‹ */
 function labelSpeedCompact(baseMinSec: number, baseMaxSec: number, speedFactor: unknown) {
 	const { minSec, maxSec, sf } = approxBetweenGroupsSeconds(baseMinSec, baseMaxSec, speedFactor)
-	if (sf === 100) return `${minSec}–${maxSec}с`
-	return `${minSec}–${maxSec}с ×${(sf / 100).toFixed(1)}`
+	if (sf === 100) return `${minSec}вЂ“${maxSec}СЃ`
+	return `${minSec}вЂ“${maxSec}СЃ Г—${(sf / 100).toFixed(1)}`
 }
 
 function templateHasExplicitPauseSec(channel: 'wa' | 'tg', row: TemplateRow) {
@@ -122,7 +122,7 @@ function templateHasExplicitPauseSec(channel: 'wa' | 'tg', row: TemplateRow) {
 	return typeof row[minK] === 'number' && typeof row[maxK] === 'number'
 }
 
-/** Пауза между группами в таблице: явные сек из шаблона или старый режим (% от базы). */
+/** РџР°СѓР·Р° РјРµР¶РґСѓ РіСЂСѓРїРїР°РјРё РІ С‚Р°Р±Р»РёС†Рµ: СЏРІРЅС‹Рµ СЃРµРє РёР· С€Р°Р±Р»РѕРЅР° РёР»Рё СЃС‚Р°СЂС‹Р№ СЂРµР¶РёРј (% РѕС‚ Р±Р°Р·С‹). */
 function labelTemplateBetweenGroups(channel: 'wa' | 'tg', row: TemplateRow, mode: 'full' | 'compact') {
 	const [lo, hi] = readTemplatePausePairFromApi(
 		channel,
@@ -131,24 +131,24 @@ function labelTemplateBetweenGroups(channel: 'wa' | 'tg', row: TemplateRow, mode
 	)
 	const explicit = templateHasExplicitPauseSec(channel, row)
 	if (mode === 'compact') {
-		if (explicit) return `${lo}–${hi}с`
+		if (explicit) return `${lo}вЂ“${hi}СЃ`
 		const [bLo, bHi] = channel === 'wa' ? SERVER_BETWEEN_GROUPS_SEC.wa : SERVER_BETWEEN_GROUPS_SEC.tg
 		return labelSpeedCompact(bLo, bHi, channel === 'wa' ? row.wa_speed_factor : row.tg_speed_factor)
 	}
-	const prefix = channel === 'wa' ? 'WA пауза' : 'TG пауза'
-	if (explicit) return `${prefix}: ${lo}–${hi} с (в шаблоне)`
+	const prefix = channel === 'wa' ? 'WA РїР°СѓР·Р°' : 'TG РїР°СѓР·Р°'
+	if (explicit) return `${prefix}: ${lo}вЂ“${hi} СЃ (РІ С€Р°Р±Р»РѕРЅРµ)`
 	const [bLo, bHi] = channel === 'wa' ? SERVER_BETWEEN_GROUPS_SEC.wa : SERVER_BETWEEN_GROUPS_SEC.tg
 	return labelSpeed(bLo, bHi, channel === 'wa' ? row.wa_speed_factor : row.tg_speed_factor, prefix)
 }
 
 function labelTgDefault(v: unknown): string {
 	const s = String(v ?? '').trim()
-	if (!s) return 'Авто'
+	if (!s) return 'РђРІС‚Рѕ'
 	if (isHHMM(s)) {
 		const [hh, mm] = s.split(':').map(x => Number(x))
 		const minutes = (Number.isFinite(hh) ? hh : 0) * 60 + (Number.isFinite(mm) ? mm : 0)
-		if (!minutes) return 'Авто'
-		return `Интервал ${minutes} мин`
+		if (!minutes) return 'РђРІС‚Рѕ'
+		return `РРЅС‚РµСЂРІР°Р» ${minutes} РјРёРЅ`
 	}
 	return s
 }
@@ -160,11 +160,11 @@ function TgReasonLegendHint() {
 			placement="top"
 			content={
 				<div style={{ maxWidth: 360, fontSize: 12, lineHeight: 1.45 }}>
-					<div><b>Расшифровка причин TG</b></div>
-					<div><b>INV</b> — канал/группа недоступны по текущим данным Telegram (часто помогает синхронизация).</div>
-					<div><b>WRT</b> — нет прав отправки в группу (ограничения/роль).</div>
-					<div><b>BAN</b> — аккаунт ограничен/заблокирован в этой группе.</div>
-					<div><b>PRIV</b> — приватный канал/группа, у аккаунта нет доступа.</div>
+					<div><b>Р Р°СЃС€РёС„СЂРѕРІРєР° РїСЂРёС‡РёРЅ TG</b></div>
+					<div><b>INV</b> вЂ” РєР°РЅР°Р»/РіСЂСѓРїРїР° РЅРµРґРѕСЃС‚СѓРїРЅС‹ РїРѕ С‚РµРєСѓС‰РёРј РґР°РЅРЅС‹Рј Telegram (С‡Р°СЃС‚Рѕ РїРѕРјРѕРіР°РµС‚ СЃРёРЅС…СЂРѕРЅРёР·Р°С†РёСЏ).</div>
+					<div><b>WRT</b> вЂ” РЅРµС‚ РїСЂР°РІ РѕС‚РїСЂР°РІРєРё РІ РіСЂСѓРїРїСѓ (РѕРіСЂР°РЅРёС‡РµРЅРёСЏ/СЂРѕР»СЊ).</div>
+					<div><b>BAN</b> вЂ” Р°РєРєР°СѓРЅС‚ РѕРіСЂР°РЅРёС‡РµРЅ/Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅ РІ СЌС‚РѕР№ РіСЂСѓРїРїРµ.</div>
+					<div><b>PRIV</b> вЂ” РїСЂРёРІР°С‚РЅС‹Р№ РєР°РЅР°Р»/РіСЂСѓРїРїР°, Сѓ Р°РєРєР°СѓРЅС‚Р° РЅРµС‚ РґРѕСЃС‚СѓРїР°.</div>
 				</div>
 			}
 		>
@@ -175,11 +175,11 @@ function TgReasonLegendHint() {
 
 function waReasonHuman(reason: string): string {
 	const r = String(reason || '').toLowerCase()
-	if (r === 'wa_not_connected') return 'Нет активного подключения WhatsApp'
-	if (r === 'media_upload_failed') return 'Не удалось загрузить медиа в WhatsApp'
-	if (r.includes('timeout')) return 'Истекло время ожидания ответа WhatsApp'
-	if (r.includes('rate') || r.includes('overlimit')) return 'Ограничение скорости отправки со стороны WhatsApp'
-	return reason || 'Неизвестная причина'
+	if (r === 'wa_not_connected') return 'РќРµС‚ Р°РєС‚РёРІРЅРѕРіРѕ РїРѕРґРєР»СЋС‡РµРЅРёСЏ WhatsApp'
+	if (r === 'media_upload_failed') return 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РјРµРґРёР° РІ WhatsApp'
+	if (r.includes('timeout')) return 'РСЃС‚РµРєР»Рѕ РІСЂРµРјСЏ РѕР¶РёРґР°РЅРёСЏ РѕС‚РІРµС‚Р° WhatsApp'
+	if (r.includes('rate') || r.includes('overlimit')) return 'РћРіСЂР°РЅРёС‡РµРЅРёРµ СЃРєРѕСЂРѕСЃС‚Рё РѕС‚РїСЂР°РІРєРё СЃРѕ СЃС‚РѕСЂРѕРЅС‹ WhatsApp'
+	return reason || 'РќРµРёР·РІРµСЃС‚РЅР°СЏ РїСЂРёС‡РёРЅР°'
 }
 
 function renderWaProblemPopover(totals: TemplatesTotals, router: ReturnType<typeof useRouter>) {
@@ -188,32 +188,32 @@ function renderWaProblemPopover(totals: TemplatesTotals, router: ReturnType<type
 	const topGroups = s?.topGroups || []
 	return (
 		<div style={{ minWidth: 320, maxWidth: 460, fontSize: 12, lineHeight: 1.45 }}>
-			<div><b>Проблемных WA групп (уник.): {Number(s?.total ?? 0)}</b></div>
+			<div><b>РџСЂРѕР±Р»РµРјРЅС‹С… WA РіСЂСѓРїРї (СѓРЅРёРє.): {Number(s?.total ?? 0)}</b></div>
 			<div style={{ marginTop: 6 }}>
-				<b>Топ причин</b>
+				<b>РўРѕРї РїСЂРёС‡РёРЅ</b>
 				{topReasons.length ? (
 					<div style={{ marginTop: 4 }}>
 						{topReasons.map((r) => (
-							<div key={r.reason}>{waReasonHuman(r.reason)} · {r.count}</div>
+							<div key={r.reason}>{waReasonHuman(r.reason)} В· {r.count}</div>
 						))}
 					</div>
-				) : <div style={{ opacity: 0.75 }}>—</div>}
+				) : <div style={{ opacity: 0.75 }}>вЂ”</div>}
 			</div>
 			<div style={{ marginTop: 6 }}>
-				<b>Top группы (до 5)</b>
+				<b>Top РіСЂСѓРїРїС‹ (РґРѕ 5)</b>
 				{topGroups.length ? (
 					<div style={{ marginTop: 4 }}>
 						{topGroups.map((g) => (
 							<div key={`${g.group_jid}:${g.reason}`}>
-								<code>{g.group_jid}</code> · {waReasonHuman(g.reason)}
+								<code>{g.group_jid}</code> В· {waReasonHuman(g.reason)}
 							</div>
 						))}
 					</div>
-				) : <div style={{ opacity: 0.75 }}>—</div>}
+				) : <div style={{ opacity: 0.75 }}>вЂ”</div>}
 			</div>
 			<div style={{ marginTop: 8 }}>
 				<button type="button" className="tpl-btn" onClick={() => router.push('/dashboard/groups')}>
-					Открыть группы WA
+					РћС‚РєСЂС‹С‚СЊ РіСЂСѓРїРїС‹ WA
 				</button>
 			</div>
 		</div>
@@ -225,30 +225,30 @@ function renderTemplateProblemPopover(row: TemplateRow, router: ReturnType<typeo
 	const top = p?.top_groups || []
 	return (
 		<div style={{ minWidth: 320, maxWidth: 440, fontSize: 12, lineHeight: 1.45 }}>
-			<div><b>Проблемных TG групп: {Number(p?.total ?? 0)}</b></div>
+			<div><b>РџСЂРѕР±Р»РµРјРЅС‹С… TG РіСЂСѓРїРї: {Number(p?.total ?? 0)}</b></div>
 			<div>
-				Топ причин: INV {Number(p?.by_reason?.CHANNEL_INVALID ?? 0)}, WRT {Number(p?.by_reason?.CHAT_WRITE_FORBIDDEN ?? 0)}, BAN {Number(p?.by_reason?.USER_BANNED_IN_CHANNEL ?? 0)}, PRIV {Number(p?.by_reason?.CHANNEL_PRIVATE ?? 0)}
+				РўРѕРї РїСЂРёС‡РёРЅ: INV {Number(p?.by_reason?.CHANNEL_INVALID ?? 0)}, WRT {Number(p?.by_reason?.CHAT_WRITE_FORBIDDEN ?? 0)}, BAN {Number(p?.by_reason?.USER_BANNED_IN_CHANNEL ?? 0)}, PRIV {Number(p?.by_reason?.CHANNEL_PRIVATE ?? 0)}
 			</div>
 			<div style={{ marginTop: 6 }}>
-				<b>Top группы (до 5)</b>
+				<b>Top РіСЂСѓРїРїС‹ (РґРѕ 5)</b>
 				{top.length ? (
 					<div style={{ marginTop: 4 }}>
 						{top.map((g) => (
 							<div key={g.group_jid}>
-								<code>{g.group_jid}</code> · failed {g.failed} · sent {g.sent} · {g.topReason}
+								<code>{g.group_jid}</code> В· failed {g.failed} В· sent {g.sent} В· {g.topReason}
 							</div>
 						))}
 					</div>
 				) : (
-					<div style={{ opacity: 0.75 }}>—</div>
+					<div style={{ opacity: 0.75 }}>вЂ”</div>
 				)}
 			</div>
 			<div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
 				<button type="button" className="tpl-btn" onClick={() => router.push(`/dashboard/templates/${row.id}`)}>
-					Открыть шаблон
+					РћС‚РєСЂС‹С‚СЊ С€Р°Р±Р»РѕРЅ
 				</button>
 				<button type="button" className="tpl-btn" onClick={() => router.push('/dashboard/groups/telegram')}>
-					Открыть группы TG
+					РћС‚РєСЂС‹С‚СЊ РіСЂСѓРїРїС‹ TG
 				</button>
 			</div>
 		</div>
@@ -272,7 +272,7 @@ function isAudioUrl(url: string | null) {
 	return /\.(mp3|ogg|wav|m4a|webm)$/i.test(clean)
 }
 
-/** Конвертация разметки шаблона в HTML для отображения в превью (жирный, курсив, списки). */
+/** РљРѕРЅРІРµСЂС‚Р°С†РёСЏ СЂР°Р·РјРµС‚РєРё С€Р°Р±Р»РѕРЅР° РІ HTML РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ РІ РїСЂРµРІСЊСЋ (Р¶РёСЂРЅС‹Р№, РєСѓСЂСЃРёРІ, СЃРїРёСЃРєРё). */
 function markdownToHtml(md: string): string {
 	if (!md?.trim()) return ''
 	let html = md
@@ -316,7 +316,7 @@ export default function TemplatesPage() {
 	const router = useRouter()
 	const [userId, setUserId] = useState('')
 	const [gsheetUrl, setGsheetUrl] = useState<string | null>(null)
-	// loading = true по умолчанию, чтобы при первом рендере не писать «Пока нет шаблонов»
+	// loading = true РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ, С‡С‚РѕР±С‹ РїСЂРё РїРµСЂРІРѕРј СЂРµРЅРґРµСЂРµ РЅРµ РїРёСЃР°С‚СЊ В«РџРѕРєР° РЅРµС‚ С€Р°Р±Р»РѕРЅРѕРІВ»
 	const [loading, setLoading] = useState(true)
 	const [contentReady, setContentReady] = useState(false)
 	const [rows, setRows] = useState<TemplateRow[]>([])
@@ -356,7 +356,7 @@ export default function TemplatesPage() {
 	const loader = useGlobalLoader()
 	const token = typeof document !== 'undefined' ? (Cookies.get('token') || '') : ''
 
-	// Закрытие контекстного меню по клику снаружи или Escape
+	// Р—Р°РєСЂС‹С‚РёРµ РєРѕРЅС‚РµРєСЃС‚РЅРѕРіРѕ РјРµРЅСЋ РїРѕ РєР»РёРєСѓ СЃРЅР°СЂСѓР¶Рё РёР»Рё Escape
 	useEffect(() => {
 		if (!contextMenu) return
 		const close = () => setContextMenu(null)
@@ -378,7 +378,7 @@ export default function TemplatesPage() {
 	useEffect(() => {
 		try {
 			const v = String(localStorage.getItem(LS_KEY_TEMPLATES_VIEW) || '').trim()
-			if (v === 'table' || v === 'cards') setViewMode(v)
+			setViewMode('cards')
 		} catch {
 			// ignore
 		}
@@ -406,7 +406,7 @@ export default function TemplatesPage() {
 			try {
 				json = await res.json()
 			} catch {
-				message.error('Неверный ответ сервера')
+				message.error('РќРµРІРµСЂРЅС‹Р№ РѕС‚РІРµС‚ СЃРµСЂРІРµСЂР°')
 				return
 			}
 			if (!json?.success) {
@@ -418,7 +418,7 @@ export default function TemplatesPage() {
 			setGsheetUrl((json.user.gsheet_url ?? null) as string | null)
 		} catch (e) {
 			console.error(e)
-			message.error('Не удалось получить пользователя')
+			message.error('РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕР»СѓС‡РёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ')
 		}
 	}
 
@@ -431,8 +431,8 @@ export default function TemplatesPage() {
 			if (!json?.success) {
 				const details = json?.details ?? json?.error?.message ?? json?.error?.code ?? ''
 				const msg = details
-					? `Ошибка загрузки шаблонов: ${json?.message || 'supabase_select_error'} (${details})`
-					: `Ошибка загрузки шаблонов: ${json?.message || 'unknown'}`
+					? `РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё С€Р°Р±Р»РѕРЅРѕРІ: ${json?.message || 'supabase_select_error'} (${details})`
+					: `РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё С€Р°Р±Р»РѕРЅРѕРІ: ${json?.message || 'unknown'}`
 				message.error(msg)
 				return
 			}
@@ -450,7 +450,7 @@ export default function TemplatesPage() {
 			})
 		} catch (e) {
 			console.error(e)
-			message.error(getApiErrorMessage(e, 'Не удалось загрузить шаблоны'))
+			message.error(getApiErrorMessage(e, 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ С€Р°Р±Р»РѕРЅС‹'))
 		} finally {
 			setLoading(false)
 		}
@@ -491,7 +491,7 @@ export default function TemplatesPage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
-	// Плавное появление контента страницы (как в ЛК): двойной rAF, чтобы первый кадр успел отрисоваться.
+	// РџР»Р°РІРЅРѕРµ РїРѕСЏРІР»РµРЅРёРµ РєРѕРЅС‚РµРЅС‚Р° СЃС‚СЂР°РЅРёС†С‹ (РєР°Рє РІ Р›Рљ): РґРІРѕР№РЅРѕР№ rAF, С‡С‚РѕР±С‹ РїРµСЂРІС‹Р№ РєР°РґСЂ СѓСЃРїРµР» РѕС‚СЂРёСЃРѕРІР°С‚СЊСЃСЏ.
 	useEffect(() => {
 		if (!loading && userId) {
 			let id1: number | undefined
@@ -522,7 +522,7 @@ export default function TemplatesPage() {
 		}
 
 		return [...rows].sort((a, b) => {
-			// В карточках управляем сортировкой селектором.
+			// Р’ РєР°СЂС‚РѕС‡РєР°С… СѓРїСЂР°РІР»СЏРµРј СЃРѕСЂС‚РёСЂРѕРІРєРѕР№ СЃРµР»РµРєС‚РѕСЂРѕРј.
 			if (viewMode === 'cards') {
 				const aVal = getTs(a, cardSortKey)
 				const bVal = getTs(b, cardSortKey)
@@ -532,7 +532,7 @@ export default function TemplatesPage() {
 				return (a.order ?? 0) - (b.order ?? 0)
 			}
 
-			// В таблице оставляем прежнее поведение: сортировка по created_at desc.
+			// Р’ С‚Р°Р±Р»РёС†Рµ РѕСЃС‚Р°РІР»СЏРµРј РїСЂРµР¶РЅРµРµ РїРѕРІРµРґРµРЅРёРµ: СЃРѕСЂС‚РёСЂРѕРІРєР° РїРѕ created_at desc.
 			const aCreated = getTs(a, 'created_at')
 			const bCreated = getTs(b, 'created_at')
 			if (aCreated !== bCreated) return bCreated - aCreated
@@ -570,15 +570,15 @@ export default function TemplatesPage() {
 			)
 			if (!res?.success) {
 				setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, enabled: prevEnabled } : r)))
-				message.error(`Не удалось изменить статус: ${res?.message || 'unknown'}`)
+				message.error(`РќРµ СѓРґР°Р»РѕСЃСЊ РёР·РјРµРЅРёС‚СЊ СЃС‚Р°С‚СѓСЃ: ${res?.message || 'unknown'}`)
 				return
 			}
-			message.success(nextEnabled ? 'Шаблон включён' : 'Шаблон выключен')
+			message.success(nextEnabled ? 'РЁР°Р±Р»РѕРЅ РІРєР»СЋС‡С‘РЅ' : 'РЁР°Р±Р»РѕРЅ РІС‹РєР»СЋС‡РµРЅ')
 			dispatchTimingHubChanged()
 		} catch (e) {
 			console.error(e)
 			setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, enabled: prevEnabled } : r)))
-			message.error(getApiErrorMessage(e, 'Не удалось изменить статус шаблона'))
+			message.error(getApiErrorMessage(e, 'РќРµ СѓРґР°Р»РѕСЃСЊ РёР·РјРµРЅРёС‚СЊ СЃС‚Р°С‚СѓСЃ С€Р°Р±Р»РѕРЅР°'))
 		} finally {
 			setToggleBusyId(null)
 		}
@@ -594,7 +594,7 @@ export default function TemplatesPage() {
 					type="button"
 					className="tpl-table__mediaBtn"
 					onClick={() => setMediaViewerUrl(row.media_url!)}
-					title="Открыть медиа"
+					title="РћС‚РєСЂС‹С‚СЊ РјРµРґРёР°"
 				>
 					<span className="tpl-table__mediaAudio">AUDIO</span>
 				</button>
@@ -605,12 +605,12 @@ export default function TemplatesPage() {
 				type="button"
 				className="tpl-table__mediaBtn"
 				onClick={() => setMediaViewerUrl(row.media_url!)}
-				title="Открыть медиа"
+				title="РћС‚РєСЂС‹С‚СЊ РјРµРґРёР°"
 			>
 				{isVideoUrl(row.media_url) ? (
 					<video src={row.media_url} className="tpl-table__mediaThumb" muted playsInline />
 				) : (
-					<img src={row.media_url} className="tpl-table__mediaThumb" alt="Медиа шаблона" />
+					<img src={row.media_url} className="tpl-table__mediaThumb" alt="РњРµРґРёР° С€Р°Р±Р»РѕРЅР°" />
 				)}
 			</button>
 		)
@@ -619,7 +619,7 @@ export default function TemplatesPage() {
 	const columns: ColumnsType<TemplateRow> = useMemo(() => {
 		const cols: ColumnsType<TemplateRow> = [
 			{
-				title: 'Статус',
+				title: 'РЎС‚Р°С‚СѓСЃ',
 				key: 'enabled',
 				width: 92,
 				render: (_: any, row: TemplateRow) => (
@@ -633,17 +633,17 @@ export default function TemplatesPage() {
 				),
 			},
 			{
-				title: 'Название',
+				title: 'РќР°Р·РІР°РЅРёРµ',
 				key: 'title',
 				render: (_: any, row: TemplateRow) => (
 					<div className="tpl-table__titleCell">
 						<div style={{ minWidth: 220 }}>
 							<div style={{ fontWeight: 800, fontSize: 13, lineHeight: 1.25 }}>
-								{row.title?.trim() ? row.title : 'Шаблон'}
+								{row.title?.trim() ? row.title : 'РЁР°Р±Р»РѕРЅ'}
 							</div>
 							<div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
-								{row.media_url ? <Tag>медиа</Tag> : null}
-								{row.send_media_as_file ? <Tag>медиа: как файл</Tag> : null}
+								{row.media_url ? <Tag>РјРµРґРёР°</Tag> : null}
+								{row.send_media_as_file ? <Tag>РјРµРґРёР°: РєР°Рє С„Р°Р№Р»</Tag> : null}
 							</div>
 						</div>
 						{renderTableMediaThumb(row)}
@@ -651,7 +651,7 @@ export default function TemplatesPage() {
 				),
 			},
 			{
-				title: 'Настройки',
+				title: 'РќР°СЃС‚СЂРѕР№РєРё',
 				key: 'settings',
 				render: (_: any, row: TemplateRow) => {
 					const waLabel = labelTemplateBetweenGroups('wa', row, 'full')
@@ -661,11 +661,11 @@ export default function TemplatesPage() {
 						<div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
 							<Tag><ChannelIcon type="wa" size={12} /> {waLabel}</Tag>
 							<Tag><ChannelIcon type="tg" size={12} /> {tgLabel}</Tag>
-							<Tag><ChannelIcon type="tg" size={12} /> TG интервал: {tgDef}</Tag>
-							<Tag><ChannelIcon type="wa" size={12} /> WA групп: {Number(row.targets_count?.wa ?? 0)}</Tag>
-							<Tag><ChannelIcon type="tg" size={12} /> TG групп: {Number(row.targets_count?.tg ?? 0)}</Tag>
+							<Tag><ChannelIcon type="tg" size={12} /> TG РёРЅС‚РµСЂРІР°Р»: {tgDef}</Tag>
+							<Tag><ChannelIcon type="wa" size={12} /> WA РіСЂСѓРїРї: {Number(row.targets_count?.wa ?? 0)}</Tag>
+							<Tag><ChannelIcon type="tg" size={12} /> TG РіСЂСѓРїРї: {Number(row.targets_count?.tg ?? 0)}</Tag>
 							<Tag color={Number(row.problematic_groups?.total ?? 0) > 0 ? 'error' : undefined}>
-								<ChannelIcon type="tg" size={12} /> Проблемных TG: {Number(row.problematic_groups?.total ?? 0)}
+								<ChannelIcon type="tg" size={12} /> РџСЂРѕР±Р»РµРјРЅС‹С… TG: {Number(row.problematic_groups?.total ?? 0)}
 							</Tag>
 							<Popover content={renderTemplateProblemPopover(row, router)} trigger="click" placement="rightTop">
 								<button type="button" className="tpl-btn" style={{ padding: '0 8px', minHeight: 22 }}>i</button>
@@ -675,7 +675,7 @@ export default function TemplatesPage() {
 				},
 			},
 			{
-				title: 'Создан',
+				title: 'РЎРѕР·РґР°РЅ',
 				key: 'created_at',
 				width: 140,
 				defaultSortOrder: 'descend',
@@ -684,12 +684,12 @@ export default function TemplatesPage() {
 				sortDirections: ['descend', 'ascend'],
 				render: (_: any, row: TemplateRow) => (
 					<div style={{ fontSize: 12, opacity: 0.85 }}>
-						{row.created_at ? new Date(row.created_at).toLocaleString() : '—'}
+						{row.created_at ? new Date(row.created_at).toLocaleString() : 'вЂ”'}
 					</div>
 				),
 			},
 			{
-				title: 'Обновлён',
+				title: 'РћР±РЅРѕРІР»С‘РЅ',
 				key: 'updated_at',
 				width: 140,
 				sorter: (a: TemplateRow, b: TemplateRow) =>
@@ -697,25 +697,25 @@ export default function TemplatesPage() {
 				sortDirections: ['descend', 'ascend'],
 				render: (_: any, row: TemplateRow) => (
 					<div style={{ fontSize: 12, opacity: 0.85 }}>
-						{row.updated_at ? new Date(row.updated_at).toLocaleString() : '—'}
+						{row.updated_at ? new Date(row.updated_at).toLocaleString() : 'вЂ”'}
 					</div>
 				),
 			},
 			{
-				title: 'Статистика',
+				title: 'РЎС‚Р°С‚РёСЃС‚РёРєР°',
 				key: 'stats',
 				width: 160,
 				render: (_: any, row: TemplateRow) => {
-					if (!row.stats) return <span style={{ opacity: 0.7, fontSize: 12 }}>—</span>
+					if (!row.stats) return <span style={{ opacity: 0.7, fontSize: 12 }}>вЂ”</span>
 					const byReason = row.problematic_groups?.by_reason
 					return (
 						<div style={{ fontSize: 12, lineHeight: 1.3 }}>
-							<div>отправлено: <b>{row.stats.sent}</b></div>
-							<div>заданий: <b>{row.stats.total}</b></div>
-							<div>проблемных TG: <b>{Number(row.problematic_groups?.total ?? 0)}</b></div>
+							<div>РѕС‚РїСЂР°РІР»РµРЅРѕ: <b>{row.stats.sent}</b></div>
+							<div>Р·Р°РґР°РЅРёР№: <b>{row.stats.total}</b></div>
+							<div>РїСЂРѕР±Р»РµРјРЅС‹С… TG: <b>{Number(row.problematic_groups?.total ?? 0)}</b></div>
 							{byReason ? (
 								<div style={{ opacity: 0.85 }}>
-									причины: INV {byReason.CHANNEL_INVALID} / WRT {byReason.CHAT_WRITE_FORBIDDEN} / BAN {byReason.USER_BANNED_IN_CHANNEL} / PRIV {byReason.CHANNEL_PRIVATE}
+									РїСЂРёС‡РёРЅС‹: INV {byReason.CHANNEL_INVALID} / WRT {byReason.CHAT_WRITE_FORBIDDEN} / BAN {byReason.USER_BANNED_IN_CHANNEL} / PRIV {byReason.CHANNEL_PRIVATE}
 									<span style={{ marginLeft: 6 }}><TgReasonLegendHint /></span>
 								</div>
 							) : null}
@@ -724,7 +724,7 @@ export default function TemplatesPage() {
 				},
 			},
 			{
-				title: 'Действия',
+				title: 'Р”РµР№СЃС‚РІРёСЏ',
 				key: 'actions',
 				width: 220,
 				render: (_: any, row: TemplateRow) => (
@@ -733,30 +733,30 @@ export default function TemplatesPage() {
 							type="button"
 							className="tpl-btn"
 							onClick={() => {
-								loader.show('Открываем шаблон…')
+								loader.show('РћС‚РєСЂС‹РІР°РµРј С€Р°Р±Р»РѕРЅвЂ¦')
 								router.push(`/dashboard/templates/${row.id}`)
 							}}
 						>
-							Редактировать
+							Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ
 						</button>
 						<Popconfirm
-							title="Удалить шаблон?"
-							description="После удаления восстановить нельзя."
-							okText="Удалить"
-							cancelText="Отмена"
+							title="РЈРґР°Р»РёС‚СЊ С€Р°Р±Р»РѕРЅ?"
+							description="РџРѕСЃР»Рµ СѓРґР°Р»РµРЅРёСЏ РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ РЅРµР»СЊР·СЏ."
+							okText="РЈРґР°Р»РёС‚СЊ"
+							cancelText="РћС‚РјРµРЅР°"
 							onConfirm={async () => {
 								const res: any = await apiPost('/templates/delete', { templateId: row.id })
 								if (!res?.success) {
-									message.error(`Ошибка удаления: ${res?.message || 'unknown'}`)
+									message.error(`РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ: ${res?.message || 'unknown'}`)
 									return
 								}
-								message.success('Шаблон удалён')
+								message.success('РЁР°Р±Р»РѕРЅ СѓРґР°Р»С‘РЅ')
 								dispatchTimingHubChanged()
 								load()
 							}}
 						>
 							<button type="button" className="tpl-btn tpl-btn--danger">
-								Удалить
+								РЈРґР°Р»РёС‚СЊ
 							</button>
 						</Popconfirm>
 					</div>
@@ -769,32 +769,32 @@ export default function TemplatesPage() {
 	const mobileColumns: ColumnsType<TemplateRow> = useMemo(() => {
 		return [
 			{
-				title: 'Шаблон',
+				title: 'РЁР°Р±Р»РѕРЅ',
 				key: 'template',
 				render: (_: any, row: TemplateRow) => {
 					const waShort = labelTemplateBetweenGroups('wa', row, 'compact')
 					const tgShort = labelTemplateBetweenGroups('tg', row, 'compact')
 					const tgDefShort = labelTgDefault(row.tg_default_send_time)
-					const speedsTitle = `WA ${waShort}, TG ${tgShort}${tgDefShort && tgDefShort !== 'Авто' ? `, интервал: ${tgDefShort}` : ''}`
+					const speedsTitle = `WA ${waShort}, TG ${tgShort}${tgDefShort && tgDefShort !== 'РђРІС‚Рѕ' ? `, РёРЅС‚РµСЂРІР°Р»: ${tgDefShort}` : ''}`
 					return (
 						<div className="tpl-table__mobileTemplate">
 							<div className="tpl-table__mobileTemplateMain">
-								<div className="tpl-table__mobileTemplateTitle" title={row.title?.trim() || 'Шаблон'}>
-									{row.title?.trim() ? row.title : 'Шаблон'}
+								<div className="tpl-table__mobileTemplateTitle" title={row.title?.trim() || 'РЁР°Р±Р»РѕРЅ'}>
+									{row.title?.trim() ? row.title : 'РЁР°Р±Р»РѕРЅ'}
 								</div>
 								<div className="tpl-table__mobileTemplateMeta">
-									{row.media_url ? <span className="tpl-table__mobileChip">медиа</span> : null}
-									{row.send_media_as_file ? <span className="tpl-table__mobileChip">файл</span> : null}
+									{row.media_url ? <span className="tpl-table__mobileChip">РјРµРґРёР°</span> : null}
+									{row.send_media_as_file ? <span className="tpl-table__mobileChip">С„Р°Р№Р»</span> : null}
 								</div>
 								<div className="tpl-table__mobileTemplateSpeeds" title={speedsTitle}>
 									<span className="tpl-table__mobileSpeed"><ChannelIcon type="wa" size={10} /> {waShort}</span>
-									<span className="tpl-table__mobileSpeedSep">·</span>
+									<span className="tpl-table__mobileSpeedSep">В·</span>
 									<span className="tpl-table__mobileSpeed"><ChannelIcon type="tg" size={10} /> {tgShort}</span>
 								</div>
-								<div className="tpl-table__mobileTemplateSpeeds" title="Количество выбранных групп по каналам">
-									<span className="tpl-table__mobileSpeed"><ChannelIcon type="wa" size={10} /> гр: {Number(row.targets_count?.wa ?? 0)}</span>
-									<span className="tpl-table__mobileSpeedSep">·</span>
-									<span className="tpl-table__mobileSpeed"><ChannelIcon type="tg" size={10} /> гр: {Number(row.targets_count?.tg ?? 0)}</span>
+								<div className="tpl-table__mobileTemplateSpeeds" title="РљРѕР»РёС‡РµСЃС‚РІРѕ РІС‹Р±СЂР°РЅРЅС‹С… РіСЂСѓРїРї РїРѕ РєР°РЅР°Р»Р°Рј">
+									<span className="tpl-table__mobileSpeed"><ChannelIcon type="wa" size={10} /> РіСЂ: {Number(row.targets_count?.wa ?? 0)}</span>
+									<span className="tpl-table__mobileSpeedSep">В·</span>
+									<span className="tpl-table__mobileSpeed"><ChannelIcon type="tg" size={10} /> РіСЂ: {Number(row.targets_count?.tg ?? 0)}</span>
 								</div>
 							</div>
 							{renderTableMediaThumb(row)}
@@ -803,7 +803,7 @@ export default function TemplatesPage() {
 				},
 			},
 			{
-				title: 'Статус',
+				title: 'РЎС‚Р°С‚СѓСЃ',
 				key: 'enabled',
 				width: 72,
 				align: 'center',
@@ -819,7 +819,7 @@ export default function TemplatesPage() {
 				),
 			},
 			{
-				title: 'Действия',
+				title: 'Р”РµР№СЃС‚РІРёСЏ',
 				key: 'actions',
 				width: 128,
 				align: 'right',
@@ -829,30 +829,30 @@ export default function TemplatesPage() {
 							type="button"
 							className="tpl-btn tpl-table__mobileActionBtn"
 							onClick={() => {
-								loader.show('Открываем шаблон…')
+								loader.show('РћС‚РєСЂС‹РІР°РµРј С€Р°Р±Р»РѕРЅвЂ¦')
 								router.push(`/dashboard/templates/${row.id}`)
 							}}
 						>
-							Открыть
+							РћС‚РєСЂС‹С‚СЊ
 						</button>
 						<Popconfirm
-							title="Удалить шаблон?"
-							description="После удаления восстановить нельзя."
-							okText="Удалить"
-							cancelText="Отмена"
+							title="РЈРґР°Р»РёС‚СЊ С€Р°Р±Р»РѕРЅ?"
+							description="РџРѕСЃР»Рµ СѓРґР°Р»РµРЅРёСЏ РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ РЅРµР»СЊР·СЏ."
+							okText="РЈРґР°Р»РёС‚СЊ"
+							cancelText="РћС‚РјРµРЅР°"
 							onConfirm={async () => {
 								const res: any = await apiPost('/templates/delete', { templateId: row.id })
 								if (!res?.success) {
-									message.error(`Ошибка удаления: ${res?.message || 'unknown'}`)
+									message.error(`РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ: ${res?.message || 'unknown'}`)
 									return
 								}
-								message.success('Шаблон удалён')
+								message.success('РЁР°Р±Р»РѕРЅ СѓРґР°Р»С‘РЅ')
 								dispatchTimingHubChanged()
 								load()
 							}}
 						>
 							<button type="button" className="tpl-btn tpl-btn--danger tpl-table__mobileActionBtn">
-								Удалить
+								РЈРґР°Р»РёС‚СЊ
 							</button>
 						</Popconfirm>
 					</div>
@@ -869,73 +869,10 @@ export default function TemplatesPage() {
 						<input
 							className='tpl-filterInput'
 							type='text'
-							placeholder='Поиск по названию и тексту…'
+							placeholder='РџРѕРёСЃРє РїРѕ РЅР°Р·РІР°РЅРёСЋ Рё С‚РµРєСЃС‚СѓвЂ¦'
 							value={search}
 							onChange={e => setSearch(e.target.value)}
 						/>
-						<Segmented
-							size="small"
-							value={viewMode}
-							options={[
-								{ label: 'Карточки', value: 'cards' },
-								{ label: 'Таблица', value: 'table' },
-							]}
-							onChange={(v) => {
-								const next = (v as any) === 'table' ? 'table' : 'cards'
-								setViewMode(next)
-								try {
-									localStorage.setItem(LS_KEY_TEMPLATES_VIEW, next)
-								} catch {
-									// ignore
-								}
-							}}
-						/>
-
-						{viewMode === 'cards' && (
-							<select
-								className="tpl-sortSelect"
-								value={`${cardSortKey}:${cardSortDir}`}
-								onChange={(e) => {
-									const [k, d] = String(e.target.value).split(':') as [CardSortKey, SortDir]
-									setCardSortKey(k)
-									setCardSortDir(d)
-								}}
-							>
-								<option value="created_at:desc">Создан ↓</option>
-								<option value="created_at:asc">Создан ↑</option>
-								<option value="updated_at:desc">Обновлён ↓</option>
-								<option value="updated_at:asc">Обновлён ↑</option>
-							</select>
-						)}
-						<div className='tpl-filterStatus'>
-							<button
-								type='button'
-								className={`tpl-filterChip ${
-									statusFilter === 'all' ? 'tpl-filterChip--active' : ''
-								}`}
-								onClick={() => setStatusFilter('all')}
-							>
-								Все
-							</button>
-							<button
-								type='button'
-								className={`tpl-filterChip ${
-									statusFilter === 'on' ? 'tpl-filterChip--active' : ''
-								}`}
-								onClick={() => setStatusFilter('on')}
-							>
-								Включены
-							</button>
-							<button
-								type='button'
-								className={`tpl-filterChip ${
-									statusFilter === 'off' ? 'tpl-filterChip--active' : ''
-								}`}
-								onClick={() => setStatusFilter('off')}
-							>
-								Выключены
-							</button>
-						</div>
 					</div>
 				</div>
 
@@ -943,38 +880,25 @@ export default function TemplatesPage() {
 					<div className='tpl__left'>
 						<div className='tpl-card' style={{ marginBottom: 12 }}>
 							<div className='tpl-card__badges'>
-								<span className='tpl-badge neutral'>Шаблонов всего: {totals.templatesTotal}</span>
-								<span className='tpl-badge neutral'>Шаблонов с группами: {totals.templatesWithGroupsSelected}</span>
-								<span className='tpl-badge neutral'>Связок шаблон↔группа: {totals.totalTargetsAssigned}</span>
-								<span className='tpl-badge neutral'>Уникальных групп всего: {totals.uniqueGroupsAll}</span>
-								<span className='tpl-badge neutral'><ChannelIcon type="wa" size={12} /> уникальных WA: {totals.uniqueGroupsWa}</span>
-								<span className='tpl-badge neutral'><ChannelIcon type="tg" size={12} /> уникальных TG: {totals.uniqueGroupsTg}</span>
-								<span className='tpl-badge neutral' title='Сейчас метрика проблемных групп считается только для Telegram'>
-									<ChannelIcon type="tg" size={12} /> Проблемных TG (уник.): {totals.uniqueUndeliverableSelectedGroups}
-								</span>
-								<span className='tpl-badge neutral' title='Активные WA-группы с ошибкой доставки в последних данных группы'>
-									<ChannelIcon type="wa" size={12} /> Проблемных WA (уник.): {totals.uniqueUndeliverableSelectedGroupsWa}
-								</span>
-								<Popover content={renderWaProblemPopover(totals, router)} trigger="click" placement="rightTop">
-									<button type="button" className="tpl-btn" style={{ padding: '0 8px', minHeight: 22 }}>i</button>
-								</Popover>
+								<span className='tpl-badge neutral'>РЁР°Р±Р»РѕРЅРѕРІ РІСЃРµРіРѕ: {totals.templatesTotal}</span>
+								<span className='tpl-badge neutral'>РЁР°Р±Р»РѕРЅРѕРІ СЃ РіСЂСѓРїРїР°РјРё: {totals.templatesWithGroupsSelected}</span>
 							</div>
 						</div>
 						{filtered.length === 0 ? (
 							<div className='tpl-empty'>
 								<div className='tpl-empty__title'>
 									{loading
-										? 'Загружаю шаблоны…'
+										? 'Р—Р°РіСЂСѓР¶Р°СЋ С€Р°Р±Р»РѕРЅС‹вЂ¦'
 										: search.trim()
-										? 'Ничего не нашлось'
-										: 'Пока нет шаблонов'}
+										? 'РќРёС‡РµРіРѕ РЅРµ РЅР°С€Р»РѕСЃСЊ'
+										: 'РџРѕРєР° РЅРµС‚ С€Р°Р±Р»РѕРЅРѕРІ'}
 								</div>
 								<div className='tpl-empty__text'>
 									{loading
-										? 'Ищу ваши шаблоны, это может занять несколько секунд.'
+										? 'РС‰Сѓ РІР°С€Рё С€Р°Р±Р»РѕРЅС‹, СЌС‚Рѕ РјРѕР¶РµС‚ Р·Р°РЅСЏС‚СЊ РЅРµСЃРєРѕР»СЊРєРѕ СЃРµРєСѓРЅРґ.'
 										: search.trim()
-										? 'Попробуйте изменить текст поиска или снять фильтр статуса.'
-										: 'Нажмите «Создать шаблон», чтобы добавить первый.'}
+										? 'РџРѕРїСЂРѕР±СѓР№С‚Рµ РёР·РјРµРЅРёС‚СЊ С‚РµРєСЃС‚ РїРѕРёСЃРєР° РёР»Рё СЃРЅСЏС‚СЊ С„РёР»СЊС‚СЂ СЃС‚Р°С‚СѓСЃР°.'
+										: 'РќР°Р¶РјРёС‚Рµ В«РЎРѕР·РґР°С‚СЊ С€Р°Р±Р»РѕРЅВ», С‡С‚РѕР±С‹ РґРѕР±Р°РІРёС‚СЊ РїРµСЂРІС‹Р№.'}
 								</div>
 							</div>
 						) : (
@@ -1012,19 +936,19 @@ export default function TemplatesPage() {
 												<div className='tpl-card__row'>
 													<div className='tpl-card__section tpl-card__section--grow'>
 														<div className='tpl-card__labelRow'>
-															<span className='tpl-card__label'>Название</span>
-															<span className='tpl-card__label'>Текст сообщения</span>
+															<span className='tpl-card__label'>РќР°Р·РІР°РЅРёРµ</span>
+															<span className='tpl-card__label'>РўРµРєСЃС‚ СЃРѕРѕР±С‰РµРЅРёСЏ</span>
 														</div>
 														<div className='tpl-card__contentRow'>
 															<div className='tpl-card__title'>
-																{row.title?.trim() ? row.title : 'Шаблон'}
+																{row.title?.trim() ? row.title : 'РЁР°Р±Р»РѕРЅ'}
 															</div>
 															<div
 																className='tpl-card__textBox'
 																dangerouslySetInnerHTML={{
 																	__html: row.text?.trim()
 																		? markdownToHtml(row.text)
-																		: 'Текст шаблона',
+																		: 'РўРµРєСЃС‚ С€Р°Р±Р»РѕРЅР°',
 																}}
 															/>
 														</div>
@@ -1035,7 +959,7 @@ export default function TemplatesPage() {
 																type='button'
 																className='tpl-card__mediaBtn'
 																onClick={() => setMediaViewerUrl(row.media_url!)}
-																title='Открыть в полном размере / запустить'
+																title='РћС‚РєСЂС‹С‚СЊ РІ РїРѕР»РЅРѕРј СЂР°Р·РјРµСЂРµ / Р·Р°РїСѓСЃС‚РёС‚СЊ'
 															>
 																{isVideoUrl(row.media_url) ? (
 																	<video
@@ -1052,83 +976,12 @@ export default function TemplatesPage() {
 																	<img
 																		src={row.media_url}
 																		className='tpl-card__mediaThumb'
-																		alt='Превью медиа'
+																		alt='РџСЂРµРІСЊСЋ РјРµРґРёР°'
 																	/>
 																)}
 															</button>
 														</div>
 													) : null}
-												</div>
-												<div className='tpl-card__badges'>
-													<Switch
-														checked={!!row.enabled}
-														checkedChildren='ON'
-														unCheckedChildren='OFF'
-														disabled={toggleBusyId === row.id}
-														onChange={(checked) => toggleTemplateEnabled(row, checked)}
-													/>
-													{row.send_media_as_file ? (
-														<span className='tpl-badge neutral'>Медиа: как файл</span>
-													) : null}
-													{row.wa_speed_factor != null ? (
-														<span className='tpl-badge neutral'>WA скорость: {row.wa_speed_factor}%</span>
-													) : null}
-													{row.tg_speed_factor != null ? (
-														<span className='tpl-badge neutral'>TG скорость: {row.tg_speed_factor}%</span>
-													) : null}
-													{row.tg_default_send_time ? (
-														<span className='tpl-badge neutral'>TG: {labelTgDefault(row.tg_default_send_time)}</span>
-													) : null}
-													<span className='tpl-badge neutral'>
-														<ChannelIcon type="wa" size={12} /> WA групп: {Number(row.targets_count?.wa ?? 0)}
-													</span>
-													<span className='tpl-badge neutral'>
-														<ChannelIcon type="tg" size={12} /> TG групп: {Number(row.targets_count?.tg ?? 0)}
-													</span>
-													<span className={`tpl-badge ${Number(row.problematic_groups?.total ?? 0) > 0 ? '' : 'neutral'}`}>
-														<ChannelIcon type="tg" size={12} /> Проблемных TG: {Number(row.problematic_groups?.total ?? 0)}
-													</span>
-													<Popover content={renderTemplateProblemPopover(row, router)} trigger="click" placement="rightTop">
-														<button type="button" className="tpl-btn" style={{ padding: '0 8px', minHeight: 22 }}>i</button>
-													</Popover>
-													{row.problematic_groups?.by_reason ? (
-														<span className='tpl-badge neutral' style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-															Причины TG: INV {row.problematic_groups.by_reason.CHANNEL_INVALID}, WRT {row.problematic_groups.by_reason.CHAT_WRITE_FORBIDDEN}, BAN {row.problematic_groups.by_reason.USER_BANNED_IN_CHANNEL}, PRIV {row.problematic_groups.by_reason.CHANNEL_PRIVATE}
-															<TgReasonLegendHint />
-														</span>
-													) : null}
-													<span className='tpl-badge neutral'>
-														Создан:{' '}
-														{row.created_at
-															? new Date(row.created_at).toLocaleString()
-															: '-'}
-													</span>
-													<span className='tpl-badge neutral'>
-														Обновлён:{' '}
-														{row.updated_at
-															? new Date(row.updated_at).toLocaleString()
-															: '-'}
-													</span>
-													{row.stats ? (
-														<>
-															<span className='tpl-badge neutral'>
-																Отправлено сообщений: {row.stats.sent}
-															</span>
-															<span className='tpl-badge neutral'>
-																Всего заданий: {row.stats.total}
-															</span>
-														</>
-													) : null}
-													<button
-														type='button'
-														className='tpl-anal-btn'
-														onClick={() => {
-															loader.show('Открываем историю…')
-															router.push('/dashboard/analytics')
-														}}
-													>
-														История
-													</button>
 												</div>
 
 												<div className='tpl-card__actions'>
@@ -1136,42 +989,39 @@ export default function TemplatesPage() {
 														<button
 															className='tpl-btn tpl-btn--wide'
 															onClick={() => {
-																loader.show('Открываем шаблон…')
+																loader.show('РћС‚РєСЂС‹РІР°РµРј С€Р°Р±Р»РѕРЅвЂ¦')
 																router.push(`/dashboard/templates/${row.id}`)
 															}}
 														>
-															Редактировать
+															Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ
 														</button>
 
 														<Popconfirm
-															title='Удалить шаблон?'
-															description='После удаления восстановить нельзя.'
-															okText='Удалить'
-															cancelText='Отмена'
+															title='РЈРґР°Р»РёС‚СЊ С€Р°Р±Р»РѕРЅ?'
+															description='РџРѕСЃР»Рµ СѓРґР°Р»РµРЅРёСЏ РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ РЅРµР»СЊР·СЏ.'
+															okText='РЈРґР°Р»РёС‚СЊ'
+															cancelText='РћС‚РјРµРЅР°'
 															onConfirm={async () => {
 																const res: any = await apiPost('/templates/delete', {
 																	templateId: row.id,
 																})
 																if (!res?.success) {
 																	message.error(
-																		`Ошибка удаления: ${res?.message || 'unknown'}`
+																		`РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ: ${res?.message || 'unknown'}`
 																	)
 																	return
 																}
-																message.success('Шаблон удален')
+																message.success('РЁР°Р±Р»РѕРЅ СѓРґР°Р»РµРЅ')
 																dispatchTimingHubChanged()
 																load()
 															}}
 														>
 															<button className='tpl-btn tpl-btn--wide tpl-btn--danger'>
-																Удалить
+																РЈРґР°Р»РёС‚СЊ
 															</button>
 														</Popconfirm>
 													</div>
 
-													<div className='tpl-card__hintsRow'>
-														<span>Редактируйте шаблон и настройки отправки. Удаляйте, если шаблон больше не нужен.</span>
-													</div>
 												</div>
 											</div>
 										</div>
@@ -1197,7 +1047,7 @@ export default function TemplatesPage() {
 					</div>
 				) : null}
 			</div>
-			{/* Контекстное меню по ПКМ на карточке */}
+			{/* РљРѕРЅС‚РµРєСЃС‚РЅРѕРµ РјРµРЅСЋ РїРѕ РџРљРњ РЅР° РєР°СЂС‚РѕС‡РєРµ */}
 			{contextMenu && (
 				<div
 					ref={contextMenuRef}
@@ -1211,18 +1061,18 @@ export default function TemplatesPage() {
 					onClick={(e) => e.stopPropagation()}
 				>
 					<div className='tpl-context-menu__section'>
-						<div className='tpl-context-menu__section-title'>Шаблон</div>
+						<div className='tpl-context-menu__section-title'>РЁР°Р±Р»РѕРЅ</div>
 						<button
 							type='button'
 							className='tpl-context-menu__item'
 							onClick={() => {
 								setContextMenu(null)
-								loader.show('Открываем шаблон…')
+								loader.show('РћС‚РєСЂС‹РІР°РµРј С€Р°Р±Р»РѕРЅвЂ¦')
 								router.push(`/dashboard/templates/${contextMenu.row.id}`)
 							}}
 						>
-							<span className='tpl-context-menu__icon'>✏️</span>
-							Изменить шаблон
+							<span className='tpl-context-menu__icon'>вњЏпёЏ</span>
+							РР·РјРµРЅРёС‚СЊ С€Р°Р±Р»РѕРЅ
 						</button>
 						<button
 							type='button'
@@ -1232,57 +1082,45 @@ export default function TemplatesPage() {
 								window.open(`/dashboard/templates/${contextMenu.row.id}`, '_blank', 'noopener,noreferrer')
 							}}
 						>
-							<span className='tpl-context-menu__icon'>↗</span>
-							Открыть в новой вкладке
+							<span className='tpl-context-menu__icon'>в†—</span>
+							РћС‚РєСЂС‹С‚СЊ РІ РЅРѕРІРѕР№ РІРєР»Р°РґРєРµ
 						</button>
 					</div>
 					<div className='tpl-context-menu__separator' />
 					<div className='tpl-context-menu__section'>
-						<div className='tpl-context-menu__section-title'>Рассылки</div>
+						<div className='tpl-context-menu__section-title'>Р Р°СЃСЃС‹Р»РєРё</div>
 						<button
 							type='button'
 							className='tpl-context-menu__item'
 							onClick={() => {
 								setContextMenu(null)
-								loader.show('Открываем историю…')
-								router.push('/dashboard/analytics')
-							}}
-						>
-							<span className='tpl-context-menu__icon'>📊</span>
-							История
-						</button>
-						<button
-							type='button'
-							className='tpl-context-menu__item'
-							onClick={() => {
-								setContextMenu(null)
-								loader.show('К рассылкам…')
+								loader.show('Рљ СЂР°СЃСЃС‹Р»РєР°РјвЂ¦')
 								router.push('/dashboard/campaigns')
 							}}
 						>
-							<span className='tpl-context-menu__icon'>📤</span>
-							К рассылкам
+							<span className='tpl-context-menu__icon'>рџ“¤</span>
+							Рљ СЂР°СЃСЃС‹Р»РєР°Рј
 						</button>
 					</div>
 					<div className='tpl-context-menu__separator' />
 					<Popconfirm
-						title='Удалить шаблон?'
-						description='После удаления восстановить нельзя.'
-						okText='Удалить'
-						cancelText='Отмена'
+						title='РЈРґР°Р»РёС‚СЊ С€Р°Р±Р»РѕРЅ?'
+						description='РџРѕСЃР»Рµ СѓРґР°Р»РµРЅРёСЏ РІРѕСЃСЃС‚Р°РЅРѕРІРёС‚СЊ РЅРµР»СЊР·СЏ.'
+						okText='РЈРґР°Р»РёС‚СЊ'
+						cancelText='РћС‚РјРµРЅР°'
 						onConfirm={async () => {
 							const templateId = deleteTargetRef.current
 							deleteTargetRef.current = null
 							setContextMenu(null)
-							if (!templateId) return message.error('Нет templateId')
+							if (!templateId) return message.error('РќРµС‚ templateId')
 							const res: any = await apiPost('/templates/delete', {
 								templateId,
 							})
 							if (!res?.success) {
-								message.error(`Ошибка удаления: ${res?.message || 'unknown'}`)
+								message.error(`РћС€РёР±РєР° СѓРґР°Р»РµРЅРёСЏ: ${res?.message || 'unknown'}`)
 								return
 							}
-							message.success('Шаблон удалён')
+							message.success('РЁР°Р±Р»РѕРЅ СѓРґР°Р»С‘РЅ')
 							dispatchTimingHubChanged()
 							load()
 						}}
@@ -1295,8 +1133,8 @@ export default function TemplatesPage() {
 								setContextMenu(null)
 							}}
 						>
-							<span className='tpl-context-menu__icon'>🗑</span>
-							Удалить шаблон
+							<span className='tpl-context-menu__icon'>рџ—‘</span>
+							РЈРґР°Р»РёС‚СЊ С€Р°Р±Р»РѕРЅ
 						</button>
 					</Popconfirm>
 				</div>

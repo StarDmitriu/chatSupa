@@ -15,8 +15,6 @@ import {
 	Slider,
 	TimePicker,
 	Tag,
-	Popover,
-	Tooltip,
 } from 'antd'
 import type { UploadProps } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
@@ -24,7 +22,6 @@ import { UploadOutlined } from '@ant-design/icons'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { apiPost, getApiErrorMessage } from '@/lib/api'
-import { fetchGroupDeliverySummary, type GroupDeliverySummary } from '@/lib/groupDeliverySummary'
 import { useGlobalLoader } from '@/ui/loader/LoaderProvider'
 import { SEND_INTERVAL_OPTIONS } from '@/constants/sendIntervals'
 import { ChannelIcon } from '@/components/ChannelIcon'
@@ -44,9 +41,8 @@ import dayjs from 'dayjs'
 
 const BACKEND_URL =
 	process.env.NEXT_PUBLIC_BACKEND_URL || '/api'
-const SUMMARY_FRESH_MS = 30_000
 
-/** Лимит символов в одном сообщении (Telegram и WhatsApp) */
+/** Р›РёРјРёС‚ СЃРёРјРІРѕР»РѕРІ РІ РѕРґРЅРѕРј СЃРѕРѕР±С‰РµРЅРёРё (Telegram Рё WhatsApp) */
 const MAX_MESSAGE_CHARS = 4096
 
 const TEMPLATE_SAVE_TIMEOUT_MS = 90_000
@@ -54,14 +50,14 @@ const TEMPLATE_SAVE_TIMEOUT_MS = 90_000
 function isVideoUrl(url: string | null) {
 	if (!url) return false
 	const clean = url.split('?')[0] || ''
-	// webm не включаем: голосовые идут как .webm, показываем их как аудио
+	// webm РЅРµ РІРєР»СЋС‡Р°РµРј: РіРѕР»РѕСЃРѕРІС‹Рµ РёРґСѓС‚ РєР°Рє .webm, РїРѕРєР°Р·С‹РІР°РµРј РёС… РєР°Рє Р°СѓРґРёРѕ
 	return /\.(mp4|mov|m4v)$/i.test(clean)
 }
 
 function isAudioUrl(url: string | null) {
 	if (!url) return false
 	const clean = url.split('?')[0] || ''
-	// .webm — часто голосовые; показываем как аудио (без окна видео)
+	// .webm вЂ” С‡Р°СЃС‚Рѕ РіРѕР»РѕСЃРѕРІС‹Рµ; РїРѕРєР°Р·С‹РІР°РµРј РєР°Рє Р°СѓРґРёРѕ (Р±РµР· РѕРєРЅР° РІРёРґРµРѕ)
 	return /\.(mp3|ogg|wav|m4a|webm)$/i.test(clean)
 }
 
@@ -79,18 +75,8 @@ type UiGroupRow = {
 	avatar_url?: string | null
 }
 
-function reasonDescription(reason: string): string {
-	const r = String(reason || '').toUpperCase()
-	if (r === 'CHANNEL_INVALID') return 'Группа недоступна по текущим данным Telegram. Часто помогает синхронизация.'
-	if (r === 'CHAT_WRITE_FORBIDDEN') return 'Нет прав на отправку в эту группу или отправка ограничена.'
-	if (r === 'USER_BANNED_IN_CHANNEL') return 'Ваш аккаунт ограничен в этой группе/канале.'
-	if (r === 'CHANNEL_PRIVATE') return 'Группа/канал приватные и недоступны для отправки.'
-	if (r === 'PEER_ID_INVALID') return 'Ссылка на группу устарела или неверна.'
-	if (r === 'WA_NOT_CONNECTED' || r === 'ETIMEDOUT') return 'В момент отправки была проблема со связью WhatsApp.'
-	return 'Сообщение не отправилось в эту группу. Проверьте доступ и состояние канала.'
-}
 
-/** Нормализует Telegram chat id: -100123 и 123 считаются одной группой, храним в виде -100... */
+/** РќРѕСЂРјР°Р»РёР·СѓРµС‚ Telegram chat id: -100123 Рё 123 СЃС‡РёС‚Р°СЋС‚СЃСЏ РѕРґРЅРѕР№ РіСЂСѓРїРїРѕР№, С…СЂР°РЅРёРј РІ РІРёРґРµ -100... */
 function normalizeTgChatId(jid: string): string {
 	const s = String(jid).trim()
 	if (s.startsWith('-100')) return s
@@ -106,7 +92,7 @@ export default function TemplateCreatePage() {
 	const [uploading, setUploading] = useState(false)
 	const [mediaViewerUrl, setMediaViewerUrl] = useState<string | null>(null)
 	const [mediaUrl, setMediaUrl] = useState<string | null>(null)
-	/** 'audio' = голосовое/аудио, 'video' = видео, 'image' = картинка; для превью без окна видео у аудио */
+	/** 'audio' = РіРѕР»РѕСЃРѕРІРѕРµ/Р°СѓРґРёРѕ, 'video' = РІРёРґРµРѕ, 'image' = РєР°СЂС‚РёРЅРєР°; РґР»СЏ РїСЂРµРІСЊСЋ Р±РµР· РѕРєРЅР° РІРёРґРµРѕ Сѓ Р°СѓРґРёРѕ */
 	const [mediaKind, setMediaKind] = useState<'audio' | 'video' | 'image' | null>(null)
 	const [form] = Form.useForm()
 
@@ -116,12 +102,12 @@ export default function TemplateCreatePage() {
 	const tgPauseLo = Form.useWatch('tg_between_groups_sec_min', form)
 	const tgPauseHi = Form.useWatch('tg_between_groups_sec_max', form)
 
-	// ✅ channel + groups
+	// вњ… channel + groups
 	const [channel, setChannel] = useState<'wa' | 'tg'>('tg')
 	const [waGroups, setWaGroups] = useState<UiGroupRow[]>([])
 	const [tgGroups, setTgGroups] = useState<UiGroupRow[]>([])
 
-	// ✅ selections per channel
+	// вњ… selections per channel
 	const [waSelected, setWaSelected] = useState<string[]>([])
 	const [tgSelected, setTgSelected] = useState<string[]>([])
 	const [waConnected, setWaConnected] = useState<boolean | null>(null)
@@ -134,30 +120,20 @@ export default function TemplateCreatePage() {
 	const [applyingBulkInterval, setApplyingBulkInterval] = useState(false)
 	const [groupFilterQuery, setGroupFilterQuery] = useState('')
 
-	// Override интервала TG на уровне (шаблон → группа)
+	// Override РёРЅС‚РµСЂРІР°Р»Р° TG РЅР° СѓСЂРѕРІРЅРµ (С€Р°Р±Р»РѕРЅ в†’ РіСЂСѓРїРїР°)
 	const [tgTargetOverrides, setTgTargetOverrides] = useState<Record<string, string | null>>({})
-	const [groupDeliverySummary, setGroupDeliverySummary] = useState<{
-		wa: Record<string, GroupDeliverySummary>
-		tg: Record<string, GroupDeliverySummary>
-	}>({ wa: {}, tg: {} })
-	const [summaryMeta, setSummaryMeta] = useState<{ wa: { cacheHit: boolean; fetchedAtMs: number | null }; tg: { cacheHit: boolean; fetchedAtMs: number | null } }>({
-		wa: { cacheHit: false, fetchedAtMs: null },
-		tg: { cacheHit: false, fetchedAtMs: null },
-	})
-	const [openInfoKey, setOpenInfoKey] = useState<string | null>(null)
-	const closeInfoLockRef = useRef<string | null>(null)
 
 	const [loadingWaGroups, setLoadingWaGroups] = useState(false)
 	const [loadingTgGroups, setLoadingTgGroups] = useState(false)
 	const [tgTotalGroups, setTgTotalGroups] = useState(0)
-	/** Строк в telegram_groups (пагинация); если больше tgTotalGroups — в БД есть дубли по tg_chat_id */
+	/** РЎС‚СЂРѕРє РІ telegram_groups (РїР°РіРёРЅР°С†РёСЏ); РµСЃР»Рё Р±РѕР»СЊС€Рµ tgTotalGroups вЂ” РІ Р‘Р” РµСЃС‚СЊ РґСѓР±Р»Рё РїРѕ tg_chat_id */
 	const [tgTotalRows, setTgTotalRows] = useState(0)
 	const [tgHasMore, setTgHasMore] = useState(false)
 	const [waAnimatedCount, setWaAnimatedCount] = useState(0)
 	const [tgAnimatedCount, setTgAnimatedCount] = useState(0)
 	const waAnimationFrameRef = useRef<number | null>(null)
 	const tgAnimationFrameRef = useRef<number | null>(null)
-	/** Сводка из /telegram/groups/:id/count: всего чатов vs с рассылкой (как на странице «Группы TG») */
+	/** РЎРІРѕРґРєР° РёР· /telegram/groups/:id/count: РІСЃРµРіРѕ С‡Р°С‚РѕРІ vs СЃ СЂР°СЃСЃС‹Р»РєРѕР№ (РєР°Рє РЅР° СЃС‚СЂР°РЅРёС†Рµ В«Р“СЂСѓРїРїС‹ TGВ») */
 	const [tgDbStats, setTgDbStats] = useState<{ total: number; selected: number } | null>(null)
 
 	const loader = useGlobalLoader()
@@ -198,7 +174,7 @@ export default function TemplateCreatePage() {
 			setUserId(String(json.user.id))
 		} catch (e) {
 			console.error(e)
-			message.error('Не удалось получить пользователя')
+			message.error('РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕР»СѓС‡РёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ')
 		}
 	}
 
@@ -311,17 +287,17 @@ export default function TemplateCreatePage() {
 			})
 			const raw = await res.json().catch(() => null)
 			if (!raw) {
-				message.error('Нет ответа от сервера при загрузке WA групп')
+				message.error('РќРµС‚ РѕС‚РІРµС‚Р° РѕС‚ СЃРµСЂРІРµСЂР° РїСЂРё Р·Р°РіСЂСѓР·РєРµ WA РіСЂСѓРїРї')
 				setWaGroups([])
 				return
 			}
 			if (!raw.success) {
-				message.error(raw.message || 'Не удалось загрузить WA группы')
+				message.error(raw.message || 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ WA РіСЂСѓРїРїС‹')
 				setWaGroups([])
 				return
 			}
 
-			// Бэкенд уже вернул только выбранные (selectedOnly=true). Исключаем только announcement.
+			// Р‘СЌРєРµРЅРґ СѓР¶Рµ РІРµСЂРЅСѓР» С‚РѕР»СЊРєРѕ РІС‹Р±СЂР°РЅРЅС‹Рµ (selectedOnly=true). РСЃРєР»СЋС‡Р°РµРј С‚РѕР»СЊРєРѕ announcement.
 			const usable = (raw.groups || []).filter((g: any) => !g.is_announcement)
 
 			const mapped: UiGroupRow[] = usable.map((g: any) => ({
@@ -343,14 +319,14 @@ export default function TemplateCreatePage() {
 			animateWaCount(0, unique.length)
 			warmupWaAvatars(unique)
 			if (unique.length === 0) {
-				message.info('Нет выбранных WA групп. Выберите группы на странице «Управление группами» (WhatsApp).')
+				message.info('РќРµС‚ РІС‹Р±СЂР°РЅРЅС‹С… WA РіСЂСѓРїРї. Р’С‹Р±РµСЂРёС‚Рµ РіСЂСѓРїРїС‹ РЅР° СЃС‚СЂР°РЅРёС†Рµ В«РЈРїСЂР°РІР»РµРЅРёРµ РіСЂСѓРїРїР°РјРёВ» (WhatsApp).')
 			}
 		} catch (e) {
 			console.error(e)
 			message.error(
 				getApiErrorMessage(
 					e,
-					'Не удалось загрузить WA группы. Проверьте подключение и обновите страницу.',
+					'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ WA РіСЂСѓРїРїС‹. РџСЂРѕРІРµСЂСЊС‚Рµ РїРѕРґРєР»СЋС‡РµРЅРёРµ Рё РѕР±РЅРѕРІРёС‚Рµ СЃС‚СЂР°РЅРёС†Сѓ.',
 				),
 			)
 			setWaGroups([])
@@ -359,7 +335,7 @@ export default function TemplateCreatePage() {
 		}
 	}
 
-	/** Один запрос из БД: все выбранные TG для шаблона (без порций и курсоров). */
+	/** РћРґРёРЅ Р·Р°РїСЂРѕСЃ РёР· Р‘Р”: РІСЃРµ РІС‹Р±СЂР°РЅРЅС‹Рµ TG РґР»СЏ С€Р°Р±Р»РѕРЅР° (Р±РµР· РїРѕСЂС†РёР№ Рё РєСѓСЂСЃРѕСЂРѕРІ). */
 	const loadTgGroups = async (uid: string) => {
 		setLoadingTgGroups(true)
 		setTgAnimatedCount(0)
@@ -380,7 +356,7 @@ export default function TemplateCreatePage() {
 			const json: any = await res.json().catch(() => null)
 			if (!res.ok) {
 				message.error(
-					`Не удалось загрузить TG группы (${res.status}). Повторите позже или обновите страницу.`,
+					`РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ TG РіСЂСѓРїРїС‹ (${res.status}). РџРѕРІС‚РѕСЂРёС‚Рµ РїРѕР·Р¶Рµ РёР»Рё РѕР±РЅРѕРІРёС‚Рµ СЃС‚СЂР°РЅРёС†Сѓ.`,
 				)
 				setTgGroups([])
 				setTgTotalGroups(0)
@@ -389,7 +365,7 @@ export default function TemplateCreatePage() {
 				return
 			}
 			if (!json?.success) {
-				message.error(json?.userMessage || 'Не удалось загрузить TG группы')
+				message.error(json?.userMessage || 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ TG РіСЂСѓРїРїС‹')
 				setTgGroups([])
 				setTgTotalGroups(0)
 				setTgTotalRows(0)
@@ -420,7 +396,7 @@ export default function TemplateCreatePage() {
 			setTgHasMore(Boolean(json.hasMore))
 		} catch (e) {
 			console.error(e)
-			message.error(getApiErrorMessage(e, 'Не удалось загрузить TG группы'))
+			message.error(getApiErrorMessage(e, 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ TG РіСЂСѓРїРїС‹'))
 			setTgGroups([])
 			setTgTotalGroups(0)
 			setTgTotalRows(0)
@@ -436,7 +412,7 @@ export default function TemplateCreatePage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
-	// WA и TG группы загружаем при появлении userId. TG — одним запросом из БД (template=1), без фоновой догрузки порциями.
+	// WA Рё TG РіСЂСѓРїРїС‹ Р·Р°РіСЂСѓР¶Р°РµРј РїСЂРё РїРѕСЏРІР»РµРЅРёРё userId. TG вЂ” РѕРґРЅРёРј Р·Р°РїСЂРѕСЃРѕРј РёР· Р‘Р” (template=1), Р±РµР· С„РѕРЅРѕРІРѕР№ РґРѕРіСЂСѓР·РєРё РїРѕСЂС†РёСЏРјРё.
 	useEffect(() => {
 		if (!userId) return
 		loadWaGroups(userId)
@@ -477,7 +453,7 @@ export default function TemplateCreatePage() {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [channel, waGroups.length])
 
-	// Статус подключения WA/TG для отображения «Подключить TG/WA» в выборе канала
+	// РЎС‚Р°С‚СѓСЃ РїРѕРґРєР»СЋС‡РµРЅРёСЏ WA/TG РґР»СЏ РѕС‚РѕР±СЂР°Р¶РµРЅРёСЏ В«РџРѕРґРєР»СЋС‡РёС‚СЊ TG/WAВ» РІ РІС‹Р±РѕСЂРµ РєР°РЅР°Р»Р°
 	useEffect(() => {
 		if (!userId || !token) return
 		Promise.all([
@@ -496,7 +472,7 @@ export default function TemplateCreatePage() {
 			maxCount: 1,
 			beforeUpload: async file => {
 				if (!userId) {
-					message.error('Нет userId')
+					message.error('РќРµС‚ userId')
 					return Upload.LIST_IGNORE
 				}
 
@@ -517,23 +493,23 @@ export default function TemplateCreatePage() {
 					const json: any = await res.json().catch(() => null)
 					if (!json?.success) {
 						message.error(
-							`Ошибка загрузки файла: ${json?.message || 'unknown'}`
+							`РћС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё С„Р°Р№Р»Р°: ${json?.message || 'unknown'}`
 						)
 						return Upload.LIST_IGNORE
 					}
 
 					const url = String(json.publicUrl || json.url || '')
 					if (!url) {
-						message.error('Не пришла ссылка на файл от сервера')
+						message.error('РќРµ РїСЂРёС€Р»Р° СЃСЃС‹Р»РєР° РЅР° С„Р°Р№Р» РѕС‚ СЃРµСЂРІРµСЂР°')
 						return Upload.LIST_IGNORE
 					}
 					const type = (file.type || '').toLowerCase()
 					setMediaKind(type.startsWith('audio/') ? 'audio' : type.startsWith('video/') ? 'video' : 'image')
 					setMediaUrl(url)
-					message.success('Файл загружен')
+					message.success('Р¤Р°Р№Р» Р·Р°РіСЂСѓР¶РµРЅ')
 				} catch (e) {
 					console.error(e)
-					message.error(getApiErrorMessage(e, 'Не удалось загрузить файл'))
+					message.error(getApiErrorMessage(e, 'РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ С„Р°Р№Р»'))
 				} finally {
 					setUploading(false)
 				}
@@ -547,16 +523,16 @@ export default function TemplateCreatePage() {
 	const groupColumns: ColumnsType<UiGroupRow> = useMemo(() => {
 		const cols: ColumnsType<UiGroupRow> = [
 			{
-				title: 'Группа',
+				title: 'Р“СЂСѓРїРїР°',
 				key: 'group',
 				render: (_: any, row: UiGroupRow) => {
-					const nameForAvatar = (row.title || 'Группа').trim() || 'Группа'
+					const nameForAvatar = (row.title || 'Р“СЂСѓРїРїР°').trim() || 'Р“СЂСѓРїРїР°'
 
-					// Текущее состояние выбора для этой строки
+					// РўРµРєСѓС‰РµРµ СЃРѕСЃС‚РѕСЏРЅРёРµ РІС‹Р±РѕСЂР° РґР»СЏ СЌС‚РѕР№ СЃС‚СЂРѕРєРё
 					const selectedList = channel === 'wa' ? waSelected : tgSelected
 					const checked = selectedList.includes(row.jid)
 
-					// Для WA подгружаем аватар через API и кэш по jid
+					// Р”Р»СЏ WA РїРѕРґРіСЂСѓР¶Р°РµРј Р°РІР°С‚Р°СЂ С‡РµСЂРµР· API Рё РєСЌС€ РїРѕ jid
 					let avatarUrl = row.avatar_url || null
 					if (channel === 'wa') {
 						avatarUrl = normalizeWaAvatarUrl(row.jid, avatarUrl)
@@ -577,66 +553,6 @@ export default function TemplateCreatePage() {
 						else setTgSelected(next)
 					}
 
-					const summary = (channel === 'wa' ? groupDeliverySummary.wa : groupDeliverySummary.tg)[row.jid]
-					const meta = channel === 'wa' ? summaryMeta.wa : summaryMeta.tg
-					const infoContent = (
-						<div style={{ minWidth: 230, fontSize: 12, lineHeight: 1.4 }}>
-							<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-								<div><b>Сводка отправок (14 дней)</b></div>
-								<button
-									type='button'
-									className='tedit-info-close'
-									onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
-									onClick={(e) => {
-										e.preventDefault()
-										e.stopPropagation()
-										closeInfoLockRef.current = `${channel}:${row.jid}`
-										setOpenInfoKey(null)
-									}}
-								>
-									×
-								</button>
-							</div>
-							<div style={{ opacity: 0.75 }}>
-								{meta.fetchedAtMs
-									? meta.cacheHit
-										? `Из кэша · ${Math.max(0, Math.floor((Date.now() - meta.fetchedAtMs) / 1000))}с назад`
-										: 'Обновлено только что'
-									: '—'}
-							</div>
-							<div>Включена в шаблонов: <b>{summary?.templatesIncluded ?? 0}</b></div>
-							<div>Отправлено: <b>{summary?.sent ?? 0}</b></div>
-							<div>Ошибок: <b>{summary?.failed ?? 0}</b></div>
-							<div>Успешность: <b>{summary?.successRate ?? 0}%</b></div>
-							<div>Последняя отправка: {summary?.lastSentAt ? new Date(summary.lastSentAt).toLocaleString() : '—'}</div>
-							<div>Последняя ошибка: {summary?.lastFailedAt ? new Date(summary.lastFailedAt).toLocaleString() : '—'}</div>
-							<div>
-								Причины:{' '}
-								{summary?.topReasons?.length ? (
-									<div style={{ display: 'grid', gap: 4, marginTop: 4 }}>
-										{summary.topReasons.map(r => (
-											<div key={r.reason} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-												<span>{r.reason} ({r.count})</span>
-												<Tooltip title={reasonDescription(r.reason)}>
-													<button type='button' className='tedit-reason-info'>i</button>
-												</Tooltip>
-											</div>
-										))}
-									</div>
-								) : '—'}
-							</div>
-							<div style={{ marginTop: 6 }}>
-								<button
-									type='button'
-									className='tedit-info-refresh'
-									onMouseDown={(e) => e.stopPropagation()}
-									onClick={(e) => { e.stopPropagation(); void refreshOneGroupSummary(channel, row.jid, true) }}
-								>
-									Обновить
-								</button>
-							</div>
-						</div>
-					)
 					return (
 						<div className="tedit-group-row-inner">
 							<div className="tedit-group-row-main">
@@ -644,7 +560,7 @@ export default function TemplateCreatePage() {
 									className={`tedit-custom-checkbox ${checked ? 'checked' : ''}`}
 									role="button"
 									tabIndex={0}
-									title={checked ? 'Снять выделение' : 'Выбрать группу'}
+									title={checked ? 'РЎРЅСЏС‚СЊ РІС‹РґРµР»РµРЅРёРµ' : 'Р’С‹Р±СЂР°С‚СЊ РіСЂСѓРїРїСѓ'}
 									onClick={(e) => {
 										e.stopPropagation()
 										toggleSelected()
@@ -681,37 +597,9 @@ export default function TemplateCreatePage() {
 										{nameForAvatar.slice(0, 1).toUpperCase()}
 									</div>
 								)}
-								<Popover
-									content={infoContent}
-									trigger="click"
-									placement="rightTop"
-									open={openInfoKey === `${channel}:${row.jid}`}
-									onOpenChange={(open) => {
-										if (open) {
-											if (closeInfoLockRef.current === `${channel}:${row.jid}`) {
-												closeInfoLockRef.current = null
-												return
-											}
-											setOpenInfoKey(`${channel}:${row.jid}`)
-											void refreshOneGroupSummary(channel, row.jid)
-										} else if (openInfoKey === `${channel}:${row.jid}`) {
-											closeInfoLockRef.current = null
-											setOpenInfoKey(null)
-										}
-									}}
-								>
-									<button
-										type="button"
-										className="tedit-info-icon"
-										onMouseDown={(e) => e.stopPropagation()}
-										onClick={(e) => e.stopPropagation()}
-									>
-										i
-									</button>
-								</Popover>
 								<div className="tedit-group-row-info">
 									<span className="tedit-group-row-title">
-										{row.title || 'без названия'}
+										{row.title || 'Р±РµР· РЅР°Р·РІР°РЅРёСЏ'}
 									</span>
 									<span className="tedit-group-row-id">
 										ID: {row.jid}
@@ -724,11 +612,11 @@ export default function TemplateCreatePage() {
 										const ov = tgTargetOverrides[row.jid] ?? null
 										const tplDef = tgDefaultSendTime
 										const eff = ov ?? (tplDef ? String(tplDef) : null) ?? (row.send_time ?? null)
-										const title = eff ? `Эффективно: ${eff}` : 'Эффективно: авто'
+										const title = eff ? `Р­С„С„РµРєС‚РёРІРЅРѕ: ${eff}` : 'Р­С„С„РµРєС‚РёРІРЅРѕ: Р°РІС‚Рѕ'
 										return (
 											<Select
 												allowClear
-												placeholder="По умолчанию"
+												placeholder="РџРѕ СѓРјРѕР»С‡Р°РЅРёСЋ"
 												size="small"
 												className="tedit-group-interval-select"
 												value={tgTargetOverrides[row.jid] ?? undefined}
@@ -744,11 +632,11 @@ export default function TemplateCreatePage() {
 							{channel === 'wa' && (
 								<span
 									className="tedit-group-row-count"
-									title="Количество участников в группе"
+									title="РљРѕР»РёС‡РµСЃС‚РІРѕ СѓС‡Р°СЃС‚РЅРёРєРѕРІ РІ РіСЂСѓРїРїРµ"
 								>
 									{typeof row.participants_count === 'number'
-										? `Участников: ${row.participants_count}`
-										: 'Участников: —'}
+										? `РЈС‡Р°СЃС‚РЅРёРєРѕРІ: ${row.participants_count}`
+										: 'РЈС‡Р°СЃС‚РЅРёРєРѕРІ: вЂ”'}
 								</span>
 							)}
 						</div>
@@ -758,12 +646,12 @@ export default function TemplateCreatePage() {
 		]
 
 		return cols
-	}, [channel, waAvatarMap, waAvatarLoading, waSelected, tgSelected, tgTargetOverrides, tgDefaultSendTime, groupDeliverySummary])
+	}, [channel, waAvatarMap, waAvatarLoading, waSelected, tgSelected, tgTargetOverrides, tgDefaultSendTime])
 
 	const currentGroups = channel === 'wa' ? waGroups : tgGroups
 	const currentSelected = channel === 'wa' ? waSelected : tgSelected
 	const currentGroupsLoading = channel === 'wa' ? loadingWaGroups : loadingTgGroups
-	// Фильтр по названию или ID, затем выбранные наверх
+	// Р¤РёР»СЊС‚СЂ РїРѕ РЅР°Р·РІР°РЅРёСЋ РёР»Рё ID, Р·Р°С‚РµРј РІС‹Р±СЂР°РЅРЅС‹Рµ РЅР°РІРµСЂС…
 	const currentGroupsSorted = useMemo(() => {
 		const q = groupFilterQuery.trim().toLowerCase()
 		const filtered = q
@@ -790,44 +678,14 @@ export default function TemplateCreatePage() {
 		setTgTargetOverrides(prev => ({ ...prev, [jid]: next }))
 	}
 
-	const refreshOneGroupSummary = async (ch: 'wa' | 'tg', jid: string, force = false) => {
-		if (!token) return
-		const hasLocal = !!(ch === 'wa' ? groupDeliverySummary.wa[jid] : groupDeliverySummary.tg[jid])
-		const meta = ch === 'wa' ? summaryMeta.wa : summaryMeta.tg
-		if (
-			!force &&
-			hasLocal &&
-			meta.fetchedAtMs &&
-			Date.now() - meta.fetchedAtMs < SUMMARY_FRESH_MS
-		) {
-			return
-		}
-		const res = await fetchGroupDeliverySummary({
-			backendUrl: BACKEND_URL,
-			token,
-			channel: ch,
-			groupJids: [jid],
-			lookbackDays: 14,
-			includeTemplatesIncluded: true,
-			bypassCache: force,
-		})
-		setGroupDeliverySummary(prev => ({
-			...prev,
-			[ch]: { ...prev[ch], ...res.summaries },
-		}))
-		setSummaryMeta(prev => ({
-			...prev,
-			[ch]: { cacheHit: res.meta.cacheHit, fetchedAtMs: res.meta.fetchedAtMs },
-		}))
-	}
 
 	const saveTargetsForTemplate = async (templateId: string) => {
 		setSavingTargets(true)
 		try {
-			// ✅ сохраняем targets отдельно по каналам
+			// вњ… СЃРѕС…СЂР°РЅСЏРµРј targets РѕС‚РґРµР»СЊРЅРѕ РїРѕ РєР°РЅР°Р»Р°Рј
 			const tasks: Array<{ ch: 'wa' | 'tg'; keys: string[] }> = [
 				{ ch: 'wa', keys: waSelected },
-				// TG: на всякий случай нормализуем id перед сохранением
+				// TG: РЅР° РІСЃСЏРєРёР№ СЃР»СѓС‡Р°Р№ РЅРѕСЂРјР°Р»РёР·СѓРµРј id РїРµСЂРµРґ СЃРѕС…СЂР°РЅРµРЅРёРµРј
 				{ ch: 'tg', keys: tgSelected.map(normalizeTgChatId) },
 			]
 
@@ -855,7 +713,7 @@ export default function TemplateCreatePage() {
 
 				if (!json?.success) {
 					message.error(
-						`Ошибка сохранения групп (${t.ch.toUpperCase()}): ${
+						`РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ РіСЂСѓРїРї (${t.ch.toUpperCase()}): ${
 							json?.message || 'unknown'
 						}`
 					)
@@ -866,7 +724,7 @@ export default function TemplateCreatePage() {
 			return true
 		} catch (e) {
 			console.error(e)
-			message.error(getApiErrorMessage(e, 'Не удалось сохранить группы для шаблона'))
+			message.error(getApiErrorMessage(e, 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ РіСЂСѓРїРїС‹ РґР»СЏ С€Р°Р±Р»РѕРЅР°'))
 			return false
 		} finally {
 			setSavingTargets(false)
@@ -874,10 +732,10 @@ export default function TemplateCreatePage() {
 	}
 
 	const onFinish = async (values: any) => {
-		if (!userId) return message.error('Нет userId')
+		if (!userId) return message.error('РќРµС‚ userId')
 
 		setSaving(true)
-		loader.show('Сохраняем шаблон…')
+		loader.show('РЎРѕС…СЂР°РЅСЏРµРј С€Р°Р±Р»РѕРЅвЂ¦')
 		try {
 			const merged = { ...form.getFieldsValue(true), ...values }
 			const [wLo, wHi] = clampPausePairFromFormValues(
@@ -910,40 +768,40 @@ export default function TemplateCreatePage() {
 				timeoutMs: TEMPLATE_SAVE_TIMEOUT_MS,
 			})
 			if (!json?.success) {
-				message.error(`Ошибка создания: ${json?.message || 'unknown'}`)
+				message.error(`РћС€РёР±РєР° СЃРѕР·РґР°РЅРёСЏ: ${json?.message || 'unknown'}`)
 				return
 			}
 			if (json?.persistenceDegraded) {
 				message.warning(
-					'В Supabase нет колонок пауз для шаблонов — ползунки не сохранились. Выполните SQL: backend/migrations/add_message_templates_between_groups_sec_range.sql',
+					'Р’ Supabase РЅРµС‚ РєРѕР»РѕРЅРѕРє РїР°СѓР· РґР»СЏ С€Р°Р±Р»РѕРЅРѕРІ вЂ” РїРѕР»Р·СѓРЅРєРё РЅРµ СЃРѕС…СЂР°РЅРёР»РёСЃСЊ. Р’С‹РїРѕР»РЅРёС‚Рµ SQL: backend/migrations/add_message_templates_between_groups_sec_range.sql',
 				)
 			}
 
 			const templateId = String(json.templateId || '')
 			if (!templateId) {
-				message.error('templateId не пришёл')
+				message.error('templateId РЅРµ РїСЂРёС€С‘Р»')
 				return
 			}
 
-			// ✅ сразу сохраняем выбранные группы (и WA и TG)
+			// вњ… СЃСЂР°Р·Сѓ СЃРѕС…СЂР°РЅСЏРµРј РІС‹Р±СЂР°РЅРЅС‹Рµ РіСЂСѓРїРїС‹ (Рё WA Рё TG)
 			const ok = await saveTargetsForTemplate(templateId)
 			if (!ok) return
 
 			const parts: string[] = []
-			parts.push('паузы между группами заданы диапазоном в шаблоне')
+			parts.push('РїР°СѓР·С‹ РјРµР¶РґСѓ РіСЂСѓРїРїР°РјРё Р·Р°РґР°РЅС‹ РґРёР°РїР°Р·РѕРЅРѕРј РІ С€Р°Р±Р»РѕРЅРµ')
 			if (values.tg_default_send_time != null) {
-				parts.push('в drawer обновится предупреждение про интервал TG (дефолт из шаблона)')
+				parts.push('РІ drawer РѕР±РЅРѕРІРёС‚СЃСЏ РїСЂРµРґСѓРїСЂРµР¶РґРµРЅРёРµ РїСЂРѕ РёРЅС‚РµСЂРІР°Р» TG (РґРµС„РѕР»С‚ РёР· С€Р°Р±Р»РѕРЅР°)')
 			}
 			message.success(
 				parts.length
-					? `Шаблон создан и группы сохранены (WA/TG) — ${parts.join(' и ')}.`
-					: 'Шаблон создан и группы сохранены (WA/TG)',
+					? `РЁР°Р±Р»РѕРЅ СЃРѕР·РґР°РЅ Рё РіСЂСѓРїРїС‹ СЃРѕС…СЂР°РЅРµРЅС‹ (WA/TG) вЂ” ${parts.join(' Рё ')}.`
+					: 'РЁР°Р±Р»РѕРЅ СЃРѕР·РґР°РЅ Рё РіСЂСѓРїРїС‹ СЃРѕС…СЂР°РЅРµРЅС‹ (WA/TG)',
 			)
 			if (typeof window !== 'undefined') window.dispatchEvent(new Event(TIMING_HUB_CHANGED_EVENT))
 			router.push(`/dashboard/templates/`)
 		} catch (e) {
 			console.error(e)
-			message.error(getApiErrorMessage(e, 'Не удалось создать шаблон'))
+			message.error(getApiErrorMessage(e, 'РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ С€Р°Р±Р»РѕРЅ'))
 		} finally {
 			setSaving(false)
 			loader.hide()
@@ -954,7 +812,7 @@ export default function TemplateCreatePage() {
 		<div className='tedit'>
 			<div className='tedit__wrap'>
 				<p className='tedit__intro'>
-					Заполните название и текст, выберите группы (вкладки WA/TG). Группы сохранятся автоматически при создании шаблона.
+					Р—Р°РїРѕР»РЅРёС‚Рµ РЅР°Р·РІР°РЅРёРµ Рё С‚РµРєСЃС‚, РІС‹Р±РµСЂРёС‚Рµ РіСЂСѓРїРїС‹ (РІРєР»Р°РґРєРё WA/TG). Р“СЂСѓРїРїС‹ СЃРѕС…СЂР°РЅСЏС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РїСЂРё СЃРѕР·РґР°РЅРёРё С€Р°Р±Р»РѕРЅР°.
 				</p>
 
 				<div className='tedit__card'>
@@ -976,11 +834,11 @@ export default function TemplateCreatePage() {
 					}}
 					onFinish={onFinish}
 				>
-					{/* Название */}
+					{/* РќР°Р·РІР°РЅРёРµ */}
 					<div className="tedit-cont">
 						<div className='tedit-cont-one'>
 							<div className='tedit-field'>
-								<div className='tedit-field__label'>Название шаблона</div>
+								<div className='tedit-field__label'>РќР°Р·РІР°РЅРёРµ С€Р°Р±Р»РѕРЅР°</div>
 								<Form.Item name='title' style={{ marginBottom: 0 }}>
 									<Input
 										className='tedit-input'
@@ -989,12 +847,12 @@ export default function TemplateCreatePage() {
 									/>
 								</Form.Item>
 								<div className='tedit-field__hint'>
-									Например: Описание квартиры, Акция, Подбор объектов
+									РќР°РїСЂРёРјРµСЂ: РћРїРёСЃР°РЅРёРµ РєРІР°СЂС‚РёСЂС‹, РђРєС†РёСЏ, РџРѕРґР±РѕСЂ РѕР±СЉРµРєС‚РѕРІ
 								</div>
 							</div>
-							{/* Текст */}
+							{/* РўРµРєСЃС‚ */}
 							<div className='tedit-field'>
-								<div className='tedit-field__label'>Текст сообщения</div>
+								<div className='tedit-field__label'>РўРµРєСЃС‚ СЃРѕРѕР±С‰РµРЅРёСЏ</div>
 								<Form.Item
 									name='text'
 									style={{ marginBottom: 0 }}
@@ -1005,7 +863,7 @@ export default function TemplateCreatePage() {
 												const text = String(value || '').trim()
 												if (!String(title || '').trim() && !text) {
 													return Promise.reject(
-														new Error('Нужно заполнить title или text'),
+														new Error('РќСѓР¶РЅРѕ Р·Р°РїРѕР»РЅРёС‚СЊ title РёР»Рё text'),
 													)
 												}
 												return Promise.resolve()
@@ -1023,12 +881,12 @@ export default function TemplateCreatePage() {
 									/>
 								</Form.Item>
 								<div className='tedit-field__hint'>
-									Макс. {MAX_MESSAGE_CHARS} символов (лимит Telegram и WhatsApp). Поддерживается форматирование и эмодзи.
+									РњР°РєСЃ. {MAX_MESSAGE_CHARS} СЃРёРјРІРѕР»РѕРІ (Р»РёРјРёС‚ Telegram Рё WhatsApp). РџРѕРґРґРµСЂР¶РёРІР°РµС‚СЃСЏ С„РѕСЂРјР°С‚РёСЂРѕРІР°РЅРёРµ Рё СЌРјРѕРґР·Рё.
 								</div>
 							</div>
-							{/* Загрузка */}
+							{/* Р—Р°РіСЂСѓР·РєР° */}
 							<div className='tedit-upload'>
-								<div className='tedit-upload__label'>Прикрепите изображение</div>
+								<div className='tedit-upload__label'>РџСЂРёРєСЂРµРїРёС‚Рµ РёР·РѕР±СЂР°Р¶РµРЅРёРµ</div>
 
 								<div className='tedit-upload__row'>
 									<div className='tedit-upload__drop'>
@@ -1041,26 +899,26 @@ export default function TemplateCreatePage() {
 												<span className='tedit-upload__icon'>
 													<Image
 														src='/iconFoto.png'
-														alt='Картинка'
+														alt='РљР°СЂС‚РёРЅРєР°'
 														width={19}
 														height={19}
 													/>
 												</span>
 												<span>
-													Перетащите файл сюда
+													РџРµСЂРµС‚Р°С‰РёС‚Рµ С„Р°Р№Р» СЃСЋРґР°
 													<br />
-													или нажмите, чтобы выбрать
+													РёР»Рё РЅР°Р¶РјРёС‚Рµ, С‡С‚РѕР±С‹ РІС‹Р±СЂР°С‚СЊ
 												</span>
 											</div>
 										</Upload.Dragger>
 									</div>
 
 									<div className='tedit-upload__note'>
-										<div className='tedit-upload__noteTitle'>Внимание!</div>
+										<div className='tedit-upload__noteTitle'>Р’РЅРёРјР°РЅРёРµ!</div>
 										<div className='tedit-upload__noteText'>
-											Можно добавить только 1 файл (изображение, видео или аудио)
+											РњРѕР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ С‚РѕР»СЊРєРѕ 1 С„Р°Р№Р» (РёР·РѕР±СЂР°Р¶РµРЅРёРµ, РІРёРґРµРѕ РёР»Рё Р°СѓРґРёРѕ)
 											<br />
-											Советуем сделать коллаж из фото
+											РЎРѕРІРµС‚СѓРµРј СЃРґРµР»Р°С‚СЊ РєРѕР»Р»Р°Р¶ РёР· С„РѕС‚Рѕ
 										</div>
 
 										{mediaUrl ? (
@@ -1069,7 +927,7 @@ export default function TemplateCreatePage() {
 													type='button'
 													className='tedit-upload__previewBtn'
 													onClick={() => setMediaViewerUrl(mediaUrl)}
-													title='Открыть в полном размере / запустить'
+													title='РћС‚РєСЂС‹С‚СЊ РІ РїРѕР»РЅРѕРј СЂР°Р·РјРµСЂРµ / Р·Р°РїСѓСЃС‚РёС‚СЊ'
 												>
 													<div className='tedit-upload__preview'>
 														{mediaKind === 'audio' || (!mediaKind && isAudioUrl(mediaUrl)) ? (
@@ -1090,30 +948,30 @@ export default function TemplateCreatePage() {
 															<img
 																src={mediaUrl}
 																className='tedit-upload__previewImg'
-																alt='Превью файла'
+																alt='РџСЂРµРІСЊСЋ С„Р°Р№Р»Р°'
 															/>
 														)}
 													</div>
 												</button>
-												<div className='tedit-upload__previewHint'>Нажмите на превью для полного просмотра или запуска</div>
+												<div className='tedit-upload__previewHint'>РќР°Р¶РјРёС‚Рµ РЅР° РїСЂРµРІСЊСЋ РґР»СЏ РїРѕР»РЅРѕРіРѕ РїСЂРѕСЃРјРѕС‚СЂР° РёР»Рё Р·Р°РїСѓСЃРєР°</div>
 												<button
 													type='button'
 													className='tedit-linkbtn'
 													onClick={() => { setMediaUrl(null); setMediaKind(null) }}
 												>
-													Убрать
+													РЈР±СЂР°С‚СЊ
 												</button>
 											</div>
 										) : null}
 									</div>
 								</div>
 							</div>
-						{/* Включение + порядок (рядом) */}
+						{/* Р’РєР»СЋС‡РµРЅРёРµ + РїРѕСЂСЏРґРѕРє (СЂСЏРґРѕРј) */}
 							<div className='tedit-mini'>
 								<div className='tedit-mini__item'>
 									<div>
-										<div className='tedit-mini__label'>Включён</div>
-										<div className='tedit-mini__hint'>Если выключить — этот шаблон не будет участвовать в рассылках.</div>
+										<div className='tedit-mini__label'>Р’РєР»СЋС‡С‘РЅ</div>
+										<div className='tedit-mini__hint'>Р•СЃР»Рё РІС‹РєР»СЋС‡РёС‚СЊ вЂ” СЌС‚РѕС‚ С€Р°Р±Р»РѕРЅ РЅРµ Р±СѓРґРµС‚ СѓС‡Р°СЃС‚РІРѕРІР°С‚СЊ РІ СЂР°СЃСЃС‹Р»РєР°С….</div>
 									</div>
 									<Form.Item name='enabled' valuePropName='checked' style={{ marginBottom: 0 }}>
 										<Switch />
@@ -1122,8 +980,8 @@ export default function TemplateCreatePage() {
 
 								<div className='tedit-mini__item' style={{ display: 'none' }}>
 									<div>
-										<div className='tedit-mini__label'>Порядок отправки</div>
-										<div className='tedit-mini__hint'>Чем меньше число, тем раньше отправляется этот шаблон (1 — самый первый).</div>
+										<div className='tedit-mini__label'>РџРѕСЂСЏРґРѕРє РѕС‚РїСЂР°РІРєРё</div>
+										<div className='tedit-mini__hint'>Р§РµРј РјРµРЅСЊС€Рµ С‡РёСЃР»Рѕ, С‚РµРј СЂР°РЅСЊС€Рµ РѕС‚РїСЂР°РІР»СЏРµС‚СЃСЏ СЌС‚РѕС‚ С€Р°Р±Р»РѕРЅ (1 вЂ” СЃР°РјС‹Р№ РїРµСЂРІС‹Р№).</div>
 									</div>
 									<Form.Item name='order' style={{ marginBottom: 0 }}>
 										<InputNumber min={1} />
@@ -1131,12 +989,12 @@ export default function TemplateCreatePage() {
 								</div>
 							</div>
 
-							{/* Медиа как файл (сразу под загрузчиком) */}
+							{/* РњРµРґРёР° РєР°Рє С„Р°Р№Р» (СЃСЂР°Р·Сѓ РїРѕРґ Р·Р°РіСЂСѓР·С‡РёРєРѕРј) */}
 							<div className='tedit-mini'>
 								<div className='tedit-mini__item'>
 									<div>
-										<div className='tedit-mini__label'>Отправлять медиа как файл</div>
-										<div className='tedit-mini__hint'>Включено — медиа придёт как документ. Выключено — показывается прямо в чате (превью/плеер).</div>
+										<div className='tedit-mini__label'>РћС‚РїСЂР°РІР»СЏС‚СЊ РјРµРґРёР° РєР°Рє С„Р°Р№Р»</div>
+										<div className='tedit-mini__hint'>Р’РєР»СЋС‡РµРЅРѕ вЂ” РјРµРґРёР° РїСЂРёРґС‘С‚ РєР°Рє РґРѕРєСѓРјРµРЅС‚. Р’С‹РєР»СЋС‡РµРЅРѕ вЂ” РїРѕРєР°Р·С‹РІР°РµС‚СЃСЏ РїСЂСЏРјРѕ РІ С‡Р°С‚Рµ (РїСЂРµРІСЊСЋ/РїР»РµРµСЂ).</div>
 									</div>
 									<Form.Item name='send_media_as_file' valuePropName='checked' style={{ marginBottom: 0 }}>
 										<Switch />
@@ -1167,11 +1025,11 @@ export default function TemplateCreatePage() {
 									<div className='tedit-pauseBetweenGroups__head'>
 										<div>
 											<div className='tedit-mini__label'>
-												<ChannelIcon type='wa' size={14} /> Пауза между группами WhatsApp (этот шаблон)
+												<ChannelIcon type='wa' size={14} /> РџР°СѓР·Р° РјРµР¶РґСѓ РіСЂСѓРїРїР°РјРё WhatsApp (СЌС‚РѕС‚ С€Р°Р±Р»РѕРЅ)
 											</div>
 											<div className='tedit-mini__hint'>
-												Здесь вы задаёте для шаблона минимум и максимум секунд паузы между группами в волне WhatsApp: при рассылке берётся{' '}
-												<b>случайное</b> число секунд между выбранными «от» и «до». Ползунки настраиваются в пределах 5–600 с.
+												Р—РґРµСЃСЊ РІС‹ Р·Р°РґР°С‘С‚Рµ РґР»СЏ С€Р°Р±Р»РѕРЅР° РјРёРЅРёРјСѓРј Рё РјР°РєСЃРёРјСѓРј СЃРµРєСѓРЅРґ РїР°СѓР·С‹ РјРµР¶РґСѓ РіСЂСѓРїРїР°РјРё РІ РІРѕР»РЅРµ WhatsApp: РїСЂРё СЂР°СЃСЃС‹Р»РєРµ Р±РµСЂС‘С‚СЃСЏ{' '}
+												<b>СЃР»СѓС‡Р°Р№РЅРѕРµ</b> С‡РёСЃР»Рѕ СЃРµРєСѓРЅРґ РјРµР¶РґСѓ РІС‹Р±СЂР°РЅРЅС‹РјРё В«РѕС‚В» Рё В«РґРѕВ». РџРѕР»Р·СѓРЅРєРё РЅР°СЃС‚СЂР°РёРІР°СЋС‚СЃСЏ РІ РїСЂРµРґРµР»Р°С… 5вЂ“600 СЃ.
 											</div>
 										</div>
 										<Tag className='tedit-pauseBetweenGroups__tag'>
@@ -1180,7 +1038,7 @@ export default function TemplateCreatePage() {
 													Number(waPauseLo ?? TEMPLATE_FORM_DEFAULT_PAUSE.wa[0]),
 													Number(waPauseHi ?? TEMPLATE_FORM_DEFAULT_PAUSE.wa[1]),
 												)
-												return `${lo}–${hi} с`
+												return `${lo}вЂ“${hi} СЃ`
 											})()}
 										</Tag>
 									</div>
@@ -1190,7 +1048,7 @@ export default function TemplateCreatePage() {
 										min={5}
 										max={600}
 										step={5}
-										tooltip={{ formatter: (v) => `${v} сек` }}
+										tooltip={{ formatter: (v) => `${v} СЃРµРє` }}
 										value={clampTemplatePauseSecPair(
 											Number(waPauseLo ?? TEMPLATE_FORM_DEFAULT_PAUSE.wa[0]),
 											Number(waPauseHi ?? TEMPLATE_FORM_DEFAULT_PAUSE.wa[1]),
@@ -1211,10 +1069,10 @@ export default function TemplateCreatePage() {
 									<div className='tedit-pauseBetweenGroups__head'>
 										<div>
 											<div className='tedit-mini__label'>
-												<ChannelIcon type='tg' size={14} /> Пауза между группами Telegram (этот шаблон)
+												<ChannelIcon type='tg' size={14} /> РџР°СѓР·Р° РјРµР¶РґСѓ РіСЂСѓРїРїР°РјРё Telegram (СЌС‚РѕС‚ С€Р°Р±Р»РѕРЅ)
 											</div>
 											<div className='tedit-mini__hint'>
-												То же для Telegram: ползунки задают диапазон секунд между группами (случайная пауза внутри «от»–«до»). Ползунки: 5–600 с.
+												РўРѕ Р¶Рµ РґР»СЏ Telegram: РїРѕР»Р·СѓРЅРєРё Р·Р°РґР°СЋС‚ РґРёР°РїР°Р·РѕРЅ СЃРµРєСѓРЅРґ РјРµР¶РґСѓ РіСЂСѓРїРїР°РјРё (СЃР»СѓС‡Р°Р№РЅР°СЏ РїР°СѓР·Р° РІРЅСѓС‚СЂРё В«РѕС‚В»вЂ“В«РґРѕВ»). РџРѕР»Р·СѓРЅРєРё: 5вЂ“600 СЃ.
 											</div>
 										</div>
 										<Tag className='tedit-pauseBetweenGroups__tag'>
@@ -1223,7 +1081,7 @@ export default function TemplateCreatePage() {
 													Number(tgPauseLo ?? TEMPLATE_FORM_DEFAULT_PAUSE.tg[0]),
 													Number(tgPauseHi ?? TEMPLATE_FORM_DEFAULT_PAUSE.tg[1]),
 												)
-												return `${lo}–${hi} с`
+												return `${lo}вЂ“${hi} СЃ`
 											})()}
 										</Tag>
 									</div>
@@ -1233,7 +1091,7 @@ export default function TemplateCreatePage() {
 										min={5}
 										max={600}
 										step={5}
-										tooltip={{ formatter: (v) => `${v} сек` }}
+										tooltip={{ formatter: (v) => `${v} СЃРµРє` }}
 										value={clampTemplatePauseSecPair(
 											Number(tgPauseLo ?? TEMPLATE_FORM_DEFAULT_PAUSE.tg[0]),
 											Number(tgPauseHi ?? TEMPLATE_FORM_DEFAULT_PAUSE.tg[1]),
@@ -1252,14 +1110,14 @@ export default function TemplateCreatePage() {
 
 								<div className='tedit-mini__item'>
 									<div>
-										<div className='tedit-mini__label'>Дефолтный интервал Telegram</div>
-										<div className='tedit-mini__hint'>Если у TG-группы не задан свой интервал (override), используется этот интервал шаблона. Если override задан — он важнее.</div>
+										<div className='tedit-mini__label'>Р”РµС„РѕР»С‚РЅС‹Р№ РёРЅС‚РµСЂРІР°Р» Telegram</div>
+										<div className='tedit-mini__hint'>Р•СЃР»Рё Сѓ TG-РіСЂСѓРїРїС‹ РЅРµ Р·Р°РґР°РЅ СЃРІРѕР№ РёРЅС‚РµСЂРІР°Р» (override), РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ СЌС‚РѕС‚ РёРЅС‚РµСЂРІР°Р» С€Р°Р±Р»РѕРЅР°. Р•СЃР»Рё override Р·Р°РґР°РЅ вЂ” РѕРЅ РІР°Р¶РЅРµРµ.</div>
 									</div>
 									<Form.Item name='tg_default_send_time' style={{ marginBottom: 0 }}>
 										<div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
 											<Select
 												allowClear
-												placeholder='Интервал'
+												placeholder='РРЅС‚РµСЂРІР°Р»'
 												size='small'
 												style={{ width: 170 }}
 												options={SEND_INTERVAL_OPTIONS}
@@ -1281,11 +1139,11 @@ export default function TemplateCreatePage() {
 								</div>
 							</div>
 						</div>
-						{/* Группы */}
+						{/* Р“СЂСѓРїРїС‹ */}
 						<div className='tedit-targets'>
 							<div className='tedit-targets__head'>
 								<div className='tedit-targets__title'>
-									Куда отправлять этот шаблон
+									РљСѓРґР° РѕС‚РїСЂР°РІР»СЏС‚СЊ СЌС‚РѕС‚ С€Р°Р±Р»РѕРЅ
 								</div>
 
 								<Segmented
@@ -1301,8 +1159,8 @@ export default function TemplateCreatePage() {
 													</span>
 													<span className='tedit-channelTab__text'>
 														{tgConnected === false
-															? 'Подключить TG'
-															: `Telegram${loadingTgGroups ? ' · загрузка' : ''}`}
+															? 'РџРѕРґРєР»СЋС‡РёС‚СЊ TG'
+															: `Telegram${loadingTgGroups ? ' В· Р·Р°РіСЂСѓР·РєР°' : ''}`}
 													</span>
 													{tgConnected !== false && (
 														<span className='tedit-channelTab__meta'>
@@ -1311,7 +1169,7 @@ export default function TemplateCreatePage() {
 															) : null}
 															<span>
 																{loadingTgGroups
-																	? `${tgAnimatedCount}/${tgTotalGroups > 0 ? tgTotalGroups : '…'}`
+																	? `${tgAnimatedCount}/${tgTotalGroups > 0 ? tgTotalGroups : 'вЂ¦'}`
 																	: `${tgGroups.length}`}
 															</span>
 														</span>
@@ -1328,15 +1186,15 @@ export default function TemplateCreatePage() {
 													</span>
 													<span className='tedit-channelTab__text'>
 														{waConnected === false
-															? 'Подключить WA'
-															: `WhatsApp${loadingWaGroups ? ' · загрузка' : ''}`}
+															? 'РџРѕРґРєР»СЋС‡РёС‚СЊ WA'
+															: `WhatsApp${loadingWaGroups ? ' В· Р·Р°РіСЂСѓР·РєР°' : ''}`}
 													</span>
 													{waConnected !== false && (
 														<span className='tedit-channelTab__meta'>
 															{loadingWaGroups ? (
 																<span className='tedit-channelTab__load' aria-hidden='true' />
 															) : null}
-															<span>{loadingWaGroups ? '…' : `${waGroups.length}`}</span>
+															<span>{loadingWaGroups ? 'вЂ¦' : `${waGroups.length}`}</span>
 														</span>
 													)}
 												</span>
@@ -1350,33 +1208,33 @@ export default function TemplateCreatePage() {
 										<span className='tedit-targets__countItem'>
 											<ChannelIcon type='tg' size={14} />
 											<span>
-												TG: для шаблона <b>{tgSelected.length}</b>
-												{' · '}
-												в таблице <b>{tgGroups.length}</b> {pluralRuGroups(tgGroups.length)}
+												TG: РґР»СЏ С€Р°Р±Р»РѕРЅР° <b>{tgSelected.length}</b>
+												{' В· '}
+												РІ С‚Р°Р±Р»РёС†Рµ <b>{tgGroups.length}</b> {pluralRuGroups(tgGroups.length)}
 											</span>
 										</span>
 										{!tgHasMore && tgTotalRows > tgTotalGroups ? (
 											<div className='tedit-targets__countHint'>
-												В базе для выбранных групп TG записано <b>{tgTotalRows}</b> строк, а разных
-												чатов <b>{tgTotalGroups}</b> — лишние строки дублируют один и тот же чат
-												(обычно после повторных синков). Готовая чистка: файл{' '}
-												<b>backend/migrations/fix_duplicate_groups.sql</b> (п. 3–4 и уникальный индекс
-												для TG).
+												Р’ Р±Р°Р·Рµ РґР»СЏ РІС‹Р±СЂР°РЅРЅС‹С… РіСЂСѓРїРї TG Р·Р°РїРёСЃР°РЅРѕ <b>{tgTotalRows}</b> СЃС‚СЂРѕРє, Р° СЂР°Р·РЅС‹С…
+												С‡Р°С‚РѕРІ <b>{tgTotalGroups}</b> вЂ” Р»РёС€РЅРёРµ СЃС‚СЂРѕРєРё РґСѓР±Р»РёСЂСѓСЋС‚ РѕРґРёРЅ Рё С‚РѕС‚ Р¶Рµ С‡Р°С‚
+												(РѕР±С‹С‡РЅРѕ РїРѕСЃР»Рµ РїРѕРІС‚РѕСЂРЅС‹С… СЃРёРЅРєРѕРІ). Р“РѕС‚РѕРІР°СЏ С‡РёСЃС‚РєР°: С„Р°Р№Р»{' '}
+												<b>backend/migrations/fix_duplicate_groups.sql</b> (Рї. 3вЂ“4 Рё СѓРЅРёРєР°Р»СЊРЅС‹Р№ РёРЅРґРµРєСЃ
+												РґР»СЏ TG).
 											</div>
 										) : null}
 									</div>
 									<span className='tedit-targets__countItem'>
 										<ChannelIcon type='wa' size={14} />
 										<span>
-											WA: для шаблона <b>{waSelected.length}</b>
-											{' · '}
-											в таблице <b>{waGroups.length}</b> {pluralRuGroups(waGroups.length)}
+											WA: РґР»СЏ С€Р°Р±Р»РѕРЅР° <b>{waSelected.length}</b>
+											{' В· '}
+											РІ С‚Р°Р±Р»РёС†Рµ <b>{waGroups.length}</b> {pluralRuGroups(waGroups.length)}
 										</span>
 									</span>
 									<p className='tedit-targets__legend'>
-										«Для шаблона» — чаты, отмеченные для этого шаблона в таблице ниже (пока не
-										отметили — 0). «В таблице» — группы с включённой рассылкой из «Группы TG / WA»;
-										TG подгружается из базы одним запросом при открытии страницы.
+										В«Р”Р»СЏ С€Р°Р±Р»РѕРЅР°В» вЂ” С‡Р°С‚С‹, РѕС‚РјРµС‡РµРЅРЅС‹Рµ РґР»СЏ СЌС‚РѕРіРѕ С€Р°Р±Р»РѕРЅР° РІ С‚Р°Р±Р»РёС†Рµ РЅРёР¶Рµ (РїРѕРєР° РЅРµ
+										РѕС‚РјРµС‚РёР»Рё вЂ” 0). В«Р’ С‚Р°Р±Р»РёС†РµВ» вЂ” РіСЂСѓРїРїС‹ СЃ РІРєР»СЋС‡С‘РЅРЅРѕР№ СЂР°СЃСЃС‹Р»РєРѕР№ РёР· В«Р“СЂСѓРїРїС‹ TG / WAВ»;
+										TG РїРѕРґРіСЂСѓР¶Р°РµС‚СЃСЏ РёР· Р±Р°Р·С‹ РѕРґРЅРёРј Р·Р°РїСЂРѕСЃРѕРј РїСЂРё РѕС‚РєСЂС‹С‚РёРё СЃС‚СЂР°РЅРёС†С‹.
 									</p>
 								</div>
 							</div>
@@ -1389,11 +1247,11 @@ export default function TemplateCreatePage() {
 									{loadingWaGroups ? (
 										<span className='tedit-targets__meta-loading'>
 											<span className='tedit-spinner' />
-											Загружаем WhatsApp-группы…
+											Р—Р°РіСЂСѓР¶Р°РµРј WhatsApp-РіСЂСѓРїРїС‹вЂ¦
 										</span>
 									) : (
 										<span className='tedit-targets__meta-idle'>
-											В списке <b>{waGroups.length}</b> {pluralRuGroups(waGroups.length)}
+											Р’ СЃРїРёСЃРєРµ <b>{waGroups.length}</b> {pluralRuGroups(waGroups.length)}
 										</span>
 									)}
 								</div>
@@ -1407,25 +1265,25 @@ export default function TemplateCreatePage() {
 										<span className='tedit-targets__meta-loading'>
 											<span className='tedit-spinner' />
 											{tgTotalGroups > 0
-												? `Загружаем чаты: ${tgAnimatedCount} из ${tgTotalGroups}${
+												? `Р—Р°РіСЂСѓР¶Р°РµРј С‡Р°С‚С‹: ${tgAnimatedCount} РёР· ${tgTotalGroups}${
 														tgTotalRows > tgTotalGroups
-															? ` (в БД ${tgTotalRows} строк — есть дубли по чату)`
+															? ` (РІ Р‘Р” ${tgTotalRows} СЃС‚СЂРѕРє вЂ” РµСЃС‚СЊ РґСѓР±Р»Рё РїРѕ С‡Р°С‚Сѓ)`
 															: ''
-													}…`
-												: 'Загружаем Telegram-группы…'}
+													}вЂ¦`
+												: 'Р—Р°РіСЂСѓР¶Р°РµРј Telegram-РіСЂСѓРїРїС‹вЂ¦'}
 										</span>
 									) : (
 										<>
 											<span className='tedit-targets__meta-idle'>
-												В списке <b>{tgGroups.length}</b> {pluralRuGroups(tgGroups.length)}
+												Р’ СЃРїРёСЃРєРµ <b>{tgGroups.length}</b> {pluralRuGroups(tgGroups.length)}
 												{tgDbStats && tgDbStats.total > 0 && (
 													<>
 														{' '}
-														· в «
+														В· РІ В«
 														<Link href='/dashboard/groups/telegram' className='tedit-link'>
-															Группы TG
+															Р“СЂСѓРїРїС‹ TG
 														</Link>
-														»: всего <b>{tgDbStats.total}</b>, с рассылкой{' '}
+														В»: РІСЃРµРіРѕ <b>{tgDbStats.total}</b>, СЃ СЂР°СЃСЃС‹Р»РєРѕР№{' '}
 														<b>{tgDbStats.selected}</b>
 													</>
 												)}
@@ -1434,9 +1292,9 @@ export default function TemplateCreatePage() {
 												tgDbStats.selected < tgDbStats.total &&
 												!loadingTgGroups && (
 													<div className='tedit-targets__meta-hint'>
-														С рассылкой сейчас только <b>{tgDbStats.selected}</b> из{' '}
-														<b>{tgDbStats.total}</b> групп. Остальные здесь не появятся, пока не
-														включите их в «Группы TG».
+														РЎ СЂР°СЃСЃС‹Р»РєРѕР№ СЃРµР№С‡Р°СЃ С‚РѕР»СЊРєРѕ <b>{tgDbStats.selected}</b> РёР·{' '}
+														<b>{tgDbStats.total}</b> РіСЂСѓРїРї. РћСЃС‚Р°Р»СЊРЅС‹Рµ Р·РґРµСЃСЊ РЅРµ РїРѕСЏРІСЏС‚СЃСЏ, РїРѕРєР° РЅРµ
+														РІРєР»СЋС‡РёС‚Рµ РёС… РІ В«Р“СЂСѓРїРїС‹ TGВ».
 													</div>
 												)}
 											{tgDbStats &&
@@ -1445,8 +1303,8 @@ export default function TemplateCreatePage() {
 												!loadingTgGroups &&
 												tgGroups.length < tgDbStats.selected && (
 													<div className='tedit-targets__meta-hint tedit-targets__meta-hint--warn'>
-														В таблице <b>{tgGroups.length}</b>, а с рассылкой в базе{' '}
-														<b>{tgDbStats.selected}</b> — проверьте ответ API или обновите страницу.
+														Р’ С‚Р°Р±Р»РёС†Рµ <b>{tgGroups.length}</b>, Р° СЃ СЂР°СЃСЃС‹Р»РєРѕР№ РІ Р±Р°Р·Рµ{' '}
+														<b>{tgDbStats.selected}</b> вЂ” РїСЂРѕРІРµСЂСЊС‚Рµ РѕС‚РІРµС‚ API РёР»Рё РѕР±РЅРѕРІРёС‚Рµ СЃС‚СЂР°РЅРёС†Сѓ.
 													</div>
 												)}
 										</>
@@ -1458,33 +1316,33 @@ export default function TemplateCreatePage() {
 								{channel === 'tg' && tgConnected === false && (
 									<div className='tedit-warning-message tedit-warning-message--connect'>
 										<ChannelIcon type='tg' size={20} variant='failed' />{' '}
-										Telegram не подключён. Подключите в кабинете, чтобы выбирать группы.{' '}
+										Telegram РЅРµ РїРѕРґРєР»СЋС‡С‘РЅ. РџРѕРґРєР»СЋС‡РёС‚Рµ РІ РєР°Р±РёРЅРµС‚Рµ, С‡С‚РѕР±С‹ РІС‹Р±РёСЂР°С‚СЊ РіСЂСѓРїРїС‹.{' '}
 										<button
 											type='button'
 											className='tedit-link'
-											onClick={() => { loader.show('В кабинет…'); router.push('/cabinet#telegram') }}
+											onClick={() => { loader.show('Р’ РєР°Р±РёРЅРµС‚вЂ¦'); router.push('/cabinet#telegram') }}
 										>
-											Подключить TG
+											РџРѕРґРєР»СЋС‡РёС‚СЊ TG
 										</button>
 									</div>
 								)}
 								{channel === 'wa' && waConnected === false && (
 									<div className='tedit-warning-message tedit-warning-message--connect'>
 										<ChannelIcon type='wa' size={20} variant='failed' />{' '}
-										WhatsApp не подключён. Подключите в кабинете, чтобы выбирать группы.{' '}
+										WhatsApp РЅРµ РїРѕРґРєР»СЋС‡С‘РЅ. РџРѕРґРєР»СЋС‡РёС‚Рµ РІ РєР°Р±РёРЅРµС‚Рµ, С‡С‚РѕР±С‹ РІС‹Р±РёСЂР°С‚СЊ РіСЂСѓРїРїС‹.{' '}
 										<button
 											type='button'
 											className='tedit-link'
-											onClick={() => { loader.show('В кабинет…'); router.push('/cabinet#whatsapp') }}
+											onClick={() => { loader.show('Р’ РєР°Р±РёРЅРµС‚вЂ¦'); router.push('/cabinet#whatsapp') }}
 										>
-											Подключить WA
+											РџРѕРґРєР»СЋС‡РёС‚СЊ WA
 										</button>
 									</div>
 								)}
 								{channel === 'wa' && waConnected !== false && !loadingWaGroups && waGroups.length === 0 && (
 									<div className='tedit-warning-message tedit-warning-message--empty'>
-										Нет выбранных WhatsApp групп. Выберите группы на странице{' '}
-										<Link href='/dashboard/groups' className='tedit-link'>Управление группами</Link> (вкладка WhatsApp), затем возвращайтесь сюда.
+										РќРµС‚ РІС‹Р±СЂР°РЅРЅС‹С… WhatsApp РіСЂСѓРїРї. Р’С‹Р±РµСЂРёС‚Рµ РіСЂСѓРїРїС‹ РЅР° СЃС‚СЂР°РЅРёС†Рµ{' '}
+										<Link href='/dashboard/groups' className='tedit-link'>РЈРїСЂР°РІР»РµРЅРёРµ РіСЂСѓРїРїР°РјРё</Link> (РІРєР»Р°РґРєР° WhatsApp), Р·Р°С‚РµРј РІРѕР·РІСЂР°С‰Р°Р№С‚РµСЃСЊ СЃСЋРґР°.
 									</div>
 								)}
 							</div>
@@ -1501,7 +1359,7 @@ export default function TemplateCreatePage() {
 										(channel === 'tg' && loadingTgGroups)
 									}
 								>
-									Выбрать все
+									Р’С‹Р±СЂР°С‚СЊ РІСЃРµ
 								</button>
 
 								<button
@@ -1510,13 +1368,13 @@ export default function TemplateCreatePage() {
 									onClick={() => setCurrentSelected([])}
 									disabled={!currentSelected.length}
 								>
-									Снять все
+									РЎРЅСЏС‚СЊ РІСЃРµ
 								</button>
 
 								{channel === 'tg' && currentSelected.length > 0 && (
 									<div className='tedit-targets__bulk-interval'>
 										<Select
-											placeholder='Интервал для всех'
+											placeholder='РРЅС‚РµСЂРІР°Р» РґР»СЏ РІСЃРµС…'
 											allowClear
 											className='tedit-bulk-interval-select'
 											value={bulkInterval ?? undefined}
@@ -1537,10 +1395,10 @@ export default function TemplateCreatePage() {
 													return next
 												})
 												setApplyingBulkInterval(false)
-												message.success(`Интервал применён к ${currentSelected.length} группам (сохранится при создании шаблона)`)
+												message.success(`РРЅС‚РµСЂРІР°Р» РїСЂРёРјРµРЅС‘РЅ Рє ${currentSelected.length} РіСЂСѓРїРїР°Рј (СЃРѕС…СЂР°РЅРёС‚СЃСЏ РїСЂРё СЃРѕР·РґР°РЅРёРё С€Р°Р±Р»РѕРЅР°)`)
 											}}
 										>
-											{applyingBulkInterval ? 'Применяем…' : 'Применить ко всем'}
+											{applyingBulkInterval ? 'РџСЂРёРјРµРЅСЏРµРјвЂ¦' : 'РџСЂРёРјРµРЅРёС‚СЊ РєРѕ РІСЃРµРј'}
 										</button>
 									</div>
 								)}
@@ -1548,7 +1406,7 @@ export default function TemplateCreatePage() {
 
 							<div className='tedit-targets__filter'>
 								<Input
-									placeholder='Фильтр по названию или ID группы'
+									placeholder='Р¤РёР»СЊС‚СЂ РїРѕ РЅР°Р·РІР°РЅРёСЋ РёР»Рё ID РіСЂСѓРїРїС‹'
 									value={groupFilterQuery}
 									onChange={(e) => setGroupFilterQuery(e.target.value)}
 									allowClear
@@ -1568,7 +1426,7 @@ export default function TemplateCreatePage() {
 											loading={currentGroupsLoading}
 											onRow={record => ({
 												onClick: (e: any) => {
-													// Не переключаем выбор, если клик был на Select или кастомном чекбоксе
+													// РќРµ РїРµСЂРµРєР»СЋС‡Р°РµРј РІС‹Р±РѕСЂ, РµСЃР»Рё РєР»РёРє Р±С‹Р» РЅР° Select РёР»Рё РєР°СЃС‚РѕРјРЅРѕРј С‡РµРєР±РѕРєСЃРµ
 													if (e?.target?.closest?.('.ant-select') || e?.target?.closest?.('.tedit-custom-checkbox')) return
 													const jid = record.jid
 													const isSelected = currentSelected.includes(jid)
@@ -1587,31 +1445,31 @@ export default function TemplateCreatePage() {
 							</div>
 
 							<div className='tedit-targets__hint'>
-								Выбор сохранится автоматически при создании шаблона.
+								Р’С‹Р±РѕСЂ СЃРѕС…СЂР°РЅРёС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РїСЂРё СЃРѕР·РґР°РЅРёРё С€Р°Р±Р»РѕРЅР°.
 							</div>
 						</div>
 					</div>
 					
-					{/* Кнопки */}
+					{/* РљРЅРѕРїРєРё */}
 					<div className='tedit-actions'>
 						<button
 							className='tedit-btn tedit-btn--primary'
 							type='submit'
 							disabled={saving || uploading || savingTargets}
 						>
-							{saving ? 'Сохраняем…' : 'Сохранить шаблон'}
+							{saving ? 'РЎРѕС…СЂР°РЅСЏРµРјвЂ¦' : 'РЎРѕС…СЂР°РЅРёС‚СЊ С€Р°Р±Р»РѕРЅ'}
 						</button>
 
 						<button
 							className='tedit-btn'
 							type='button'
 							onClick={() => {
-								loader.show('К списку шаблонов…')
+								loader.show('Рљ СЃРїРёСЃРєСѓ С€Р°Р±Р»РѕРЅРѕРІвЂ¦')
 								router.push('/dashboard/templates')
 							}}
 							disabled={saving}
 						>
-							Назад
+							РќР°Р·Р°Рґ
 						</button>
 					</div>
 				</Form>

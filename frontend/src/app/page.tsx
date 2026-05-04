@@ -108,9 +108,6 @@ export default function HomePage() {
 							<a className='mobile-link ui-action-btn ui-header-btn' href='#pricing' onClick={closeMenu}>
 								Тарифы
 							</a>
-							<Link className='mobile-link ui-action-btn ui-header-btn' href='/presentation' onClick={closeMenu}>
-								Презентация
-							</Link>
 							<Link className='mobile-link ui-action-btn ui-header-btn' href='/cabinet' onClick={closeMenu}>
 								Личный кабинет
 							</Link>
@@ -143,9 +140,6 @@ export default function HomePage() {
 						<a className='pill ui-action-btn ui-header-btn' href='#pricing'>
 							Тарифы
 						</a>
-						<Link className='pill ui-action-btn ui-header-btn' href='/presentation'>
-							Презентация
-						</Link>
 						<Link className='pill ui-action-btn ui-header-btn' href='/cabinet'>
 							Личный кабинет
 						</Link>
@@ -659,7 +653,6 @@ export default function HomePage() {
 							<a className='ui-action-btn' href='#how'>Как работает сервис?</a>
 							<a className='ui-action-btn' href='#pricing'>Тарифы</a>
 							<Link className='ui-action-btn' href='/cabinet'>Личный кабинет</Link>
-							<Link className='ui-action-btn' href='/presentation'>Презентация</Link>
 						</div>
 
 						<div className='footer-meta'>
