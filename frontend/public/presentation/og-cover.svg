@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#141210"/>
+      <stop offset="100%" stop-color="#1f1a15"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.76" cy="0.2" r="0.8">
+      <stop offset="0%" stop-color="#e8d68a" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#e8d68a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6e8b0"/>
+      <stop offset="100%" stop-color="#caa548"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <g opacity="0.35">
+    <path d="M90 520 C 230 410, 370 480, 530 350" stroke="#a58a47" stroke-width="2" fill="none"/>
+    <path d="M140 560 C 300 450, 480 500, 660 380" stroke="#8e7840" stroke-width="2" fill="none"/>
+    <circle cx="530" cy="350" r="8" fill="#e8d68a"/>
+    <circle cx="660" cy="380" r="6" fill="#d9c275"/>
+  </g>
+
+  <g transform="translate(100,100)">
+    <path d="M78 120 C 20 80, 18 24, 60 10 C 92 1, 120 23, 128 51 C 137 23, 165 1, 197 10 C 238 24, 237 80, 179 120 L 128 164 Z"
+      fill="url(#gold)" opacity="0.95"/>
+    <circle cx="128" cy="80" r="76" fill="none" stroke="#e8d68a" stroke-opacity="0.35" stroke-width="1.5"/>
+  </g>
+
+  <g transform="translate(330,116)">
+    <text x="0" y="48" fill="#f8f1da" font-size="58" font-family="Manrope, Arial, sans-serif" font-weight="800">
+      Chatrassylka
+    </text>
+    <text x="0" y="102" fill="#d8cba3" font-size="34" font-family="Manrope, Arial, sans-serif" font-weight="600">
+      WhatsApp and Telegram for business
+    </text>
+    <text x="0" y="154" fill="#bfb4a0" font-size="26" font-family="Manrope, Arial, sans-serif">
+      Templates - Queue - Pauses - Repeat schedule
+    </text>
+  </g>
+
+  <g transform="translate(760,190)">
+    <rect x="0" y="0" width="320" height="220" rx="20" fill="#211c17" stroke="#4f4230"/>
+    <rect x="20" y="22" width="180" height="12" rx="6" fill="#715f37"/>
+    <rect x="20" y="50" width="120" height="10" rx="5" fill="#5c513d"/>
+    <rect x="20" y="84" width="280" height="38" rx="12" fill="#2b251f" stroke="#5d4f3b"/>
+    <rect x="20" y="136" width="240" height="38" rx="12" fill="#2b251f" stroke="#5d4f3b"/>
+    <rect x="20" y="188" width="280" height="14" rx="7" fill="#c9a54a"/>
+  </g>
+</svg>

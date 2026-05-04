@@ -1,0 +1,11 @@
+# Override для работы nginx в Docker при приложении под PM2 на хосте.
+# Nginx проксирует на host.docker.internal:3000 и :3001.
+# Запуск: docker compose -f docker-compose.yml -f docker-compose.pm2.yml up -d nginx redis
+
+services:
+  nginx:
+    volumes:
+      - ./deploy/nginx/default.pm2-docker.conf:/etc/nginx/conf.d/default.conf:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on: []

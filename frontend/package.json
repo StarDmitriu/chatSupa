@@ -1,0 +1,45 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "PORT=3001 node .next/standalone/server.js",
+    "start:next": "next start -p 3001",
+    "dev": "next dev -p 3001",
+    "build": "NODE_OPTIONS='--max-old-space-size=6144' next build",
+    "postbuild": "cp -r .next/static .next/standalone/.next/static && cp -r public .next/standalone/public",
+    "deploy": "npm run build && echo '→ Выполните: pm2 restart frontend'",
+    "deploy:vps": "bash ../scripts/deploy-frontend-vps.sh",
+    "build:webpack": "NODE_OPTIONS='--max-old-space-size=6144' next build --webpack",
+    "lint": "npx eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "dependencies": {
+    "antd": "^6.1.1",
+    "js-cookie": "^3.0.5",
+    "next": "^16.1.6",
+    "qrcode.react": "^4.2.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "swr": "^2.4.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/js-cookie": "^3.0.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "baseline-browser-mapping": "^2.9.19",
+    "eslint": "^9",
+    "eslint-config-next": "^16.1.6",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  },
+  "optionalDependencies": {
+    "@next/swc-linux-x64-gnu": "^16.1.6"
+  }
+}

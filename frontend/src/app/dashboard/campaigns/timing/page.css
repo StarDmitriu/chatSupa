@@ -1,0 +1,86 @@
+/* Наследует .camp с ../page.css */
+.campTiming__section {
+  margin-bottom: 22px;
+}
+.campTiming__sectionTitle {
+  font-size: 17px;
+  font-weight: 800;
+  margin: 0 0 10px;
+  color: rgba(0, 0, 0, 0.88);
+}
+.campTiming__localCard {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(0, 0, 0, 0.78);
+  box-shadow: var(--camp-glass-inner-shadow);
+}
+.campTiming__localCard code {
+  font-size: 11px;
+}
+
+/* Заголовок колонки с подсказкой (antd Table) */
+.campTiming__thHint {
+  cursor: help;
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.22);
+}
+.campTiming__muted {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 8px;
+}
+.campTiming__inlineBtn {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: #1677ff;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.campTiming__inlineBtn:hover {
+  color: #4096ff;
+}
+.campTiming__topNav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 18px;
+}
+
+@media (max-width: 768px) {
+  .campTiming__section {
+    margin-bottom: 16px;
+  }
+
+  .campTiming__sectionTitle {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+
+  .campTiming__localCard {
+    padding: 12px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+
+  .campTiming__topNav {
+    width: 100%;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .campTiming__topNav > * {
+    flex: 1 1 100%;
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,0 +1,309 @@
+/* Общая шапка дашборда (единая навигация). Стили совместимы с .camp .tpl-header. */
+.dashboard-layout {
+  /* Высота зарезервирована под глобальную шапку: вторая sticky-шапка страницы цепляется ниже, без наложения */
+  --dashboard-global-nav-h: 116px;
+}
+@media (max-width: 768px) {
+  .dashboard-layout {
+    --dashboard-global-nav-h: 100px;
+  }
+}
+
+.dashboard-layout .tpl-header {
+  width: 100%;
+  padding: 32px 0 30px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: transparent;
+  margin: -32px -16px 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* Глобальная навигация — выше контента страницы, чтобы при скролле клики не «уходили» под блоки */
+.dashboard-layout > header.tpl-header {
+  z-index: 300;
+  top: 0;
+}
+
+/* Вторая шапка на странице (Рассылки, Шаблоны, …) — под глобальной, без перекрытия кнопок */
+.dashboard-layout .camp > header.tpl-header,
+.dashboard-layout .tpl > header.tpl-header,
+.dashboard-layout .grp > header.tpl-header,
+.dashboard-layout .analytics > header.tpl-header,
+.dashboard-layout .tedit > header.tpl-header {
+  top: var(--dashboard-global-nav-h);
+  z-index: 150;
+}
+.dashboard-layout .tpl-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: transparent;
+}
+.dashboard-layout .tpl-header__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.dashboard-layout .tpl-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.dashboard-layout .tpl-header__logoWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.dashboard-layout .tpl-header__pageTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dashboard-layout .tpl-header__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 33px;
+  font-weight: 900;
+  color: inherit;
+  text-decoration: none;
+}
+
+.dashboard-layout .tpl-header__logo-icon {
+  display: inline-block;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.dashboard-layout .tpl-header__logo-chat {
+  color: rgba(0, 0, 0, 0.9);
+}
+.dashboard-layout .tpl-header__logo-accent {
+  background: radial-gradient(
+    circle at 0% 0%,
+    #fff8d2 0,
+    #f9ee91 40%,
+    #f4e36b 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0.6px rgba(0, 0, 0, 0.45);
+}
+.dashboard-layout .tpl-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.dashboard-layout .tpl-header__pill {
+  /* визуальный стиль задаёт .ui-action-btn (globals.css); тут — только компоновка */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dashboard-layout .tpl-header__chanIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.28));
+}
+.dashboard-layout .tpl-header__statusDot--refreshing {
+  animation: tpl-header-status-pulse 1.1s ease-in-out infinite;
+}
+@keyframes tpl-header-status-pulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.35); opacity: 0.55; }
+  100% { transform: scale(1); opacity: 0.9; }
+}
+.dashboard-layout .tpl-header__pill:hover:not(:disabled) {
+  /* hover/active делает .ui-action-btn */
+}
+.dashboard-layout .tpl-header__pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.dashboard-layout .tpl-header__pill--active {
+  background: rgba(254, 249, 200, 0.95);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+/* Бургер (как в ЛК): скрыт на десктопе */
+.dashboard-layout .tpl-header__burger.app-burger {
+  display: none;
+  /* прокидываем переменные в общий AppBurgerButton */
+  --burger-size: 40px;
+  --burger-radius: 14px;
+  --burger-bg: rgba(255, 255, 255, 0.82);
+  --burger-border: 1px solid rgba(0,0,0,0.08);
+  --burger-shadow: 0 10px 22px rgba(0, 0, 0, 0.16), 0 1px 0 rgba(255, 255, 255, 0.85) inset;
+}
+/* Мобильная панель */
+.dashboard-layout .tpl-header__mobile-panel {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  pointer-events: none;
+}
+.dashboard-layout .tpl-header__mobile-panel--open {
+  pointer-events: auto;
+}
+/*
+ * У родителя pointer-events: none дочерние элементы по умолчанию всё равно с pointer-events: auto
+ * и перехватывают клики по всему экрану (невидимый backdrop). Явно отключаем, пока меню закрыто.
+ */
+.dashboard-layout .tpl-header__mobile-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.dashboard-layout .tpl-header__mobile-panel--open .tpl-header__mobile-backdrop {
+  pointer-events: auto;
+  opacity: 1;
+}
+.dashboard-layout .tpl-header__mobile-nav {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(280px, 85vw);
+  height: 100%;
+  background: linear-gradient(180deg, #fffef8 0%, #fef9e8 100%);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: translateX(100%);
+  transition: transform 0.25s ease;
+  pointer-events: none;
+}
+.dashboard-layout .tpl-header__mobile-panel--open .tpl-header__mobile-nav {
+  pointer-events: auto;
+  transform: translateX(0);
+}
+.dashboard-layout .tpl-header__mobile-nav .tpl-header__pill {
+  justify-content: flex-start;
+  width: 100%;
+}
+
+/* Базовая мобильная адаптация dashboard-экранов */
+@media (max-width: 768px) {
+  .dashboard-layout {
+    overflow-x: clip;
+  }
+
+  .dashboard-layout > header.tpl-header {
+    padding-top: 16px;
+    padding-bottom: 14px;
+    margin-top: -16px;
+    margin-left: -10px;
+    margin-right: -10px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .dashboard-layout .tpl-header__container {
+    padding: 0 10px;
+  }
+
+  .dashboard-layout .tpl-header__row {
+    gap: 12px;
+  }
+
+  .dashboard-layout .tpl-header__logo {
+    font-size: 27px;
+  }
+
+  .dashboard-layout :is(.camp, .tpl, .grp, .analytics, .tedit) {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .dashboard-layout :is(.camp, .tpl, .grp, .analytics, .tedit)
+    :where(.camp__wrap, .tpl__wrap, .analytics__wrap, .tedit__wrap) {
+    max-width: 100%;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .dashboard-layout :is(.camp, .tpl, .grp, .analytics, .tedit) .ant-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .dashboard-layout :is(.camp, .tpl, .grp, .analytics, .tedit)
+    .ant-table-wrapper
+    .ant-table {
+    min-width: 640px;
+  }
+
+  /* Таблица «Ваши шаблоны» в мобильном режиме — своя компактная вёрстка, без 640px
+     (иначе на узком экране «уезжает» колонка с названием за пределы видимой области). */
+  .dashboard-layout .tpl .tpl-table--mobile .ant-table-wrapper .ant-table {
+    min-width: 0 !important;
+  }
+
+  .dashboard-layout :is(.camp, .tpl, .grp, .analytics, .tedit)
+    :where(.ant-btn, .ant-input, .ant-input-number, .ant-picker, .ant-select) {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-layout > header.tpl-header {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    margin-top: -12px;
+    margin-left: -8px;
+    margin-right: -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .dashboard-layout .tpl-header__container {
+    padding: 0 8px;
+  }
+
+  .dashboard-layout .tpl-header__logo {
+    font-size: 23px;
+  }
+
+  .dashboard-layout :is(.camp, .tpl, .grp, .analytics, .tedit) {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-layout .tpl-header__burger.app-burger {
+    display: inline-flex;
+  }
+  .dashboard-layout .tpl-header__nav {
+    display: none;
+  }
+  .dashboard-layout .tpl-header__mobile-panel {
+    display: block;
+  }
+}

@@ -1,0 +1,1022 @@
+/* Liquid glass + шапка (см. cabinet/STYLE-LIQUID-GLASS.md) */
+.camp {
+  --camp-page-bg: linear-gradient(180deg, #ffffff 0%, #fffef8 25%, #fef9e8 55%, #faf4e0 85%, #f5eed5 100%);
+  --camp-glass-bg: linear-gradient(135deg, #fff8d2 0%, #fef4b8 35%, #f9ee91 70%, #f4e36b 100%);
+  --camp-glass-border: 1px solid rgba(255, 255, 255, 0.85);
+  --camp-glass-shadow: 0 16px 48px rgba(212, 180, 40, 0.25), 0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  --camp-glass-inner-border: 1px solid rgba(255, 255, 255, 0.9);
+  --camp-glass-inner-shadow: 0 2px 12px rgba(200, 170, 30, 0.08), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  --camp-glass-btn-bg: linear-gradient(135deg, #fffef0 0%, #fef9d4 50%, #f9ee91 100%);
+  --camp-glass-btn-border: 1px solid rgba(255, 255, 255, 0.95);
+  --camp-glass-btn-shadow: 0 4px 16px rgba(212, 180, 40, 0.15), 0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  --camp-glass-btn-hover-bg: linear-gradient(135deg, #ffffff 0%, #fff9d8 50%, #f9ee91 100%);
+  --camp-glass-btn-hover-shadow: 0 6px 24px rgba(212, 180, 40, 0.2), 0 1px 0 rgba(255, 255, 255, 1) inset;
+}
+
+.campaigns-segmented .ant-segmented-item-label{
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.camp__channelRow{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.camp__segmentedLabel{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.camp__pauseSliders{
+  margin-bottom: 16px;
+  padding: 14px 14px 10px;
+  border-radius: 12px;
+  border: var(--camp-glass-inner-border);
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: var(--camp-glass-inner-shadow);
+}
+
+.camp__pauseSliderBlock{
+  margin-bottom: 16px;
+}
+
+.camp__pauseSliderBlock:last-child{
+  margin-bottom: 4px;
+}
+
+.camp__pauseSliderHead{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.camp__pauseSliderTitle{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.78);
+}
+
+.camp__pauseSliderTag{
+  margin-inline-end: 0 !important;
+  font-size: 12px;
+  border-radius: 999px;
+}
+
+.camp__pauseSliderHint{
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(0, 0, 0, 0.62);
+}
+
+/* Двухстрочные подписи в Segmented: откуда берётся пауза между группами */
+.camp__pauseSegOpt{
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.15;
+  padding: 2px 0;
+  max-width: 140px;
+}
+.camp__pauseSegOptMain{
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.82);
+}
+.camp__pauseSegOptSub{
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.52);
+  white-space: normal;
+}
+
+.camp__pauseSliderHint--muted{
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.camp__selectedGroups{
+  margin-top: 6px;
+  margin-left: 12px;
+}
+
+.camp__selectedGroups .camp__channelRow{
+  margin-bottom: 4px;
+}
+
+.camp__selectedGroups .camp__channelRow:last-child{
+  margin-bottom: 0;
+}
+
+.camp{
+  min-height: 100vh;
+  background: var(--camp-page-bg);
+  padding: 32px 16px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.camp__wrap{
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Шапка */
+.camp .tpl-header {
+  width: 100%;
+  padding: 32px 0 30px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: transparent;
+  margin: -32px -16px 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* На desktop «Рассылки ?» нужно визуально быть выше «Чат Рассылка» (в глобальной шапке).
+   Поднимаем вторую sticky-шапку относительно первой. */
+@media (min-width: 769px) {
+  .dashboard-layout .camp > header.tpl-header {
+    /* Чуть выше и слоем поверх — чтобы «Рассылки ?» не перекрывалось глобальным лого. */
+    top: 72px !important;
+    z-index: 420 !important;
+  }
+}
+.camp .tpl-header::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: transparent;
+}
+.camp .tpl-header__container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.camp .tpl-header__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.camp .tpl-header__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.camp .tpl-header__logo {
+  display: inline-flex; align-items: baseline; gap: 4px;
+  font-size: 33px; font-weight: 900; color: inherit; text-decoration: none;
+}
+.camp .tpl-header__logo-chat { color: rgba(0, 0, 0, 0.9); }
+.camp .tpl-header__logo-accent {
+  background: radial-gradient(circle at 0% 0%, #fff8d2 0, #f9ee91 40%, #f4e36b 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-text-fill-color: transparent; -webkit-text-stroke: 0.6px rgba(0, 0, 0, 0.45);
+}
+.camp .tpl-header__nav { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+/* Кнопки шапки — как hero-button на главной (барельеф) */
+.camp .tpl-header__pill {
+  /* визуальный стиль задаёт .ui-action-btn (globals.css); тут — только компоновка/размер */
+  cursor: pointer;
+}
+.camp .tpl-header__pill:hover:not(:disabled) {
+  /* hover/active делает .ui-action-btn */
+}
+.camp .tpl-header__pill:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.camp .tpl-header__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+@media (max-width: 768px) {
+  .camp .tpl-header__row { flex-wrap: wrap; }
+  .camp .tpl-header__nav { width: 100%; justify-content: flex-start; }
+  .camp .tpl-header__pill { font-size: 13px; padding: 8px 14px; }
+
+  .camp {
+    padding-bottom: 42px;
+  }
+
+  .camp .tpl-header {
+    padding-top: 16px;
+    padding-bottom: 14px;
+    margin-top: -16px;
+  }
+
+  .camp__wrap {
+    padding: 0 8px;
+  }
+
+  .camp__one {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .camp__sectionTitle {
+    font-size: 19px;
+    margin-bottom: 12px;
+  }
+
+  .camp__summaryRow {
+    gap: 8px 10px;
+  }
+
+  .camp__summaryRow .camp__summaryItem--status {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .camp .campaigns-segmented,
+  .camp .campaigns-segmented.ant-segmented {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .camp .campaigns-segmented .ant-segmented-group {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .camp .campaigns-segmented .ant-segmented-item {
+    min-width: 0;
+  }
+
+  .camp .campaigns-segmented .ant-segmented-item-label {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .camp__wrap {
+    padding: 0 4px;
+  }
+
+  .camp__one {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .camp__sectionTitle {
+    font-size: 17px;
+  }
+
+  .camp .campaigns-segmented .ant-segmented-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Кнопка подсказки — в стиле hero-button (барельеф), компактная */
+.camp__helpBtn {
+  border: none;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), 0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 0;
+  transition: transform 200ms ease, color 200ms ease, box-shadow 200ms ease;
+  vertical-align: middle;
+}
+.camp__helpBtn:hover {
+  color: rgba(0, 0, 0, 0.85);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  transform: translateY(-2px);
+}
+.camp__helpBtn:focus-visible {
+  outline: 2px solid rgba(0, 0, 0, 0.25);
+  outline-offset: 2px;
+}
+.camp__helpBtnIcon {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Контент попапа подсказки */
+.camp__helpContent {
+  max-width: 320px;
+  padding: 4px 0;
+}
+.camp__helpTitle {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(0, 0, 0, 0.5);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.camp__helpContent p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.82);
+}
+.camp__helpContent p:last-child {
+  margin-bottom: 0;
+}
+.camp__helpContent strong {
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.9);
+}
+
+/* Попап-подсказка — liquid glass */
+.camp__helpPopover {
+  max-width: min(340px, calc(100vw - 24px));
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+.camp__helpPopover .ant-popover-inner {
+  border-radius: 16px;
+  padding: 0;
+  background: linear-gradient(135deg, rgba(255, 253, 240, 0.98) 0%, rgba(254, 250, 220, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  overflow: hidden;
+}
+.camp__helpPopover .ant-popover-inner-content {
+  padding: 16px 20px 18px;
+}
+.camp__helpPopover .ant-popover-arrow::before {
+  background: linear-gradient(135deg, rgba(255, 253, 240, 0.98) 0%, rgba(254, 250, 220, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+.camp__helpPopover.ant-popover-hidden {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+.camp__helpPopover:not(.ant-popover-hidden) {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Окно суток — кликабельные цифры */
+.camp__timeWindowBtn{
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0 2px;
+  margin: 0;
+  font: inherit;
+  font-weight: 800;
+  color: rgba(0,0,0,0.88);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.camp__timeWindowBtn:hover{
+  color: rgba(0,0,0,0.98);
+}
+.camp__timeWindowBtn:focus-visible{
+  outline: 2px solid rgba(0,0,0,0.25);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.camp__timeWindowPopover .ant-popover-inner{
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 253, 240, 0.98) 0%, rgba(254, 250, 220, 0.98) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+.camp__timeWindowPopContent{
+  display: grid;
+  gap: 10px;
+  min-width: 220px;
+}
+.camp__timeWindowPopContent--wide{
+  min-width: 260px;
+  max-width: min(92vw, 340px);
+}
+.camp__timeWindowPopRow{
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  align-items: center;
+  gap: 10px;
+}
+.camp__timeWindowPopRow--switch{
+  grid-template-columns: 40px 1fr;
+}
+.camp__summaryAdvLine{
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 0;
+}
+.camp__timeWindowPopLabel{
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(0,0,0,0.62);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.camp__timeWindowPopHint{
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(0,0,0,0.62);
+}
+
+@media (max-width: 520px) {
+  .camp__helpPopover { max-width: calc(100vw - 20px); }
+  .camp__helpPopover .ant-popover-inner-content { padding: 14px 16px 16px; }
+  .camp__helpContent { max-width: none; }
+}
+
+.camp__intro{
+  margin: 0 0 20px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--app-text-muted);
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.camp__intro strong {
+  color: var(--app-text);
+}
+
+.camp__topbar{
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+
+/* Один общий блок — liquid glass */
+.camp__one{
+  background: var(--camp-glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: var(--camp-glass-border);
+  border-radius: 24px;
+  padding: 24px;
+  margin-bottom: 0;
+  box-shadow: var(--camp-glass-shadow);
+  position: relative;
+  overflow: hidden;
+}
+.camp__one::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 20% 0%, rgba(255,255,255,0.5), transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(255,255,255,0.28), transparent 50%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.camp__one > * { position: relative; z-index: 0; }
+
+.camp__one-section{
+  padding-top: 28px;
+  padding-bottom: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+.camp__one-section:first-child{
+  padding-top: 0;
+  border-top: none;
+}
+.camp__one-section--summary {
+  padding-top: 0;
+  padding-bottom: 20px;
+}
+.camp__one-section--summary .camp__sectionTitle {
+  margin-bottom: 14px;
+}
+
+/* Крупные заголовки секций */
+.camp__sectionTitle {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: rgba(0, 0, 0, 0.88);
+  margin: 0 0 16px;
+}
+.camp__one-section--summary .camp__sectionTitle {
+  margin-bottom: 14px;
+}
+.camp__one-section:not(:first-child) .camp__sectionTitle {
+  margin-top: 2px;
+}
+.camp__one-section--progress .camp__sectionTitle {
+  margin-bottom: 14px;
+}
+.camp__summaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+}
+.camp__summaryRow .camp__summaryItem {
+  padding: 8px 12px;
+  min-width: 0;
+}
+.camp__summaryRow .camp__summaryItem--status {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+.camp__summarySep {
+  margin: 0 4px;
+  opacity: 0.6;
+  font-weight: 700;
+}
+.camp__readyBadge {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.camp__readyBadge--ok {
+  background: rgba(82, 196, 26, 0.15);
+  color: #389e0d;
+  border: 1px solid rgba(82, 196, 26, 0.35);
+}
+.camp__readyBadge--warn {
+  background: rgba(255, 77, 79, 0.08);
+  color: #cf1322;
+  border: 1px solid rgba(255, 77, 79, 0.25);
+}
+.camp__progressLinkWrap {
+  margin-top: 12px;
+}
+.camp__warnText {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #cf1322;
+  line-height: 1.4;
+}
+.camp__one-section--progress{
+  padding-top: 28px;
+  padding-bottom: 24px;
+}
+.camp__one-section--cta{
+  padding-top: 24px;
+  padding-bottom: 0;
+}
+.camp__ctaBlock {
+  text-align: center;
+  padding: 24px 28px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--app-radius-lg);
+  border: var(--camp-glass-inner-border);
+  box-shadow: var(--camp-glass-inner-shadow);
+}
+.camp__ctaText {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.82);
+}
+
+.camp__card{
+  background: var(--app-card);
+  border-radius: 28px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.camp__cardTitle{
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.camp__card--summary .camp__cardTitle { margin-bottom: 14px; }
+.camp__summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+.camp__summaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--app-radius);
+  border: var(--camp-glass-inner-border);
+  box-shadow: var(--camp-glass-inner-shadow);
+}
+.camp__summaryLabel {
+  font-size: 12px;
+  color: var(--app-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.camp__summaryValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.camp__cardInner{
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--app-radius-lg);
+  padding: 16px;
+  border: var(--camp-glass-inner-border);
+  box-shadow: var(--camp-glass-inner-shadow);
+}
+.camp__cardInner--actions {
+  padding: 20px 20px 18px;
+}
+.camp__cardInner--actions .camp__actions {
+  margin-bottom: 18px;
+}
+.camp__launchToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin-bottom: 14px;
+}
+.camp__launchToolbarChannels {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+}
+.camp__launchToolbarChannels .campaigns-segmented {
+  max-width: 100%;
+}
+
+.camp__timingHubLinkRow {
+  width: 100%;
+  margin: -4px 0 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+}
+.camp__timingHubOpenBtn {
+  font-weight: 600;
+}
+.camp__timingHubHelpLink {
+  padding: 0 4px;
+}
+.camp__timingTableLink {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.55);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.camp__timingTableLink:hover {
+  color: rgba(0, 0, 0, 0.85);
+}
+@media (max-width: 520px) {
+  .camp__timingHubLinkRow {
+    justify-content: flex-start;
+  }
+}
+.camp__launchActions.camp__actionButtons {
+  margin-bottom: 14px;
+}
+.camp__launchPrimary {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.camp__statusRow--compact {
+  padding-top: 12px;
+  margin-top: 2px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+.camp__statusCompactMuted {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+/* Планирование: прогноз и паузы — простая иерархия */
+.camp__planningBlock {
+  width: 100%;
+  margin-top: 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 14px;
+}
+.camp__planningLead {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--app-radius-lg);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--camp-glass-inner-shadow);
+}
+.camp__planningLeadTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.88);
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+.camp__planningLeadRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 12px;
+  margin-bottom: 10px;
+}
+.camp__planningLeadText {
+  flex: 1 1 220px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.82);
+  min-width: 0;
+}
+.camp__planningPlain {
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.68);
+  margin: 0;
+}
+.camp__planningMode {
+  margin-bottom: 12px;
+}
+.camp__planningModeLabel {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(0, 0, 0, 0.48);
+  margin-bottom: 8px;
+}
+.camp__planningModeHint {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.62);
+}
+.camp__planningCollapse {
+  margin-bottom: 12px;
+}
+.camp__planningCollapse .ant-collapse-header {
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.72) !important;
+}
+.camp__planningCollapse .ant-collapse-content-box {
+  padding-block: 8px 12px !important;
+}
+.camp__planningDetailsP {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.62);
+}
+.camp__planningDetailsList {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.78);
+}
+.camp__planningDetailsList li {
+  margin-bottom: 6px;
+}
+.camp__planningAdvice {
+  padding: 12px 14px;
+  border-radius: var(--app-radius);
+  border: 1px dashed rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.45);
+  margin-bottom: 4px;
+}
+.camp__planningAdviceTitle {
+  font-size: 13px;
+  font-weight: 800;
+  margin: 0 0 8px;
+  color: rgba(0, 0, 0, 0.78);
+}
+.camp__planningAdviceText {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.75);
+}
+.camp__planningAdvicePause {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.78);
+}
+.camp__planningAdviceBtns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.camp__actionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.camp__statusRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 24px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+.camp__statusItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.camp__statusId {
+  font-size: 11px;
+  opacity: 0.8;
+  font-family: ui-monospace, monospace;
+}
+
+.camp__muted{
+  font-size: 12px;
+  opacity: .75;
+}
+
+.camp__actions{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.camp__actionsCenter{
+  justify-content: center;
+}
+
+@keyframes campActionsBadgePulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.28);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 4px rgba(255, 77, 79, 0.08);
+  }
+}
+
+.camp .camp__actionsBadgePulse {
+  animation: campActionsBadgePulse 1.8s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+
+.camp__tableWrap{
+  background: var(--app-bg);
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  padding: 10px;
+}
+
+.camp__tableWrap table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.camp__tableWrap thead tr{
+  border-bottom: 1px solid #eee;
+}
+
+.camp__tableWrap th,
+.camp__tableWrap td{
+  text-align: left;
+  padding: 8px 12px;
+}
+
+.camp__iframe{
+  width: 100%;
+  height: 900px;
+  border: 1px solid var(--app-border);
+  border-radius: 16px;
+  background: var(--app-bg);
+}
+
+@media (max-width: 980px){
+  .camp__one{ border-radius: 18px; padding: 16px; }
+}
+
+/* Овальные кнопки, без синего — в стиле приложения */
+.camp .ant-btn {
+  border-radius: var(--app-radius-pill);
+  border: 1px solid var(--app-border-strong);
+  background: var(--app-card-soft);
+  color: var(--app-text);
+  font-weight: 600;
+}
+.camp .ant-btn:hover,
+.camp .ant-btn:focus,
+.camp .ant-btn:focus-visible {
+  background: var(--app-hover-card) !important;
+  border-color: var(--app-border-strong) !important;
+  color: var(--app-text) !important;
+}
+.camp .ant-btn-primary {
+  background: var(--app-accent) !important;
+  border-color: var(--app-accent) !important;
+  color: var(--app-text) !important;
+}
+.camp .ant-btn-primary:hover,
+.camp .ant-btn-primary:focus,
+.camp .ant-btn-primary:focus-visible {
+  background: var(--app-accent-strong) !important;
+  border-color: var(--app-accent-strong) !important;
+  color: var(--app-text) !important;
+  filter: brightness(1.05);
+}
+.camp .ant-btn-danger {
+  border-radius: var(--app-radius-pill);
+}
+.camp .ant-btn-danger:hover {
+  border-radius: var(--app-radius-pill);
+}
+.camp .ant-btn-link {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+.camp .ant-btn-link:hover {
+  background: var(--app-hover-bg) !important;
+  border-color: transparent !important;
+}
+
+/* Segmented и прочие ant-элементы без синего */
+.camp .ant-segmented-item:hover,
+.camp .ant-segmented-item:focus {
+  color: var(--app-text) !important;
+}
+.camp .ant-segmented-item-selected {
+  background: var(--app-card-soft) !important;
+  color: var(--app-text) !important;
+}
+
+@media (max-width: 520px){
+  .camp{ padding: 22px 12px 44px; }
+  .camp__wrap{ padding: 0 8px; }
+  .camp__card{ border-radius: 18px; }
+  .camp__one{ border-radius: 18px; padding: 16px; }
+
+  .camp__launchToolbarChannels {
+    flex: 1 1 100%;
+    justify-content: stretch;
+  }
+  .camp__launchToolbarChannels .campaigns-segmented {
+    width: 100%;
+  }
+
+  /* Мобильная версия: переключатель режимов (TG+WA / Только TG / Только WA) */
+  .camp__actionsCenter{
+    justify-content: stretch;
+  }
+  .campaigns-segmented{
+    width: 100%;
+    max-width: 100%;
+  }
+  .campaigns-segmented .ant-segmented-group{
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .campaigns-segmented .ant-segmented-item{
+    flex: 1 1 140px; /* даём минимальную ширину и переносим на 2 строки */
+    min-width: 0;
+  }
+  /* Thumb плохо работает при переносе строк */
+  .campaigns-segmented .ant-segmented-thumb{
+    display: none !important;
+  }
+}

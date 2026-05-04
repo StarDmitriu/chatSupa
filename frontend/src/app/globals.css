@@ -1,0 +1,446 @@
+/* ========== DESIGN TOKENS (единая палитра и стили) ========== */
+:root {
+  /* Текст */
+  --app-text: #2f2f2f;
+  --app-text-muted: #6b6b6b;
+  --app-text-inverse: #ffffff;
+
+  /* Фоны */
+  --app-bg: #ffffff;
+  --app-card: #F8F1C9;
+  --app-card-strong: #F9EE91;
+  --app-card-soft: #F7F5D3;
+
+  /* Границы */
+  --app-border: rgba(0, 0, 0, 0.12);
+  --app-border-medium: rgba(0, 0, 0, 0.18);
+  --app-border-strong: rgba(0, 0, 0, 0.25);
+
+  /* Акцент (фокус, выделение) */
+  --app-accent: #E8D68A;
+  --app-accent-strong: #dec471;
+  --app-focus-ring: rgba(232, 214, 138, 0.4);
+
+  /* Hover */
+  --app-hover-bg: rgba(0, 0, 0, 0.04);
+  --app-hover-card: #f5e9b0;
+  --app-hover-card-strong: #f0e090;
+
+  /* Тени */
+  --app-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --app-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --app-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.1);
+
+  /* Радиусы */
+  --app-radius: 12px;
+  --app-radius-lg: 18px;
+  --app-radius-pill: 999px;
+
+  /* Переходы */
+  --app-transition: 0.2s ease;
+  --app-transition-fast: 0.15s ease;
+}
+
+body, html {
+	margin: 0;
+	padding: 0;
+	color: var(--app-text);
+	background: var(--app-bg);
+}
+
+/* Курсор: стрелка на заголовках и тексте; pointer только на кнопках/ссылках; text только в полях ввода */
+h1, h2, h3, h4, h5, h6,
+.hero-title, .hero-subtitle, .section-title, .section-text, .footer-title,
+.tedit__title, .tpl__title, .tedit-targets__title, .tedit-targets__meta, .tedit-targets__hint,
+.brand-title, .tpl-card__title, .tpl-empty__title,
+.profile-text p, .profile-text strong,
+.title {
+  cursor: default;
+}
+
+/* Единый стиль кнопок по умолчанию */
+button{
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 20px;
+  border: 1px solid var(--app-border-medium);
+  background: var(--app-bg);
+  border-radius: var(--app-radius-pill);
+  cursor: pointer;
+  transition: background var(--app-transition), border-color var(--app-transition), color var(--app-transition);
+  color: var(--app-text);
+}
+
+button:hover{
+  background: var(--app-hover-bg);
+  border-color: var(--app-border-strong);
+}
+
+button:disabled{
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ========== UI ACTION BUTTON (единый стиль как .how-action-btn) ========== */
+.ui-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  color: #1a1814;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(252, 248, 236, 0.98) 100%
+  );
+  border: 1px solid rgba(180, 150, 70, 0.32);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 14px 34px rgba(60, 45, 18, 0.16),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 260ms ease,
+    border-color 260ms ease,
+    color 260ms ease;
+}
+
+.ui-action-btn:hover:not(:disabled){
+  transform: translateY(-3px);
+  border-color: rgba(160, 125, 45, 0.45);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 20px 46px rgba(60, 45, 18, 0.18),
+    0 6px 16px rgba(0, 0, 0, 0.10);
+}
+
+.ui-action-btn:active:not(:disabled){
+  transform: translateY(-1px);
+}
+
+.ui-action-btn:focus-visible{
+  outline: 2px solid rgba(140, 110, 40, 0.55);
+  outline-offset: 3px;
+}
+
+/* ========== HEADER BUTTON SIZE (как на главной) ========== */
+.ui-header-btn.ui-action-btn{
+  /* базовый размер как в шапке главной */
+  font-size: 15px;
+  padding: 12px 22px;
+  min-height: 46px;
+}
+
+@media (max-width: 900px){
+  .ui-header-btn.ui-action-btn{
+    font-size: 13px;
+    padding: 8px 14px;
+    min-height: 44px;
+  }
+}
+
+/* Поверхность с тем же визуалом, но НЕ “кнопка” */
+.ui-action-surface{
+  display: block;
+  min-height: 46px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  color: #1a1814;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(252, 248, 236, 0.98) 100%
+  );
+  border: 1px solid rgba(180, 150, 70, 0.32);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 14px 34px rgba(60, 45, 18, 0.16),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* --- Выпадающие списки (нативные и Ant Design) --- */
+select {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--app-text);
+  background: var(--app-card-soft);
+  border: 1px solid var(--app-border);
+  border-radius: var(--app-radius-pill);
+  transition: border-color var(--app-transition), box-shadow var(--app-transition);
+}
+
+/* Ant Design Select: триггер и выпадающая панель */
+.ant-select:not(.ant-select-disabled) .ant-select-selector {
+  border-radius: var(--app-radius-pill) !important;
+  border-color: var(--app-border) !important;
+  background: var(--app-card-soft) !important;
+  color: var(--app-text) !important;
+  font-weight: 500;
+  transition: border-color var(--app-transition), box-shadow var(--app-transition);
+}
+
+.ant-select-focused:not(.ant-select-disabled) .ant-select-selector {
+  border-color: var(--app-border-strong) !important;
+  box-shadow: 0 0 0 2px var(--app-focus-ring) !important;
+}
+
+.ant-select:hover:not(.ant-select-disabled) .ant-select-selector {
+  border-color: var(--app-border-medium) !important;
+}
+
+.ant-select-dropdown {
+  border-radius: var(--app-radius-lg) !important;
+  border: 1px solid var(--app-border) !important;
+  box-shadow: var(--app-shadow-lg) !important;
+  padding: 4px 0 !important;
+}
+
+.ant-select-item {
+  border-radius: 10px !important;
+  margin: 0 6px !important;
+}
+
+.ant-select-item-option-active,
+.ant-select-item-option-selected {
+  background: var(--app-hover-card) !important;
+}
+
+.ant-select-item-option-selected {
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+
+/* --- Toast notifications --- */
+:root {
+  --ntf-bg: rgba(20, 20, 20, 0.92);
+  --ntf-text: #fff;
+  --ntf-border: rgba(255, 255, 255, 0.12);
+  --ntf-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+
+  --ntf-success: #2ecc71;
+  --ntf-error: #ff5c5c;
+  --ntf-warning: #ffcc00;
+  --ntf-info: #66b3ff;
+}
+
+.ntf-stack {
+  position: fixed;
+  z-index: 9999;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: min(420px, calc(100vw - 32px));
+}
+
+.ntf-toast {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: start;
+  gap: 12px;
+
+  padding: 12px 12px 12px 10px;
+  border-radius: 14px;
+  background: var(--ntf-bg);
+  color: var(--ntf-text);
+  border: 1px solid var(--ntf-border);
+  box-shadow: var(--ntf-shadow);
+  backdrop-filter: blur(10px);
+
+  animation: ntf-in 160ms ease-out;
+}
+
+.ntf-bar {
+  width: 10px;
+  height: 100%;
+  border-radius: 10px;
+  background: var(--ntf-info);
+}
+
+.ntf-toast[data-type="success"] .ntf-bar { background: var(--ntf-success); }
+.ntf-toast[data-type="error"] .ntf-bar { background: var(--ntf-error); }
+.ntf-toast[data-type="warning"] .ntf-bar { background: var(--ntf-warning); }
+.ntf-toast[data-type="info"] .ntf-bar { background: var(--ntf-info); }
+
+.ntf-title {
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.25;
+  margin: 0 0 2px;
+}
+
+.ntf-message {
+  font-size: 13px;
+  line-height: 1.35;
+  opacity: 0.92;
+  margin: 0;
+  word-break: break-word;
+}
+
+.ntf-close {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 10px;
+  line-height: 1;
+}
+
+.ntf-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+@keyframes ntf-in {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* --- Global overlay loader --- */
+.app-loaderOverlay{
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+}
+
+.app-loaderOverlay__backdrop{
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.18);
+  backdrop-filter: blur(3px);
+  pointer-events: none; /* клики проходят к странице — можно сразу перейти по кнопке навигации */
+}
+
+.app-loaderOverlay__center{
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.app-loaderBubble{
+  width: 76px;
+  height: 76px;
+  border-radius: var(--app-radius-pill);
+  background: transparent;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  animation: app-loader-breathe 1.1s ease-in-out infinite;
+}
+
+.app-loaderBubble__icon{
+  min-width: 34px;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Лого в лоадере — как в шапке, но компактнее */
+.brand-logo{
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 33px;
+  font-weight: 900;
+}
+
+.brand-logo__chat{
+  color: rgba(0,0,0,0.9);
+}
+
+.brand-logo__accent{
+  background: radial-gradient(circle at 0% 0%, #fff8d2 0, #f9ee91 40%, #f4e36b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0.6px rgba(0,0,0,0.45);
+}
+
+.app-loaderLogo{
+  font-size: 24px;
+}
+
+@media (max-width: 520px) {
+  .brand-logo{
+    font-size: 27px;
+  }
+  .app-loaderLogo{
+    font-size: 20px;
+  }
+}
+
+.app-loaderBubble__dots{
+  display: flex;
+  gap: 4px;
+}
+
+.app-loaderBubble__dots span{
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.65);
+  animation: app-loader-dots 0.9s ease-in-out infinite;
+}
+
+.app-loaderBubble__dots span:nth-child(2){
+  animation-delay: 0.12s;
+}
+
+.app-loaderBubble__dots span:nth-child(3){
+  animation-delay: 0.24s;
+}
+
+.app-loaderOverlay__text{
+  margin-top: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0,0,0,.72);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.app-loaderOverlay__text--muted{
+  background: rgba(0,0,0,.45);
+  font-size: 11px;
+  opacity: .9;
+}
+
+@keyframes app-loader-breathe{
+  0% { transform: scale(.94); }
+  50% { transform: scale(1); }
+  100% { transform: scale(.94); }
+}
+
+@keyframes app-loader-dots{
+  0% { transform: translateY(0); opacity: .4; }
+  30% { transform: translateY(-3px); opacity: 1; }
+  60% { transform: translateY(0); opacity: .4; }
+  100% { transform: translateY(0); opacity: .4; }
+}

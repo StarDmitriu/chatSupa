@@ -1,0 +1,429 @@
+/* ===== Telegram theme (brand) ===== */
+.tg{
+  --tg-blue: #26A5E4;         /* официальный оттенок */
+  --tg-blue-strong: #178ec9;
+  --tg-blue-soft: rgba(38, 165, 228, 0.14);
+  --tg-border: rgba(38, 165, 228, 0.26);
+  --tg-white-border: rgba(255,255,255,0.78);
+}
+
+.tg .yellowContent{
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* Блок с данными подключённого аккаунта — заливка в тон карточки (голубой) */
+.tg-account{
+  margin-top: 4px;
+  padding: 6px 10px 8px;
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse 100% 80% at 50% 0%, rgba(38, 165, 228, 0.16), transparent 55%),
+    linear-gradient(180deg, rgba(255,255,255,0.72), rgba(183, 224, 249, 0.55));
+  border: 1px solid rgba(38,165,228,0.22);
+  font-size: 12px;
+  color: rgba(0,0,0,0.78);
+}
+.tg-accountTitle{
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.tg-accountLine{
+  margin: 0;
+  line-height: 1.4;
+}
+.tg-account__row{
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.tg-account__avatar{
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 2px solid rgba(38, 165, 228, 0.35);
+  box-shadow: 0 4px 12px rgba(23, 142, 201, 0.15);
+}
+.tg-account__avatar img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tg-account__logo{
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(38, 165, 228, 0.12);
+  border: 2px solid rgba(38, 165, 228, 0.35);
+  box-shadow: 0 4px 12px rgba(23, 142, 201, 0.15);
+}
+.tg-account__info{
+  flex: 1;
+  min-width: 0;
+}
+.tg-account__premium{
+  margin-left: 6px;
+  color: #ffc107;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.tg .yellowContent-cont{
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+  border-radius: var(--app-radius-lg);
+  padding: 0;
+  background:
+    radial-gradient(900px 420px at 12% -10%, rgba(38, 165, 228, 0.20), transparent 60%),
+    radial-gradient(800px 320px at 110% 0%, rgba(38, 165, 228, 0.12), transparent 55%),
+    linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.66));
+  border: 1px solid var(--tg-border);
+  outline: 1px solid var(--tg-white-border); /* белая обводка */
+  outline-offset: -2px;
+  box-shadow: 0 12px 34px rgba(23, 142, 201, 0.12);
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: height 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+  will-change: height;
+}
+
+.tg .yellowContent-inner{
+  padding: 12px 16px;
+  box-sizing: border-box;
+}
+
+/* Плавное появление карточки при переходе в «подключён» */
+@keyframes tg-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Плавное появление блока «Подключённый аккаунт» */
+@keyframes tg-account-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Когда подключён — liquid glass, цвет чуть насыщеннее */
+.tg--connected .yellowContent-cont {
+  background: linear-gradient(
+    135deg,
+    #d4eef9 0%,
+    #a8dff5 45%,
+    #6ec5ee 100%
+  );
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  outline: none;
+  box-shadow:
+    0 16px 48px rgba(30, 144, 201, 0.22),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  position: relative;
+  overflow: hidden;
+  animation: tg-card-in 0.45s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.tg--connected .yellowContent-cont::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.5), transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(255, 255, 255, 0.28), transparent 50%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.tg--connected .tg-account {
+  background: linear-gradient(
+    135deg,
+    #cce9f7 0%,
+    #8ed4f2 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 8px 24px rgba(30, 144, 201, 0.14),
+    0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  animation: tg-account-in 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0.08s forwards;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tg--connected .yellowContent-cont {
+    animation: none;
+  }
+  .tg .yellowContent-cont{
+    transition: none;
+  }
+  .tg--connected .tg-account {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .tg .yellowContent-cont {
+    padding: 0;
+    border-radius: 22px;
+  }
+  .tg .yellowContent-inner{
+    padding: 16px 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .tg .chanHead {
+    align-items: stretch;
+  }
+  .tg .chanHead__actions {
+    margin-left: 0;
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* QR не вылезает за границы на любых экранах */
+.tg-qr-wrap {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.tg-qr-wrap canvas {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
+.tg-qr-placeholder {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #555;
+  font-size: 15px;
+}
+
+.tg{
+  max-width: 865px;
+  margin: 0 auto;
+  margin-top: 0;
+  padding: 10px 0 0;
+}
+
+.tg-title{
+  display: none; /* заменили на бренд‑шапку */
+}
+
+.tg-text{
+  display: none; /* заменили на бренд‑шапку */
+}
+
+.tg-text--connected{
+  display: none;
+}
+
+.tg .yellowContent-cont{
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+}
+
+/* Бренд‑шапка */
+.tg .chanHead{
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 10px 4px 14px;
+}
+.tg .chanHead__left{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  flex: 1 1 260px;
+}
+.tg .chanHead__logo{
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(38, 165, 228, 0.10);
+  border: 1px solid rgba(38, 165, 228, 0.22);
+  box-shadow: 0 10px 22px rgba(23, 142, 201, 0.10);
+  flex: 0 0 auto;
+}
+.tg .chanHead__avatar{
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 2px solid rgba(38, 165, 228, 0.35);
+  box-shadow: 0 4px 12px rgba(23, 142, 201, 0.18);
+}
+.tg .chanHead__avatar img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tg .chanHead__texts{
+  min-width: 0;
+}
+.tg .chanHead__title{
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #000;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+.tg .chanHead__subtitle{
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(0,0,0,0.56);
+}
+.tg .syncInline{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.tg .syncInline__spinner{
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(23, 142, 201, 0.25);
+  border-top-color: var(--tg-blue-strong);
+  animation: tg-spin 0.8s linear infinite;
+}
+@keyframes tg-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* «Аккаунт активен» — зелёный акцент, как статус в подписке */
+.tg--connected .chanHead__subtitle {
+  color: #0d7d3d;
+  font-size: 14px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.tg .chanHead__badge{
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.10);
+  background: rgba(255,255,255,0.65);
+  color: rgba(0,0,0,0.66);
+  white-space: nowrap;
+}
+.tg .chanHead__badge.is-on{
+  border-color: rgba(38, 165, 228, 0.26);
+  background: rgba(38, 165, 228, 0.10);
+  color: var(--tg-blue-strong);
+}
+.tg .chanHead__actions{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+  flex: 0 1 auto;
+}
+.tg .tg-actionBtn--pause { opacity: 0.92; }
+.tg .tg-actionBtn--play { background: rgba(38, 165, 228, 0.2); color: var(--tg-blue-strong); }
+
+/* Error / actions */
+.tg-error{
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 77, 79, 0.10);
+  border: 1px solid rgba(255, 77, 79, 0.22);
+  color: #b42318;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.tg-connectedRow{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tg-actionBtn{
+  border: 1px solid var(--tg-border);
+  background: rgba(34, 158, 217, 0.10);
+  color: var(--tg-blue-strong);
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+.tg-actionBtn:hover:not(:disabled){
+  background: rgba(34, 158, 217, 0.14);
+  border-color: rgba(34, 158, 217, 0.34);
+  transform: translateY(-1px);
+}
+.tg-actionBtn:disabled{
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Кнопка «Отключить» в стиле liquid glass при подключённом состоянии */
+.tg--connected .tg-actionBtn {
+  background: linear-gradient(135deg, #e8f6fc 0%, #a8dff5 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 8px rgba(30, 144, 201, 0.15), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.tg--connected .tg-actionBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f0f9fd 0%, #b8e5f7 100%);
+  box-shadow: 0 4px 12px rgba(30, 144, 201, 0.22), 0 1px 0 rgba(255, 255, 255, 0.95) inset;
+}
+
+@media (max-width: 520px){
+  .tg-connectedRow{
+    margin-top: 16px;
+  }
+}

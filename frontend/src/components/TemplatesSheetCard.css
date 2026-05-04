@@ -1,0 +1,447 @@
+/* Карточка в том же стиле liquid glass, что и блок «Рассылка почти готова» */
+.tsc {
+  margin-top: 12px;
+  padding: 20px 22px;
+  border-radius: var(--app-radius-lg);
+  background: var(--cabinet-glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: var(--cabinet-glass-border);
+  box-shadow: var(--cabinet-glass-inner-shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.tsc__outer-collapse {
+  margin-top: 12px;
+}
+
+/* На странице шаблонов этот блок должен выглядеть как остальные карточки `.tpl__backup`. */
+.tsc__outer-collapse .ant-collapse-item {
+  border: none;
+  background: transparent;
+}
+
+.tsc__outer-collapse .ant-collapse-header {
+  padding: 0;
+}
+
+.tsc__outer-title {
+  margin: 0 !important;
+  padding: 12px 0;
+  font-size: 15px;
+}
+
+.tpl__backup .tsc__outer-collapse {
+  margin-top: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  width: 100%;
+  max-width: none;
+}
+
+.tpl__backup .tsc__outer-collapse .tsc__outer-title {
+  padding: 0;
+  margin: 0 0 8px !important;
+}
+
+.tsc__outer-content {
+  max-height: 520px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.tpl__backup .tsc__outer-content {
+  padding-right: 0;
+}
+
+.tsc__inside-collapse {
+  margin-top: 0;
+}
+
+/* При раскрытии не делаем внутренний `.tsc` отдельной карточкой — внешний контейнер уже “glass”. */
+.tpl__backup .tsc__outer-collapse .tsc {
+  margin-top: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.tpl__backup .tsc__outer-collapse .tsc::before {
+  display: none;
+}
+
+@media (max-width: 520px) {
+  .tsc__outer-content {
+    max-height: 70vh;
+  }
+}
+
+.tsc::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.5), transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(255, 255, 255, 0.28), transparent 50%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.tsc__title {
+  position: relative;
+  z-index: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--app-text, #1f1f1f);
+  margin: 0 0 8px;
+}
+
+.tsc__lead {
+  position: relative;
+  z-index: 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.tsc__section {
+  position: relative;
+  z-index: 0;
+  margin-bottom: 24px;
+}
+
+.tsc__section:last-child {
+  margin-bottom: 0;
+}
+
+.tsc__section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--app-text, #1f1f1f);
+  margin: 0 0 6px;
+}
+
+.tsc__section-lead {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.tsc__steps {
+  position: relative;
+  z-index: 0;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.6;
+  margin: 0 0 18px;
+  padding-left: 20px;
+}
+
+.tsc__steps li {
+  margin-bottom: 6px;
+}
+
+.tsc__steps li:last-child {
+  margin-bottom: 0;
+}
+
+.tsc__actions {
+  position: relative;
+  z-index: 0;
+  margin-bottom: 14px;
+}
+
+.tsc__actions:last-child {
+  margin-bottom: 0;
+}
+
+.tsc__btn-download {
+  min-width: 180px;
+}
+
+.tsc__file-input {
+  display: none;
+}
+
+.tsc__import-summary {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--app-radius);
+  background: rgba(82, 196, 26, 0.08);
+  border: 1px solid rgba(82, 196, 26, 0.22);
+}
+
+.tsc__import-summary-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #237804;
+  margin-bottom: 8px;
+}
+
+.tsc__import-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tsc__import-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.tsc__import-label {
+  font-size: 11px;
+  color: #666;
+}
+
+/* Кнопки в стиле liquid glass (как в блоке «Рассылка почти готова»). */
+.cabinet .tsc .ant-btn-primary,
+.tpl .tsc .ant-btn-primary {
+  background: var(--cabinet-glass-btn-bg) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: var(--cabinet-glass-btn-border) !important;
+  color: var(--app-text, #1f1f1f) !important;
+  box-shadow: var(--cabinet-glass-btn-shadow);
+}
+.cabinet .tsc .ant-btn-primary:hover,
+.tpl .tsc .ant-btn-primary:hover {
+  background: var(--cabinet-glass-btn-hover-bg) !important;
+  border-color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: var(--cabinet-glass-btn-hover-shadow);
+}
+
+.tsc__url-row {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.tsc__url-input {
+  flex: 1;
+  min-width: 200px;
+  max-width: 100%;
+}
+
+.tsc__btn-save-url {
+  flex-shrink: 0;
+}
+
+.tsc__hint {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.tsc__hintText {
+  margin: 0;
+}
+
+.tsc__hintMeta {
+  margin: 6px 0 0;
+  font-size: 12px;
+  opacity: 0.95;
+}
+
+.tsc__hint-code {
+  font-size: 12px;
+  padding: 1px 5px;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+}
+
+.tsc__hint-link {
+  color: var(--app-link, #1677ff);
+  text-decoration: none;
+}
+
+.tsc__hint-link:hover {
+  text-decoration: underline;
+}
+
+.tsc__hint--success {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(82, 196, 26, 0.08);
+  border-radius: var(--app-radius);
+  color: #389e0d;
+}
+
+.tsc__hint--warn {
+  padding: 8px 10px;
+  background: rgba(250, 173, 20, 0.12);
+  border-radius: var(--app-radius);
+  color: #ad6800;
+}
+
+.tsc__hint--error {
+  padding: 8px 10px;
+  background: rgba(255, 77, 79, 0.1);
+  border-radius: var(--app-radius);
+  color: #a8071a;
+}
+
+.tsc__hint--ok {
+  padding: 8px 10px;
+  background: rgba(82, 196, 26, 0.08);
+  border-radius: var(--app-radius);
+  color: #237804;
+}
+
+.tsc__row {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 12px;
+}
+
+.tsc__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.tsc__link-actions {
+  margin: 0;
+}
+
+.tsc__open-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--app-link, #1677ff);
+  text-decoration: none;
+}
+
+.tsc__open-link:hover {
+  text-decoration: underline;
+}
+
+.tsc__copy-btn {
+  color: #666;
+  font-size: 13px;
+}
+
+.tsc__copy-btn:hover {
+  color: var(--app-text);
+}
+
+.tsc__copy-headers-btn {
+  color: #555;
+}
+
+.tsc__note {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.45;
+  margin: 0 0 14px;
+}
+
+.tsc__go-wrap {
+  margin: 14px 0 0;
+}
+
+.tsc__go-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-link, #1677ff);
+  text-decoration: none;
+}
+
+.tsc__go-link:hover {
+  text-decoration: underline;
+}
+
+.tsc__fields-collapse {
+  position: relative;
+  z-index: 0;
+  margin-bottom: 16px;
+}
+
+.tsc__fields-collapse .ant-collapse-header {
+  font-size: 13px;
+  color: #555;
+}
+
+.tsc__fields-list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 13px;
+  color: #555;
+  line-height: 1.7;
+}
+
+.tsc__fields-list li {
+  margin-bottom: 4px;
+}
+
+.tsc__field-desc {
+  color: #666;
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+  .tsc {
+    padding: 16px;
+  }
+
+  .tsc__title {
+    font-size: 16px;
+  }
+
+  .tsc__section-title {
+    font-size: 14px;
+  }
+
+  .tsc__url-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tsc__url-input {
+    min-width: 0;
+  }
+
+  .tsc__btn-save-url {
+    width: 100%;
+  }
+
+  .tsc__actions .ant-space {
+    width: 100%;
+  }
+
+  .tsc__actions .ant-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .tsc__btn-download {
+    width: 100%;
+    min-width: 0;
+  }
+  .tsc__import-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

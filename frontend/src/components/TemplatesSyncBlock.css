@@ -1,0 +1,39 @@
+.sinh {
+  max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.sinh-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--app-text, #1f1f1f);
+  margin: 0 0 8px;
+}
+
+.sinh-text {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 16px;
+  line-height: 1.45;
+}
+
+.pattern-button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.pattern-button button {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: var(--app-radius-pill, 999px);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}

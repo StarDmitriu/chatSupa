@@ -1,0 +1,303 @@
+/* Liquid glass + шапка (см. cabinet/STYLE-LIQUID-GLASS.md) */
+.analytics {
+  --ana-page-bg: linear-gradient(180deg, #ffffff 0%, #fffef8 25%, #fef9e8 55%, #faf4e0 85%, #f5eed5 100%);
+  --ana-glass-bg: linear-gradient(135deg, #fff8d2 0%, #fef4b8 35%, #f9ee91 70%, #f4e36b 100%);
+  --ana-glass-border: 1px solid rgba(255, 255, 255, 0.85);
+  --ana-glass-shadow: 0 16px 48px rgba(212, 180, 40, 0.25), 0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  --ana-glass-inner-border: 1px solid rgba(255, 255, 255, 0.9);
+  --ana-glass-inner-shadow: 0 2px 12px rgba(200, 170, 30, 0.08), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  --ana-glass-btn-bg: linear-gradient(135deg, #fffef0 0%, #fef9d4 50%, #f9ee91 100%);
+  --ana-glass-btn-border: 1px solid rgba(255, 255, 255, 0.95);
+  --ana-glass-btn-shadow: 0 4px 16px rgba(212, 180, 40, 0.15), 0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  --ana-glass-btn-hover-bg: linear-gradient(135deg, #ffffff 0%, #fff9d8 50%, #f9ee91 100%);
+  --ana-glass-btn-hover-shadow: 0 6px 24px rgba(212, 180, 40, 0.2), 0 1px 0 rgba(255, 255, 255, 1) inset;
+}
+
+.analytics{
+  min-height: 100vh;
+  padding: 34px 16px 60px;
+  background: var(--ana-page-bg);
+  color: var(--app-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.analytics__wrap{
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Шапка */
+.analytics .tpl-header {
+  width: 100%;
+  padding: 32px 0 30px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: transparent;
+  margin: -34px -16px 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+.analytics .tpl-header::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: transparent;
+}
+.analytics .tpl-header__container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.analytics .tpl-header__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+.analytics .tpl-header__row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.analytics .tpl-header__logo {
+  display: inline-flex; align-items: baseline; gap: 4px;
+  font-size: 33px; font-weight: 900; color: inherit; text-decoration: none;
+}
+.analytics .tpl-header__logo-chat { color: rgba(0, 0, 0, 0.9); }
+.analytics .tpl-header__logo-accent {
+  background: radial-gradient(circle at 0% 0%, #fff8d2 0, #f9ee91 40%, #f4e36b 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-text-fill-color: transparent; -webkit-text-stroke: 0.6px rgba(0, 0, 0, 0.45);
+}
+.analytics .tpl-header__nav { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+/* Кнопки шапки — как hero-button на главной (барельеф) */
+.analytics .tpl-header__pill {
+  /* визуальный стиль задаёт .ui-action-btn (globals.css); тут — только компоновка/размер */
+  cursor: pointer;
+}
+.analytics .tpl-header__pill:hover:not(:disabled) {
+  /* hover/active делает .ui-action-btn */
+}
+.analytics .tpl-header__pill:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+@media (max-width: 768px) {
+  .analytics .tpl-header__row { flex-wrap: wrap; }
+  .analytics .tpl-header__nav { width: 100%; justify-content: flex-start; }
+  /* размер шапочных кнопок унифицирован через .ui-header-btn (globals.css) */
+}
+
+/* Desktop: заголовок «История» должен быть выше глобального лого «Чат Рассылка». */
+@media (min-width: 769px) {
+  .dashboard-layout .analytics > header.tpl-header {
+    top: 80px !important;
+    z-index: 320 !important;
+  }
+}
+
+.analytics__lead{
+  margin: 0 0 24px;
+  font-size: 14px;
+  line-height: 1.5;
+  opacity: 0.9;
+  max-width: 640px;
+}
+
+.analytics__lead strong{
+  font-weight: 700;
+}
+
+.analytics__card{
+  background: var(--ana-glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: var(--ana-glass-border);
+  border-radius: 24px;
+  padding: 20px 22px 22px;
+  margin-bottom: 18px;
+  box-shadow: var(--ana-glass-shadow);
+  position: relative;
+  overflow: hidden;
+}
+.analytics__card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 20% 0%, rgba(255,255,255,0.5), transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(255,255,255,0.28), transparent 50%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.analytics__card > * { position: relative; z-index: 0; }
+
+.analytics__cardTitle{
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.analytics__cardDesc{
+  font-size: 13px;
+  opacity: 0.85;
+  margin: -6px 0 12px;
+  line-height: 1.4;
+}
+
+.analytics__grid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.analytics__grid--status{
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.analytics__metric{
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--app-radius-lg);
+  padding: 12px 14px;
+  border: var(--ana-glass-inner-border);
+  box-shadow: var(--ana-glass-inner-shadow);
+}
+
+.analytics__metricLabel{
+  font-size: 13px;
+  opacity: .75;
+  margin-bottom: 4px;
+}
+
+.analytics__metricValue{
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.analytics__statusItem{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--app-radius-lg);
+  padding: 8px 10px;
+  border: var(--ana-glass-inner-border);
+  box-shadow: var(--ana-glass-inner-shadow);
+}
+
+.analytics__statusCount{
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.analytics__hint{
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: .7;
+}
+
+.analytics__tableWrap{
+  margin-top: 6px;
+  max-height: 400px;
+  overflow: auto;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--app-radius-lg);
+  border: var(--ana-glass-inner-border);
+  box-shadow: var(--ana-glass-inner-shadow);
+}
+
+/* Кнопки в стиле приложения: скругление, тень, без синего Ant Design */
+.analytics .ant-btn,
+.analytics .ant-btn:hover,
+.analytics .ant-btn:focus,
+.analytics .ant-btn:focus-visible {
+  border-radius: var(--app-radius-pill) !important;
+  border-color: var(--app-border-strong) !important;
+  background: var(--app-card-soft) !important;
+  color: var(--app-text) !important;
+  font-weight: 600 !important;
+  box-shadow: var(--app-shadow-sm) !important;
+  transition: background var(--app-transition), border-color var(--app-transition), box-shadow var(--app-transition) !important;
+}
+.analytics .ant-btn:hover {
+  background: var(--app-hover-card) !important;
+  border-color: var(--app-border-strong) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08) !important;
+}
+.analytics .ant-btn:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--app-focus-ring) !important;
+}
+.analytics .ant-btn-primary,
+.analytics .ant-btn-primary:hover,
+.analytics .ant-btn-primary:focus,
+.analytics .ant-btn-primary:focus-visible {
+  background: var(--app-accent) !important;
+  border-color: var(--app-accent) !important;
+  color: var(--app-bg) !important;
+}
+.analytics .ant-btn-primary:hover {
+  filter: brightness(1.06);
+}
+.analytics .ant-btn-link,
+.analytics .ant-btn-link:hover,
+.analytics .ant-btn-link:focus,
+.analytics .ant-btn-link:focus-visible {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--app-text) !important;
+  box-shadow: none !important;
+}
+.analytics .ant-btn-link:hover {
+  background: var(--app-hover-bg) !important;
+  text-decoration: underline;
+}
+.analytics .ant-btn-sm {
+  padding: 6px 14px !important;
+  font-size: 13px !important;
+}
+
+.analytics__tableWrap table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.analytics__tableWrap thead tr{
+  background: var(--app-card-soft);
+}
+.analytics__tableWrap th{
+  font-weight: 600;
+  color: var(--app-text);
+}
+.analytics__tableWrap th,
+.analytics__tableWrap td{
+  padding: 10px 12px;
+  text-align: left;
+  border-color: var(--app-border);
+}
+.analytics__tableWrap tbody tr:nth-child(even){
+  background: rgba(0,0,0,.02);
+}
+.analytics__tableWrap tbody tr:hover{
+  background: var(--app-hover-bg);
+}
+
+.analytics__actions{
+  margin-top: 10px;
+}
+
+@media (max-width: 720px){
+  .analytics{
+    padding: 18px 10px 40px;
+  }
+  .analytics__title{
+    font-size: 30px;
+  }
+  .analytics__grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .analytics__grid--status{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+

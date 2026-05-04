@@ -1,0 +1,118 @@
+.camp{
+  min-height: 100vh;
+  background: var(--app-bg);
+  padding: 32px 16px 60px;
+  display: flex;
+  justify-content: center;
+  color: var(--app-text);
+}
+
+.camp--embed{
+  padding-top: 16px;
+}
+
+.camp__wrap{
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.camp-progress__lead{
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--app-text);
+  opacity: 0.9;
+  max-width: 640px;
+}
+.camp-progress__lead strong{
+  font-weight: 700;
+}
+
+.camp-progress__channel{
+  background: var(--app-card-soft);
+  border-radius: var(--app-radius-lg);
+  padding: 20px;
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow-sm);
+}
+
+/* Блоки WA/TG — таблица и типографика */
+.camp .ant-typography{
+  color: var(--app-text);
+}
+.camp .ant-divider{
+  border-color: var(--app-border);
+}
+.camp code{
+  background: var(--app-card-soft);
+  padding: 2px 8px;
+  border-radius: var(--app-radius);
+  font-size: 12px;
+  border: 1px solid var(--app-border);
+}
+.camp .ant-table-wrapper{
+  background: var(--app-card-soft);
+  border-radius: var(--app-radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--app-border);
+  box-shadow: var(--app-shadow-sm);
+}
+.camp .ant-table{
+  background: transparent !important;
+  color: var(--app-text);
+}
+.camp .ant-table-thead > tr > th{
+  background: rgba(0,0,0,.04) !important;
+  color: var(--app-text);
+  font-weight: 600;
+  border-color: var(--app-border);
+}
+.camp .ant-table-tbody > tr > td{
+  border-color: var(--app-border);
+}
+.camp .ant-table-tbody > tr:hover > td{
+  background: var(--app-hover-bg) !important;
+}
+
+/* Овальные кнопки, без синего — в стиле приложения */
+.camp .ant-btn {
+  border-radius: var(--app-radius-pill);
+  border: 1px solid var(--app-border-strong);
+  background: var(--app-card-soft);
+  color: var(--app-text);
+  font-weight: 600;
+  transition: background var(--app-transition), border-color var(--app-transition), box-shadow var(--app-transition);
+}
+.camp .ant-btn:hover {
+  background: var(--app-hover-card);
+  border-color: var(--app-border-strong);
+  color: var(--app-text);
+}
+.camp .ant-btn:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 2px var(--app-focus-ring);
+}
+.camp .ant-btn-primary {
+  background: var(--app-accent) !important;
+  border-color: var(--app-accent) !important;
+  color: var(--app-bg) !important;
+}
+.camp .ant-btn-primary:hover {
+  background: var(--app-accent-strong) !important;
+  border-color: var(--app-accent-strong) !important;
+  color: var(--app-bg) !important;
+  filter: brightness(1.05);
+}
+.camp .ant-btn-danger {
+  border-radius: var(--app-radius-pill);
+}
+.camp .ant-btn-danger:hover{
+  border-color: var(--app-border-strong);
+}
+
+@media (max-width: 520px){
+  .camp{ padding: 22px 12px 44px; }
+  .camp__wrap{ padding: 0 8px; }
+}

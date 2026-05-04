@@ -1,0 +1,1867 @@
+p{
+  margin: 0;
+}
+
+@keyframes cabinet-spin {
+  to { transform: rotate(360deg); }
+}
+
+.cabinet-loading-spinner {
+  animation: cabinet-spin 0.8s linear infinite;
+}
+
+/* ==========================================================================
+   ЛК: СТИЛЬ LIQUID GLASS — ДОКУМЕНТАЦИЯ И СТАНДАРТ
+   ==========================================================================
+   Единый визуальный стиль карточек и кнопок в личном кабинете (как блок
+   «Рассылка почти готова» и главная страница):
+   - Фон страницы: единый тёплый жёлтый (--cabinet-page-bg), без «островков»
+   - Отступ между блоками: --cabinet-block-gap (единый для всех секций)
+   - Секции (.cabinet-block): без своего фона, кроме TG/WA до подключения
+   - Карточка: градиент + backdrop-filter blur + светлая рамка +
+     внешняя тень + inset-блик по верхнему краю
+   - Блик: псевдоэлемент ::before с радиальными градиентами (свет сверху и снизу)
+   - Внутренние блоки: те же края (border) и лёгкий inset-блик
+   - Кнопки: полупрозрачный градиент, blur, inset-блик
+   Используйте переменные ниже при добавлении новых блоков в том же стиле.
+   ========================================================================== */
+
+.cabinet {
+  /* Единый отступ между всеми блоками ЛК */
+  --cabinet-block-gap: 24px;
+  /* Мягкий градиентный фон: от белого сверху к светлому тёплому снизу (как на странице шаблонов) */
+  --cabinet-page-bg: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #fffef8 25%,
+    #fef9e8 55%,
+    #faf4e0 85%,
+    #f5eed5 100%
+  );
+  /* Фон секции и карточек — насыщенный тёплый жёлтый (как «Рассылка почти готова») */
+  --cabinet-glass-bg: linear-gradient(
+    135deg,
+    #fff8d2 0%,
+    #fef4b8 35%,
+    #f9ee91 70%,
+    #f4e36b 100%
+  );
+  /* Рамка карточки */
+  --cabinet-glass-border: 1px solid rgba(255, 255, 255, 0.85);
+  /* Тень карточки — теплее и выразительнее */
+  --cabinet-glass-shadow: 0 16px 48px rgba(212, 180, 40, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  /* Края внутренних блоков */
+  --cabinet-glass-inner-border: 1px solid rgba(255, 255, 255, 0.9);
+  --cabinet-glass-inner-shadow: 0 2px 12px rgba(200, 170, 30, 0.08),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  /* Кнопки — насыщенный liquid glass */
+  --cabinet-glass-btn-bg: linear-gradient(
+    135deg,
+    #fffef0 0%,
+    #fef9d4 50%,
+    #f9ee91 100%
+  );
+  --cabinet-glass-btn-border: 1px solid rgba(255, 255, 255, 0.95);
+  --cabinet-glass-btn-shadow: 0 4px 16px rgba(212, 180, 40, 0.15),
+    0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  --cabinet-glass-btn-hover-bg: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #fff9d8 50%,
+    #f9ee91 100%
+  );
+  --cabinet-glass-btn-hover-shadow: 0 6px 24px rgba(212, 180, 40, 0.2),
+    0 1px 0 rgba(255, 255, 255, 1) inset;
+}
+
+/* Внутри личного кабинета считаем ширину с учётом padding/border,
+   чтобы внутренние карточки не "выпирали" за границы внешних блоков */
+.cabinet,
+.cabinet *{
+  box-sizing: border-box;
+}
+
+/* Обертка для ограничения ширины контента — единый тёплый фон страницы.
+   Анимация появления на .cabinet__wrap, а не на .cabinet, чтобы header (sticky)
+   не был внутри элемента с transform — иначе sticky ломается на мобиле. */
+.cabinet {
+  min-height: 100vh;
+  /* Фон ЛК: основной тёплый градиент + лёгкая подложка с домиками, как на главной */
+  background-image:
+    var(--cabinet-page-bg),
+    url('/house-tile.png');
+  background-size:
+    auto,
+    236px 302px;
+  background-repeat:
+    no-repeat,
+    repeat;
+  background-position:
+    0 0,
+    0 0;
+  padding: 32px 16px 60px;
+}
+.cabinet__wrap {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+    transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.cabinet.cabinet--ready .cabinet__wrap {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes cabinet-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Единый мягкий вход для всех элементов страницы ЛК */
+.cabinet .cabinet-header,
+.cabinet .cabinet-block,
+.cabinet .subscription__wrap,
+.cabinet .subscription-cont,
+.cabinet .newsletters,
+.cabinet .link,
+.cabinet .profile {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.cabinet.cabinet--ready .cabinet-header,
+.cabinet.cabinet--ready .cabinet-block,
+.cabinet.cabinet--ready .subscription__wrap,
+.cabinet.cabinet--ready .subscription-cont,
+.cabinet.cabinet--ready .newsletters,
+.cabinet.cabinet--ready .link,
+.cabinet.cabinet--ready .profile {
+  animation: cabinet-fade-up 0.55s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+/* Небольшой stagger, чтобы страница ощущалась "живой" */
+.cabinet.cabinet--ready .cabinet-header { animation-delay: 40ms; }
+.cabinet.cabinet--ready .cabinet-block:nth-of-type(1) { animation-delay: 90ms; }
+.cabinet.cabinet--ready .cabinet-block:nth-of-type(2) { animation-delay: 130ms; }
+.cabinet.cabinet--ready .cabinet-block:nth-of-type(3) { animation-delay: 170ms; }
+.cabinet.cabinet--ready .cabinet-block:nth-of-type(4) { animation-delay: 210ms; }
+.cabinet.cabinet--ready .cabinet-block:nth-of-type(5) { animation-delay: 250ms; }
+.cabinet.cabinet--ready #cabinet-support.cabinet-block { animation-delay: 195ms; }
+.cabinet.cabinet--ready .subscription__wrap { animation-delay: 220ms; }
+.cabinet.cabinet--ready .subscription-cont { animation-delay: 260ms; }
+.cabinet.cabinet--ready .newsletters { animation-delay: 210ms; }
+.cabinet.cabinet--ready .link { animation-delay: 280ms; }
+.cabinet.cabinet--ready .profile { animation-delay: 300ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cabinet__wrap {
+    transition-duration: 0.01ms;
+    transform: none;
+  }
+  .cabinet .cabinet-header,
+  .cabinet .cabinet-block,
+  .cabinet .subscription__wrap,
+  .cabinet .subscription-cont,
+  .cabinet .newsletters,
+  .cabinet .link,
+  .cabinet .profile {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  .cabinet-block {
+    transition-duration: 0.05ms;
+  }
+}
+
+/* ========== Шапка ЛК в стиле страницы: тот же тёплый фон, кнопки liquid glass ========== */
+.cabinet-header {
+  padding: 32px 0 30px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: transparent;
+  margin: -32px -16px 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+/* Лёгкий тёплый градиент в тон страницы (вместо белой полосы) */
+.cabinet-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 40%;
+  pointer-events: none;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 252, 232, 0.92) 0%,
+    rgba(254, 249, 200, 0.5) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.cabinet-header__container {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.cabinet-header__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.cabinet-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.cabinet-header__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 33px;
+  font-weight: 900;
+  color: inherit;
+  text-decoration: none;
+}
+
+.cabinet-header__logo-icon {
+  display: inline-block;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  flex-shrink: 0;
+  vertical-align: middle;
+  transform: translateY(3px);
+}
+
+.cabinet-header__logo-chat {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+.cabinet-header__logo-accent {
+  background: radial-gradient(circle at 0% 0%, #fff8d2 0, #f9ee91 40%, #f4e36b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0.6px rgba(0, 0, 0, 0.45);
+}
+
+.cabinet-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Кнопки шапки — как hero-button на главной (барельеф) */
+.cabinet-header__pill {
+  /* визуальный стиль задаёт .ui-action-btn (globals.css); тут — только компоновка */
+  cursor: pointer;
+}
+
+.cabinet-header__pill:hover {
+  /* hover/active делает .ui-action-btn */
+}
+
+.cabinet-header__burger.app-burger {
+  display: none;
+  /* прокидываем переменные в общий AppBurgerButton */
+  --burger-bg: var(--cabinet-glass-btn-bg);
+  --burger-border: var(--cabinet-glass-btn-border);
+  --burger-shadow: var(--cabinet-glass-btn-shadow);
+}
+
+/* Мобильное меню — только transform/opacity (композитор), без лагов.
+   z-index выше карточек ЛК и шапки; разметка — не внутри .cabinet-header (там transform ломает position:fixed). */
+.cabinet-mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.22s ease-out;
+}
+
+.cabinet-mobile-menu.open {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.cabinet-mobile-menu__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.cabinet-mobile-menu__panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: min(360px, 92vw);
+  background: #fff;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transform: translateX(100%);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 2;
+}
+
+.cabinet-mobile-menu.open .cabinet-mobile-menu__panel {
+  transform: translateX(0);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cabinet-mobile-menu,
+  .cabinet-mobile-menu__panel {
+    transition-duration: 0.01ms;
+  }
+}
+
+.cabinet-mobile-menu__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.cabinet-mobile-menu__close {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: #fff;
+  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+}
+
+.cabinet-mobile-menu__links {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+}
+
+.cabinet-mobile-menu__link {
+  border: 1px solid #797979;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 16px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+@media (max-width: 900px) {
+  .cabinet-header { padding: 24px 0 20px; }
+  .cabinet-header__nav { display: none; }
+  .cabinet-header__burger.app-burger { display: inline-flex; align-items: center; justify-content: center; flex-direction: column; }
+}
+
+@media (max-width: 520px) {
+  .cabinet-header__logo { font-size: 27px; }
+}
+
+.cabinet__wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Кнопки наверху страницы — liquid glass (оставлены для возможного использования в других местах) */
+.cabinet__quickBtn{
+  border: var(--cabinet-glass-btn-border);
+  background: var(--cabinet-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--app-radius-pill);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a2a2a;
+  cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+  white-space: nowrap;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--cabinet-glass-btn-shadow);
+}
+
+.cabinet__quickBtn:hover{
+  background: var(--cabinet-glass-btn-hover-bg);
+  border-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 8px 28px rgba(212, 180, 40, 0.25), 0 1px 0 rgba(255, 255, 255, 1) inset;
+}
+
+.cabinet__quickBtn:active{
+  transform: scale(0.98);
+  box-shadow: 0 2px 12px rgba(212, 180, 40, 0.2), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.cabinet__quickBtn:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 2px var(--app-bg), 0 0 0 4px var(--app-accent);
+}
+
+.cabinet__quickBtn--primary{
+  background: var(--app-accent);
+  border-color: var(--app-accent-strong);
+  color: #1a1a1a;
+  box-shadow: 0 4px 16px rgba(180, 150, 40, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, filter 0.2s ease, transform 0.2s ease;
+}
+
+.cabinet__quickBtn--primary:hover{
+  background: var(--app-accent-strong);
+  border-color: #c9b55a;
+  filter: brightness(1.02);
+  box-shadow: 0 6px 22px rgba(180, 150, 40, 0.35), 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+}
+
+.cabinet__quickBtn--primary:active{
+  transform: scale(0.98);
+  box-shadow: 0 2px 12px rgba(180, 150, 40, 0.3), 0 1px 0 rgba(255, 255, 255, 0.35) inset;
+}
+
+.cabinet__quickBtn--primary:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 2px var(--app-bg), 0 0 0 4px var(--app-accent-strong);
+}
+
+.cabinet__title {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--app-text);
+  text-align: center;
+}
+
+.cabinet__logout {
+  border: var(--cabinet-glass-btn-border);
+  background: var(--cabinet-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--app-radius-pill);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2a2a2a;
+  cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+  white-space: nowrap;
+  box-shadow: var(--cabinet-glass-btn-shadow);
+}
+
+.cabinet__logout:hover {
+  background: var(--cabinet-glass-btn-hover-bg);
+  border-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 8px 28px rgba(212, 180, 40, 0.25), 0 1px 0 rgba(255, 255, 255, 1) inset;
+}
+
+.cabinet__logout:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 12px rgba(212, 180, 40, 0.2), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.cabinet__logout:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--app-bg), 0 0 0 4px var(--app-accent);
+}
+
+/* Блоки кабинета — без своего фона, страница уже жёлтая; единый отступ между блоками */
+.cabinet-block {
+  max-width: 680px;
+  margin: var(--cabinet-block-gap) auto 0;
+  background: transparent;
+  border-radius: var(--app-radius-lg);
+  padding: 24px 28px 28px;
+  transition:
+    background 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    box-shadow 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    padding 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    margin 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Telegram — акцент голубой гаммой на общем жёлтом фоне */
+#cabinet-telegram.cabinet-block {
+  background: radial-gradient(circle at 0% 0%, #e3f4fd 0, #b3e0f9 40%, #5eb8e8 100%);
+  box-shadow: 0 8px 28px rgba(30, 144, 201, 0.15);
+}
+
+/* Когда Telegram подключён — без фона, тот же отступ (плавный переход) */
+#cabinet-telegram.cabinet-block:has(.tg--connected) {
+  background: transparent;
+  box-shadow: none;
+  margin-top: var(--cabinet-block-gap);
+  padding: 0 8px 0;
+}
+
+/* WhatsApp — акцент зелёной гаммой на общем жёлтом фоне */
+#cabinet-whatsapp.cabinet-block {
+  background: radial-gradient(circle at 0% 0%, #e0f7e9 0, #a8ecc5 40%, #34c759 100%);
+  box-shadow: 0 8px 28px rgba(37, 211, 102, 0.12);
+}
+
+/* Когда WhatsApp подключён — без фона, тот же отступ (плавный переход) */
+#cabinet-whatsapp.cabinet-block:has(.wa--connected) {
+  background: transparent;
+  box-shadow: none;
+  margin-top: var(--cabinet-block-gap);
+  padding: 0 8px 0;
+}
+
+/* Профиль и подписка — без отдельного фона */
+.cabinet-block--profile,
+.cabinet-block--subscription {
+  max-width: 680px;
+  padding: 24px 28px 28px;
+  border-radius: var(--app-radius-lg);
+  background: transparent;
+}
+
+/* Блок «Часовой пояс» сразу после «Моя подписка» — одна строка */
+.cabinet-timezone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 14px 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.cabinet-timezone__label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--app-text);
+}
+.cabinet-timezone__select {
+  flex: 0 0 auto;
+}
+
+/* Часовой пояс внизу блока «Моя подписка» — отступ сверху */
+.cabinet .subscription__wrap .cabinet-timezone {
+  margin-top: var(--cabinet-block-gap);
+}
+
+/* Тур планирования — запуск из кабинета без консоли */
+.cabinet-planning-tour {
+  width: 100%;
+  max-width: 520px;
+  margin: var(--cabinet-block-gap) auto 0;
+  padding: 16px 18px 18px;
+  border-radius: var(--app-radius-md);
+  background: rgba(255, 255, 255, 0.35);
+  border: var(--cabinet-glass-inner-border);
+  box-shadow: var(--cabinet-glass-inner-shadow);
+}
+.cabinet-planning-tour__title {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--app-text);
+  margin-bottom: 8px;
+}
+.cabinet-planning-tour__text {
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.72);
+  margin: 0 0 14px;
+}
+.cabinet-planning-tour__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+  cursor: pointer;
+  border-radius: var(--app-radius-sm);
+  background: var(--cabinet-glass-btn-bg);
+  border: var(--cabinet-glass-btn-border);
+  box-shadow: var(--cabinet-glass-btn-shadow);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.cabinet-planning-tour__btn:hover {
+  background: var(--cabinet-glass-btn-hover-bg);
+  box-shadow: var(--cabinet-glass-btn-hover-shadow);
+}
+
+/* Техподдержка (Telegram + страница контактов) */
+.cabinet-block--support {
+  max-width: 520px;
+  padding: 18px 20px 20px;
+}
+
+.cabinet-support__title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--app-text);
+  text-align: center;
+}
+
+.cabinet-support__text {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(0, 0, 0, 0.72);
+  text-align: center;
+}
+
+.cabinet-support__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.cabinet-support__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--app-radius-sm);
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  font-family: inherit;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+
+.cabinet-support__btn--tg {
+  background: #229ed9;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(34, 158, 217, 0.3);
+}
+
+.cabinet-support__btn--tg:hover {
+  background: #1b8bc0;
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+
+#cabinet-support.cabinet-block {
+  background: rgba(255, 255, 255, 0.35);
+  border: var(--cabinet-glass-inner-border);
+  box-shadow: var(--cabinet-glass-inner-shadow);
+  border-radius: var(--app-radius-md);
+}
+
+/* «Моя подписка» — liquid glass как «Рассылка почти готова» */
+.cabinet .subscription__wrap{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 28px 28px;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--app-radius-lg);
+  background: var(--cabinet-glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: var(--cabinet-glass-border);
+  box-shadow: var(--cabinet-glass-shadow);
+}
+
+.cabinet .subscription__wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.5), transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(255, 255, 255, 0.28), transparent 50%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.cabinet .subscription-title{
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--app-text);
+  text-align: center;
+  max-width: 340px;
+  width: 100%;
+  position: relative;
+  z-index: 0;
+}
+
+.cabinet .subscription-text{
+  margin: 0 0 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--app-text-muted);
+  max-width: 340px;
+  width: 100%;
+  position: relative;
+  z-index: 0;
+}
+
+/* Внутренний блок с данными подписки — края как стандарт ЛК */
+.cabinet .subscription-cont {
+  max-width: 340px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 22px 24px 24px;
+  position: relative;
+  z-index: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), rgba(249, 238, 145, 0.35));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--app-radius-lg);
+  border: var(--cabinet-glass-inner-border);
+  box-shadow: var(--cabinet-glass-inner-shadow);
+  transition: opacity 0.3s ease;
+}
+.cabinet .subscription__wrap--loading .subscription-cont {
+  opacity: 0.85;
+}
+
+.cabinet .subscription-data{
+  margin: 0;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid rgba(0,0,0,0.14);
+}
+.cabinet .subscription-data:last-of-type{
+  border-bottom: none;
+}
+
+.cabinet .subscription-data strong{
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--app-text);
+}
+
+.cabinet .subscription-data-text{
+  background: transparent;
+  border: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--app-text);
+}
+
+/* Статус подписки — выделение цветом и акцентом */
+.cabinet .subscription-data--status-active .subscription-data-text {
+  color: #0d7d3d;
+  font-size: 16px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+.cabinet .subscription-data--status-trial .subscription-data-text {
+  color: #1b5e20;
+  font-size: 15px;
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.cabinet .subscription-data--status-inactive .subscription-data-text {
+  color: #b71c1c;
+  font-size: 16px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* Кнопки подписки вынесены в отдельный блок под карточкой с данными */
+.cabinet .subscription-actions{
+  max-width: 340px;
+  width: 100%;
+  margin: 16px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  position: relative;
+  z-index: 0;
+}
+
+.cabinet .subscription-footer {
+  position: relative;
+  z-index: 0;
+}
+
+.cabinet .subscription-actionsButtons{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+/* Кнопки подписки — liquid glass, цвета как у «Рассылка почти готова» */
+.cabinet .subscription-actionsButtons .subscription-btn{
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  border: var(--cabinet-glass-btn-border);
+  background: var(--cabinet-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--cabinet-glass-btn-shadow);
+  color: var(--app-text);
+}
+
+.cabinet .subscription-actionsButtons .subscription-btn:hover:not(:disabled){
+  background: var(--cabinet-glass-btn-hover-bg);
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--cabinet-glass-btn-hover-shadow);
+  transform: translateY(-1px);
+}
+
+.subscription-btnLabel{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Кнопки тарифов — общий стиль задан в .subscription-btn выше */
+
+/* Кнопка отмены/подключения — liquid glass, как остальные */
+.cabinet .subscription-actions .subscription-btn--cancel{
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  border: var(--cabinet-glass-btn-border);
+  background: var(--cabinet-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--cabinet-glass-btn-shadow);
+  color: var(--app-text);
+}
+.cabinet .subscription-actions .subscription-btn--cancel:hover:not(:disabled){
+  background: var(--cabinet-glass-btn-hover-bg);
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--cabinet-glass-btn-hover-shadow);
+  transform: translateY(-1px);
+}
+
+.cabinet-block .pattern {
+  margin-top: 0;
+  max-width: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+/* Реферальный блок — единый отступ */
+.cabinet-block:has(.link) {
+  margin-top: var(--cabinet-block-gap);
+  padding: 24px 28px 28px;
+  border-radius: var(--app-radius-lg);
+  background: transparent;
+}
+
+/* Убираем синий hover Ant Design и любые синие акценты — единая палитра кабинета */
+.cabinet .ant-btn,
+.cabinet .ant-btn-primary,
+.cabinet .ant-btn-primary:hover,
+.cabinet .ant-btn:hover {
+  background: var(--app-card-strong) !important;
+  border-color: var(--app-accent) !important;
+  color: var(--app-text) !important;
+}
+
+.cabinet .ant-btn-primary:hover,
+.cabinet .ant-btn:hover {
+  background: var(--app-hover-card-strong) !important;
+  border-color: var(--app-accent-strong) !important;
+}
+
+.cabinet button:hover {
+  background: var(--app-hover-card);
+  border-color: var(--app-border-strong);
+}
+
+/* Блок «Рассылка почти готова» — стандарт liquid glass ЛК, единый отступ */
+.cabinet .newsletters {
+  margin-top: var(--cabinet-block-gap);
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 24px 28px 28px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--app-radius-lg);
+  background: var(--cabinet-glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: var(--cabinet-glass-border);
+  box-shadow: var(--cabinet-glass-shadow);
+}
+
+.cabinet .newsletters::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.5), transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(255, 255, 255, 0.28), transparent 50%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.cabinet .newsletters-title {
+  position: relative;
+  z-index: 0;
+}
+
+.cabinet .newsletters-text {
+  position: relative;
+  z-index: 0;
+}
+
+.cabinet .newsletters-button {
+  width: 100%;
+  max-width: 280px;
+  min-height: auto;
+  height: auto;
+  padding: 16px 0;
+  margin-top: 20px;
+  margin-left: auto;
+  margin-right: auto;
+  background: transparent;
+  position: relative;
+  z-index: 0;
+}
+
+.cabinet .newsletters-button .ant-btn {
+  min-height: 48px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--cabinet-glass-btn-bg) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: var(--cabinet-glass-btn-border) !important;
+  color: var(--app-text) !important;
+  border-radius: var(--app-radius-pill);
+  box-shadow: var(--cabinet-glass-btn-shadow);
+}
+
+.cabinet .newsletters-button .ant-btn:hover {
+  background: var(--cabinet-glass-btn-hover-bg) !important;
+  border-color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: var(--cabinet-glass-btn-hover-shadow);
+}
+
+.title{
+  font-size: 36px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 20px;
+  color: var(--app-text);
+}
+
+/* «Немного обо мне» — строчка с подчёркиванием и стрелкой (не кнопка) */
+.profile-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+  padding: 8px 0 10px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--app-text);
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.22);
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, opacity 0.2s;
+}
+
+/* Внутри карточки «Реферальная ссылка» — только отступ сверху, без линии */
+.cabinet .link .profile-toggle {
+  margin-top: var(--cabinet-block-gap);
+  padding-top: var(--cabinet-block-gap);
+}
+
+/* Без смены цвета при наведении */
+.cabinet .profile-toggle:hover {
+  background: transparent;
+  border-bottom-color: rgba(0, 0, 0, 0.22);
+  color: var(--app-text);
+  opacity: 1;
+}
+
+.profile-toggle__label {
+  flex: 1;
+  text-decoration: none;
+}
+
+.profile-toggle__icon {
+  flex-shrink: 0;
+  font-size: 10px;
+  opacity: 0.7;
+  margin-left: 6px;
+  transition: transform 0.25s ease;
+}
+
+.profile-toggle--open .profile-toggle__icon {
+  transform: rotate(180deg);
+}
+
+/* Обёртка контента: плавная высота через grid (без скачков max-height), без лагов */
+.profile-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  contain: layout;
+}
+
+.profile-content--open {
+  grid-template-rows: 1fr;
+}
+
+.profile-content > .profile {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.25s ease-out 0.05s;
+}
+
+.profile-content--open > .profile {
+  opacity: 1;
+  margin-top: 14px;
+  transition: opacity 0.22s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-content,
+  .profile-content > .profile {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* Личная информация — стандарт liquid glass, края как у всех внутренних блоков */
+.profile{
+  max-width: 340px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--app-radius-lg);
+  padding: 22px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--cabinet-glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: var(--cabinet-glass-inner-border);
+  box-shadow: var(--cabinet-glass-inner-shadow);
+}
+
+.profile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.5), transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(255, 255, 255, 0.28), transparent 50%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.profile .profile-text,
+.profile .profile-timezone {
+  position: relative;
+  z-index: 0;
+}
+
+.profile-text{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(0,0,0,0.14);
+}
+.profile-text:focus-within {
+  border-bottom-color: var(--app-accent);
+}
+
+.profile-text strong {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--app-text);
+  flex: 0 0 auto;
+}
+
+.profile-text p {
+  background: transparent;
+  font-size: 15px;
+  padding: 0;
+  border-radius: 0;
+  font-weight: 400;
+  margin: 0;
+  color: var(--app-text);
+  flex: 0 0 auto;
+}
+
+.profile-channel-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.profile-channel-info p {
+  margin: 0;
+  font-size: 14px;
+}
+.profile-channel-label {
+  font-weight: 600;
+  color: var(--app-text-muted);
+  margin-right: 6px;
+}
+.profile-text--channel code {
+  font-size: 12px;
+  background: rgba(0,0,0,.06);
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+/* Кнопки действий — на всю ширину */
+.profile-btns {
+  grid-column: 1 / -1;
+}
+
+.profile-timezone {
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-timezone-desc {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  margin: 0 !important;
+  color: var(--app-text-muted);
+}
+
+.profile-timezone-select {
+  width: auto;
+  max-width: 180px;
+  flex: 0 0 auto;
+  padding: 8px 30px 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--app-text);
+  background: var(--cabinet-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: var(--cabinet-glass-btn-border);
+  border-radius: var(--app-radius-pill);
+  cursor: pointer;
+  transition: border-color var(--app-transition), box-shadow var(--app-transition);
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6b6b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  box-shadow: var(--cabinet-glass-btn-shadow);
+}
+
+.profile-timezone-select:hover {
+  border-color: var(--app-border-medium);
+}
+
+.profile-timezone-select:focus {
+  outline: none;
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 2px var(--app-focus-ring);
+}
+
+.profile-timezone-select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.profile-btns{
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+.profile-btns {
+  position: relative;
+  z-index: 0;
+}
+
+.profile-btns button {
+  border-radius: var(--app-radius-pill);
+  border: var(--cabinet-glass-btn-border);
+  background: var(--cabinet-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  box-shadow: var(--cabinet-glass-btn-shadow);
+}
+.profile-btns button:hover {
+  background: var(--cabinet-glass-btn-hover-bg);
+  box-shadow: var(--cabinet-glass-btn-hover-shadow);
+  transform: translateY(-2px);
+}
+
+.groups{
+  margin: var(--cabinet-block-gap) auto 0;
+  max-width: 520px;
+  background: radial-gradient(circle at 0% 0%, #fff8d2 0, #f9ee91 40%, #f4e36b 100%);
+  border-radius: 32px;
+  padding: 20px 24px;
+  box-shadow: var(--app-shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.groups-title{
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 16px;
+  color: var(--app-text);
+}
+
+.groups-button{
+  width: 100%;
+  max-width: 280px;
+  min-height: 48px;
+  background: var(--app-card-strong);
+  border-radius: var(--app-radius-pill);
+  border: 1px solid var(--app-border-medium);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+.groups-button:hover {
+  background: var(--app-card-soft);
+  transform: translateY(-2px);
+}
+
+/* Секции-карточки как у шаблонов (tpl-card) */
+.pattern{
+  max-width: 520px;
+  margin: var(--cabinet-block-gap) auto 0;
+  background: radial-gradient(circle at 0% 0%, #fff8d2 0, #f9ee91 40%, #f4e36b 100%);
+  border-radius: var(--app-radius-lg);
+  padding: 20px 24px 24px;
+  box-shadow: var(--app-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pattern-title{
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 8px;
+  color: var(--app-text);
+}
+
+.pattern-text{
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 16px;
+  color: var(--app-text);
+  opacity: 0.9;
+}
+
+.pattern-button{
+  width: 100%;
+  max-width: 280px;
+  min-height: 48px;
+  background: var(--app-card);
+  border-radius: var(--app-radius-pill);
+  border: 1px solid var(--app-accent);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  box-shadow: var(--app-shadow-sm);
+}
+.pattern-button:hover {
+  background: var(--app-card-strong);
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 2px var(--app-focus-ring);
+  transform: translateY(-2px);
+}
+
+.pattern-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.pattern-btn {
+  min-height: 48px;
+  padding: 0 24px;
+  background: var(--app-card);
+  border-radius: var(--app-radius-pill);
+  border: 1px solid var(--app-accent);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  box-shadow: var(--app-shadow-sm);
+}
+
+@media (max-width: 520px) {
+  .cabinet {
+    padding: 22px 12px 44px;
+  }
+
+  .cabinet__wrap {
+    padding: 0 12px;
+  }
+
+  .cabinet-block--profile {
+    max-width: 100%;
+  }
+
+  /* В первом блоке на мобиле оба внутренних блока на всю ширину */
+  .cabinet-profileLayout .profile,
+  .cabinet-profileLayout .subscription__wrap,
+  .cabinet .subscription-cont {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .profile{
+    padding: 18px 16px 20px;
+  }
+
+  /* В личных данных на мобиле переносим подпись и значение в колонку,
+     чтобы текст не вылезал за края */
+  .profile-text{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .profile-text strong{
+    font-size: 12px;
+    flex: none;
+    width: auto;
+  }
+
+  .profile-text p{
+    font-size: 14px;
+    flex: none;
+    width: auto;
+    word-break: break-word;
+  }
+}
+
+.pattern-btn:hover {
+  background: var(--app-card-strong);
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 2px var(--app-focus-ring);
+  transform: translateY(-2px);
+}
+
+.pattern-btn--primary {
+  background: var(--app-accent);
+  color: var(--app-bg, #fff);
+  border-color: var(--app-accent);
+}
+
+.pattern-btn--primary:hover {
+  filter: brightness(1.08);
+  border-color: var(--app-accent);
+}
+
+.pattern-groupsCount {
+  font-size: 13px;
+  color: var(--app-text);
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pattern-groupsCount__tg { color: #29A9EB; }
+.pattern-groupsCount__wa { color: #25D366; }
+.pattern-groupsCount__label { opacity: 0.8; }
+
+.link{
+  max-width: 520px;
+  margin: var(--cabinet-block-gap) auto 0;
+  background: radial-gradient(circle at 0% 0%, #fff8d2 0, #f9ee91 40%, #f4e36b 100%);
+  border-radius: var(--app-radius-lg);
+  padding: 20px 24px 24px;
+  box-shadow: var(--app-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* В кабинете реферальная ссылка — liquid glass, аккуратная типографика */
+.cabinet .link {
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  background: var(--cabinet-glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: var(--cabinet-glass-inner-border);
+  box-shadow: var(--cabinet-glass-inner-shadow);
+  padding: 28px 28px 32px;
+}
+
+.cabinet .link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.5), transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(255, 255, 255, 0.28), transparent 50%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.cabinet .link .link-title,
+.cabinet .link .link-text,
+.cabinet .link .link-row,
+.cabinet .link .link-hint {
+  position: relative;
+  z-index: 0;
+}
+
+.link-title {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 8px;
+  color: var(--app-text);
+}
+
+.cabinet .link .link-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 14px;
+  color: #1a1a1a;
+}
+
+.link-text {
+  font-size: 14px;
+  font-weight: 400;
+  text-align: center;
+  margin: 0 0 4px;
+  color: var(--app-text);
+  opacity: 0.9;
+  line-height: 1.45;
+}
+
+.cabinet .link .link-text {
+  font-size: 15px;
+  line-height: 1.55;
+  margin: 0 auto 18px;
+  max-width: 380px;
+  color: #2f2f2f;
+  opacity: 1;
+}
+
+.cabinet .link .link-text__accent {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.cabinet .link .link-text__highlight {
+  font-weight: 800;
+  font-size: 1.08em;
+  color: #0d7d3d;
+}
+
+.link-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.cabinet .link .link-row {
+  margin-top: 0;
+  max-width: 100%;
+}
+
+.link-input{
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  text-align: center;
+  border: 1px solid var(--app-border);
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--app-card-strong);
+  border-radius: var(--app-radius-pill);
+  transition: border-color var(--app-transition), box-shadow var(--app-transition);
+}
+.link-input:hover {
+  border-color: var(--app-border-medium);
+}
+.link-input:focus {
+  outline: none;
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 2px var(--app-focus-ring);
+}
+
+.cabinet .link-input {
+  border: var(--cabinet-glass-btn-border);
+  background: var(--cabinet-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--cabinet-glass-btn-shadow);
+}
+.cabinet .link-input:hover {
+  border-color: rgba(255, 255, 255, 0.95);
+  background: var(--cabinet-glass-btn-hover-bg);
+  box-shadow: var(--cabinet-glass-btn-hover-shadow);
+}
+.cabinet .link-input:focus {
+  box-shadow: 0 0 0 2px var(--app-focus-ring);
+}
+
+.link-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 10px 20px;
+  border: 1px solid var(--app-border-strong);
+  background: var(--app-card-strong);
+  border-radius: var(--app-radius-pill);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+  cursor: pointer;
+  transition: background var(--app-transition), border-color var(--app-transition), transform var(--app-transition);
+}
+.link-share-btn:hover {
+  background: var(--app-hover-card);
+  border-color: var(--app-border-strong);
+  transform: translateY(-1px);
+}
+.link-share-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--app-focus-ring);
+}
+
+.cabinet .link-share-btn {
+  border: var(--cabinet-glass-btn-border);
+  background: var(--cabinet-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--cabinet-glass-btn-shadow);
+}
+.cabinet .link-share-btn:hover {
+  background: var(--cabinet-glass-btn-hover-bg);
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--cabinet-glass-btn-hover-shadow);
+}
+.cabinet .link-share-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--app-focus-ring);
+}
+
+.link-share-icon {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 980px) {
+  .cabinet__title {
+    font-size: 32px;
+  }
+  .title {
+    font-size: 28px;
+  }
+  .pattern-title,
+  .link-title,
+  .groups-title {
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 520px) {
+  .cabinet {
+    padding: 22px 12px 44px;
+  }
+  .cabinet__wrap {
+    padding: 0 12px;
+  }
+  .cabinet__title {
+    font-size: 28px;
+    padding-right: 0;
+  }
+  .cabinet__header {
+    min-height: 44px;
+    margin-bottom: 22px;
+  }
+  .cabinet__logout {
+    width: auto;
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+  .title {
+    font-size: 24px;
+    margin: 0 0 16px;
+  }
+  .cabinet .subscription-title{
+    font-size: 22px;
+  }
+  .cabinet .subscription-text{
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+  .cabinet .subscription-cont{
+    max-width: 100%;
+    width: 100%;
+    padding: 18px 16px 20px;
+  }
+  .cabinet .subscription-data{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .cabinet .subscription-actions{
+    max-width: 100%;
+    width: 100%;
+  }
+  .cabinet-block--profile,
+  .cabinet-block--subscription,
+  .cabinet-block:has(.link) {
+    padding: 18px 16px 20px;
+  }
+  .cabinet .subscription__wrap {
+    padding: 18px 16px 20px;
+  }
+  .profile,
+  .pattern,
+  .link,
+  .groups {
+    padding: 16px 18px 20px;
+    border-radius: var(--app-radius-lg);
+  }
+  .cabinet .link {
+    padding: 16px 18px 20px;
+  }
+  .pattern-title,
+  .link-title,
+  .groups-title {
+    font-size: 16px;
+  }
+  .pattern-text,
+  .link-text {
+    font-size: 13px;
+  }
+  .pattern-button,
+  .groups-button {
+    max-width: 100%;
+    min-height: 44px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Подтверждение выхода из ЛК
+   -------------------------------------------------------------------------- */
+.cabinet-logout-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(30, 28, 20, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.cabinet-logout-modal {
+  width: 100%;
+  max-width: 420px;
+  padding: 24px 22px 20px;
+  border-radius: 18px;
+  background: var(--cabinet-glass-bg, linear-gradient(135deg, #fff8d2 0%, #f4e36b 100%));
+  border: var(--cabinet-glass-border, 1px solid rgba(255, 255, 255, 0.85));
+  box-shadow: var(
+    --cabinet-glass-shadow,
+    0 16px 48px rgba(212, 180, 40, 0.25)
+  );
+}
+
+.cabinet-logout-modal__title {
+  margin: 0 0 14px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #2a2618;
+  line-height: 1.3;
+}
+
+.cabinet-logout-modal__text,
+.cabinet-logout-modal__phone,
+.cabinet-logout-modal__hint,
+.cabinet-logout-modal__note {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #3d3828;
+}
+
+.cabinet-logout-modal__phone {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.cabinet-logout-modal__phone-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b6348;
+  margin-bottom: 4px;
+}
+
+.cabinet-logout-modal__phone-value {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1a1810;
+  word-break: break-all;
+}
+
+.cabinet-logout-modal__note {
+  margin-bottom: 18px;
+  font-size: 13px;
+  color: #5c563f;
+}
+
+.cabinet-logout-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.cabinet-logout-modal__btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.cabinet-logout-modal__btn:active {
+  transform: scale(0.98);
+}
+
+.cabinet-logout-modal__btn--cancel {
+  background: rgba(255, 255, 255, 0.75);
+  color: #3d3828;
+}
+
+.cabinet-logout-modal__btn--confirm {
+  background: linear-gradient(135deg, #c45c4a 0%, #a84838 100%);
+  color: #fff;
+  border-color: rgba(180, 80, 60, 0.5);
+  box-shadow: 0 4px 14px rgba(168, 72, 56, 0.35);
+}
+
+.cabinet-logout-modal__btn--confirm:hover {
+  filter: brightness(1.05);
+}

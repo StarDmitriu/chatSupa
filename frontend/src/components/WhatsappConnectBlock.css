@@ -1,0 +1,537 @@
+/* ===== WhatsApp theme (brand) ===== */
+.wa{
+  --wa-green: #25D366;          /* официальный оттенок */
+  --wa-green-strong: #128C7E;   /* тёмный бренд-акцент */
+  --wa-green-soft: rgba(37, 211, 102, 0.14);
+  --wa-border: rgba(37, 211, 102, 0.26);
+  --wa-white-border: rgba(255,255,255,0.78);
+}
+
+/* Скоупим общий блок, чтобы не конфликтовать с Telegram */
+.wa .yellowContent{
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wa-moreBtn{
+  margin-top: 2px;
+  align-self: flex-start;
+  border: 1px solid rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.75);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.wa-moreBtn:hover{
+  background: rgba(255,255,255,0.95);
+}
+/* Блок с данными подключённого аккаунта — заливка в тон карточки (зелёный) */
+.wa-account{
+  margin-top: 4px;
+  padding: 6px 10px 8px;
+  border-radius: 14px;
+  background:
+    radial-gradient(ellipse 100% 80% at 50% 0%, rgba(37, 211, 102, 0.16), transparent 55%),
+    linear-gradient(180deg, rgba(255,255,255,0.72), rgba(200, 240, 218, 0.55));
+  border: 1px solid rgba(37,211,102,0.22);
+  font-size: 12px;
+  color: rgba(0,0,0,0.78);
+}
+.wa-accountTitle{
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.wa-accountLine{
+  margin: 0;
+  line-height: 1.4;
+}
+.wa-account__row{
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.wa-account__avatar{
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 2px solid rgba(37, 211, 102, 0.35);
+  box-shadow: 0 4px 12px rgba(18, 140, 126, 0.15);
+  background: rgba(255, 255, 255, 0.55);
+}
+.wa-account__avatarImg{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wa-account__avatarImg--placeholder{
+  object-fit: contain;
+  padding: 9px; /* делаем логотип меньше и целиком влезает */
+  box-sizing: border-box;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.12));
+}
+/* Нет фото / временно недоступно — нейтральный круг, не бренд */
+.wa-account__avatar--neutral{
+  background: linear-gradient(145deg, #e6e9ee 0%, #f2f4f7 100%);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.85);
+}
+.wa-account__logo{
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(37, 211, 102, 0.12);
+  border: 2px solid rgba(37, 211, 102, 0.35);
+  box-shadow: 0 4px 12px rgba(18, 140, 126, 0.15);
+}
+.wa-account__info{
+  flex: 1;
+  min-width: 0;
+}
+
+.wa .yellowContent-cont{
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
+  border-radius: var(--app-radius-lg);
+  padding: 0;
+  background:
+    radial-gradient(1200px 420px at 20% -10%, rgba(37, 211, 102, 0.18), transparent 60%),
+    radial-gradient(900px 360px at 110% 0%, rgba(37, 211, 102, 0.12), transparent 55%),
+    linear-gradient(180deg, rgba(255,255,255,0.70), rgba(255,255,255,0.70));
+  border: 1px solid var(--wa-border);
+  outline: 1px solid var(--wa-white-border);
+  outline-offset: -2px;
+  box-shadow: 0 12px 34px rgba(18, 140, 126, 0.10);
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: height 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+  will-change: height;
+}
+
+.wa .yellowContent-inner{
+  padding: 12px 16px;
+  box-sizing: border-box;
+}
+
+/* Плавное появление карточки при переходе в «подключён» */
+@keyframes wa-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Плавное появление блока «Подключённый аккаунт» */
+@keyframes wa-account-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Когда подключён — liquid glass, цвет чуть насыщеннее */
+.wa--connected .yellowContent-cont {
+  background: linear-gradient(
+    135deg,
+    #d4f5e3 0%,
+    #a8ecc5 45%,
+    #5dd68a 100%
+  );
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  outline: none;
+  box-shadow:
+    0 16px 48px rgba(37, 211, 102, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  position: relative;
+  overflow: hidden;
+  animation: wa-card-in 0.45s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.wa--connected .yellowContent-cont::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.5), transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(255, 255, 255, 0.28), transparent 50%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.wa--connected .wa-account {
+  background: linear-gradient(
+    135deg,
+    #c5f0d6 0%,
+    #7adea8 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 8px 24px rgba(37, 211, 102, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  animation: wa-account-in 0.35s cubic-bezier(0.25, 0.1, 0.25, 1) 0.08s forwards;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wa--connected .yellowContent-cont {
+    animation: none;
+  }
+  .wa .yellowContent-cont{
+    transition: none;
+  }
+  .wa--connected .wa-account {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .wa .yellowContent-cont {
+    padding: 0;
+    border-radius: 22px;
+  }
+  .wa .yellowContent-inner{
+    padding: 16px 14px;
+  }
+}
+
+/* Кнопки не наезжают на заголовок: на узкой ширине — строка кнопок под текстом */
+@media (max-width: 560px) {
+  .wa .chanHead {
+    align-items: stretch;
+  }
+  .wa .chanHead__actions {
+    margin-left: 0;
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* QR не вылезает за границы на любых экранах */
+.wa-qr-wrap {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.wa-qr-wrap canvas {
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
+.wa-qr-placeholder {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--app-text-secondary, #666);
+  font-size: 15px;
+}
+
+.wa{
+  max-width: 865px;
+  margin: 0 auto;
+  margin-top: 0;
+  padding: 10px 0 0;
+}
+
+.wa-title{
+  display: none; /* заменили на бренд‑шапку */
+}
+
+.wa-text{
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  margin: 0 0 14px;
+  color: rgba(0,0,0,0.56);
+
+}
+
+.wa-text--connected{
+  display: none;
+}
+
+/* Liquid glass: усиливаем эффект */
+.wa .yellowContent-cont{
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+}
+
+/* Бренд‑шапка */
+.wa .chanHead{
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding: 10px 4px 14px;
+}
+.wa .chanHead__left{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  flex: 1 1 260px;
+}
+.wa .chanHead__logo{
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(37, 211, 102, 0.10);
+  border: 1px solid rgba(37, 211, 102, 0.22);
+  box-shadow: 0 10px 22px rgba(18, 140, 126, 0.10);
+  flex: 0 0 auto;
+}
+.wa .chanHead__avatar{
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 2px solid rgba(37, 211, 102, 0.35);
+  box-shadow: 0 4px 12px rgba(18, 140, 126, 0.18);
+}
+.wa .chanHead__avatar img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.wa .chanHead__texts{
+  min-width: 0;
+}
+.wa .chanHead__title{
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #000;
+  white-space: nowrap;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+.wa .chanHead__subtitle{
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(0,0,0,0.56);
+}
+.wa .wa-diag{
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.wa .wa-diag__badge{
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  border: 1px solid rgba(0,0,0,0.14);
+  background: rgba(255,255,255,0.72);
+  color: rgba(0,0,0,0.72);
+}
+.wa .wa-diag__badge.is-ok{
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.12);
+  color: #0f7a37;
+}
+.wa .wa-diag__badge.is-degraded{
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.14);
+  color: #9a5a00;
+}
+.wa .wa-diag__badge.is-down{
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.14);
+  color: #a91f1f;
+}
+.wa .wa-diag__badge.is-unknown{
+  border-color: rgba(107, 114, 128, 0.35);
+  background: rgba(107, 114, 128, 0.1);
+  color: #4b5563;
+}
+.wa .wa-diag__text{
+  font-size: 12px;
+  color: rgba(0,0,0,0.58);
+}
+.wa .syncInline{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.wa .syncInline__spinner{
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(18, 140, 126, 0.25);
+  border-top-color: var(--wa-green-strong);
+  animation: wa-spin 0.8s linear infinite;
+}
+@keyframes wa-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* «Аккаунт активен» — зелёный акцент, как статус в подписке */
+.wa--connected .chanHead__subtitle {
+  color: #0d7d3d;
+  font-size: 14px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.wa .chanHead__badge{
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,0.10);
+  background: rgba(255,255,255,0.65);
+  color: rgba(0,0,0,0.66);
+  white-space: nowrap;
+}
+.wa .chanHead__badge.is-on{
+  border-color: rgba(37, 211, 102, 0.26);
+  background: rgba(37, 211, 102, 0.10);
+  color: var(--wa-green-strong);
+}
+.wa .chanHead__actions{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+  flex: 0 1 auto;
+}
+.wa .wa-actionBtn--pause { opacity: 0.92; }
+.wa .wa-actionBtn--play { background: rgba(37, 211, 102, 0.2); color: var(--wa-green-strong); }
+
+.wa-error{
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255, 77, 79, 0.10);
+  border: 1px solid rgba(255, 77, 79, 0.22);
+  color: #b42318;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.wa-errorActions{
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wa-center{
+  text-align: center;
+}
+
+.wa-lead{
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(0,0,0,0.75);
+}
+
+.wa-subhint{
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(0,0,0,0.55);
+  line-height: 1.35;
+}
+
+.wa-connectedRow{
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.wa-actionBtn{
+  border: 1px solid var(--wa-border);
+  background: rgba(37, 211, 102, 0.10);
+  color: var(--wa-green-strong);
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+.wa-actionBtn:hover:not(:disabled){
+  background: rgba(37, 211, 102, 0.14);
+  border-color: rgba(37, 211, 102, 0.34);
+  transform: translateY(-1px);
+}
+.wa-actionBtn:disabled{
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.wa-actionBtn--danger{
+  border-color: rgba(255, 77, 79, 0.35);
+  background: rgba(255, 77, 79, 0.10);
+  color: #b42318;
+}
+.wa-actionBtn--danger:hover:not(:disabled){
+  background: rgba(255, 77, 79, 0.14);
+  border-color: rgba(255, 77, 79, 0.45);
+}
+
+/* Кнопка «Отключить» в стиле liquid glass при подключённом состоянии */
+.wa--connected .wa-actionBtn {
+  background: linear-gradient(135deg, #e2f8eb 0%, #a8ecc5 100%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.12), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.wa--connected .wa-actionBtn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ecfbf2 0%, #b8f0ce 100%);
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.18), 0 1px 0 rgba(255, 255, 255, 0.95) inset;
+}
+
+@media (max-width: 520px){
+  .wa-connectedRow{
+    margin-top: 16px;
+  }
+}

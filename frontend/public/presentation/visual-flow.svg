@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#141210"/>
+      <stop offset="100%" stop-color="#211a15"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f4e5b2"/>
+      <stop offset="100%" stop-color="#c79f46"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+
+  <text x="600" y="84" text-anchor="middle" fill="#efe4c0" font-size="42" font-family="Arial, sans-serif" font-weight="700">
+    Unified Messaging Flow
+  </text>
+  <text x="600" y="120" text-anchor="middle" fill="#b9ab8b" font-size="22" font-family="Arial, sans-serif">
+    Templates, Queue, Schedule, Control
+  </text>
+
+  <g transform="translate(455,220)">
+    <rect x="0" y="0" width="290" height="210" rx="26" fill="#2a231c" stroke="#6a5738" stroke-width="2"/>
+    <text x="145" y="48" text-anchor="middle" fill="#f2e7bf" font-size="30" font-family="Arial, sans-serif" font-weight="700">
+      Chatrassylka
+    </text>
+    <text x="145" y="78" text-anchor="middle" fill="#c3b496" font-size="16" font-family="Arial, sans-serif">
+      One cabinet
+    </text>
+    <path d="M145 160 C 104 132, 100 94, 126 82 C 145 73, 160 84, 166 100 C 172 84, 187 73, 206 82 C 232 94, 228 132, 187 160 L 166 178 Z"
+      fill="url(#gold)"/>
+    <circle cx="166" cy="128" r="70" fill="none" stroke="#d9bf77" stroke-opacity="0.35"/>
+  </g>
+
+  <g transform="translate(140,240)">
+    <circle cx="95" cy="95" r="90" fill="#1f2f22" stroke="#4fa86f" stroke-width="3"/>
+    <text x="95" y="112" text-anchor="middle" fill="#c8f5d6" font-size="62" font-family="Arial, sans-serif" font-weight="800">WA</text>
+    <text x="95" y="206" text-anchor="middle" fill="#d7efdf" font-size="26" font-family="Arial, sans-serif" font-weight="700">WhatsApp</text>
+  </g>
+
+  <g transform="translate(870,240)">
+    <circle cx="95" cy="95" r="90" fill="#1a2935" stroke="#5fa7db" stroke-width="3"/>
+    <text x="95" y="112" text-anchor="middle" fill="#d9efff" font-size="62" font-family="Arial, sans-serif" font-weight="800">TG</text>
+    <text x="95" y="206" text-anchor="middle" fill="#d9efff" font-size="26" font-family="Arial, sans-serif" font-weight="700">Telegram</text>
+  </g>
+
+  <g stroke="#d9bf77" stroke-width="5" opacity="0.9">
+    <line x1="365" y1="335" x2="455" y2="325"/>
+    <line x1="745" y1="325" x2="870" y2="335"/>
+  </g>
+</svg>

@@ -1,0 +1,192 @@
+/* Стиль и размеры как у страницы шаблонов (.tpl) */
+.subscription {
+  min-height: 100vh;
+  background: var(--app-bg);
+  padding: 32px 16px 60px;
+  display: flex;
+  justify-content: center;
+}
+
+.subscription__wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.subscription-title {
+  font-size: 36px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0 0 20px;
+  color: var(--app-text);
+}
+
+.subscription-text {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 24px;
+  text-align: center;
+  color: var(--app-text);
+  opacity: 0.9;
+}
+
+.subscription-footer {
+  margin-top: 24px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--app-text-muted);
+}
+
+/* Карточка контента — как .tpl-card у шаблонов */
+.subscription-cont {
+  max-width: 640px;
+  margin: 0 auto;
+  /* фон в стиле подвала на главной */
+  background: radial-gradient(circle at 0% 0%, #fff8d2 0, #f9ee91 40%, #f4e36b 100%);
+  border-radius: 32px;
+  padding: 20px 24px 24px;
+  box-shadow: var(--app-shadow);
+}
+
+.subscription-data {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+.subscription-data:last-of-type {
+  margin-bottom: 0;
+}
+.subscription-data strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-text);
+  opacity: 0.9;
+  display: block;
+  margin-bottom: 0;
+  flex: 0 0 auto;
+}
+
+.subscription-data-text {
+  background: var(--app-card-soft);
+  padding: 10px 14px;
+  border-radius: var(--app-radius);
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+  border: 1px solid var(--app-border);
+  flex: 0 0 auto;
+}
+
+/* Кнопки в стиле .tpl-btn */
+.subscription-cont button,
+.trial-btn {
+  border-radius: var(--app-radius-pill);
+  border: 1px solid var(--app-border-strong);
+  background: transparent;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  margin-bottom: 10px;
+  margin-right: 8px;
+}
+.subscription-cont button:hover:not(:disabled),
+.trial-btn:hover:not(:disabled) {
+  background: var(--app-card);
+  transform: translateY(-2px);
+}
+.subscription-cont button:disabled,
+.trial-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Цветные кнопки подписки в кабинете */
+.subscription-btn{
+  border-color: transparent;
+}
+
+.subscription-btn--cancel{
+  background: #ff4d4f;
+}
+.subscription-btn--cancel:hover:not(:disabled){
+  background: #d9363e;
+}
+
+.subscription-btn--wa{
+  background: #25d366;
+}
+.subscription-btn--wa:hover:not(:disabled){
+  background: #1eb85a;
+}
+
+.subscription-btn--tg{
+  background: #29a9eb;
+}
+.subscription-btn--tg:hover:not(:disabled){
+  background: #1c8fcc;
+}
+
+.subscription-btn--wa-tg{
+  background: linear-gradient(90deg, #25d366, #29a9eb);
+}
+.subscription-btn--wa-tg:hover:not(:disabled){
+  background: linear-gradient(90deg, #1eb85a, #1c8fcc);
+}
+
+.subscription-cont [style*='marginTop: 10'] {
+  margin-top: 16px;
+}
+.subscription-cont [style*='marginTop: 12'] {
+  margin-top: 16px;
+}
+
+/* Уведомление о скором окончании */
+.subscription-cont > div[style*='background'] {
+  border-radius: var(--app-radius) !important;
+  font-size: 14px !important;
+  margin-bottom: 16px !important;
+}
+
+@media (max-width: 520px) {
+  .subscription {
+    padding: 22px 12px 44px;
+  }
+  .subscription__wrap {
+    padding: 0 12px;
+  }
+  .subscription-title {
+    font-size: 28px;
+    margin: 0 0 16px;
+  }
+  .subscription-text {
+    font-size: 13px;
+    margin: 0 0 20px;
+  }
+  .subscription-cont {
+    padding: 16px 18px 20px;
+    border-radius: 24px;
+  }
+  /* На мобиле каждая строка подписки в колонку, чтобы текст помещался */
+  .subscription-data{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .subscription-data strong,
+  .subscription-data-text{
+    width: auto;
+  }
+  .subscription-data strong {
+    font-size: 12px;
+  }
+  .subscription-data-text {
+    font-size: 13px;
+    padding: 8px 12px;
+  }
+}

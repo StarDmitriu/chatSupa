@@ -1,0 +1,2058 @@
+/* Стиль как на странице шаблонов: мягкий градиент, liquid glass (см. cabinet/STYLE-LIQUID-GLASS.md) */
+.tedit {
+  --tedit-page-bg: linear-gradient(180deg, #ffffff 0%, #fffef8 25%, #fef9e8 55%, #faf4e0 85%, #f5eed5 100%);
+  --tedit-glass-bg: linear-gradient(135deg, #fff8d2 0%, #fef4b8 35%, #f9ee91 70%, #f4e36b 100%);
+  --tedit-glass-border: 1px solid rgba(255, 255, 255, 0.85);
+  --tedit-glass-shadow: 0 16px 48px rgba(212, 180, 40, 0.25), 0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  --tedit-glass-inner-border: 1px solid rgba(255, 255, 255, 0.9);
+  --tedit-glass-inner-shadow: 0 2px 12px rgba(200, 170, 30, 0.08), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  --tedit-glass-btn-bg: linear-gradient(135deg, #fffef0 0%, #fef9d4 50%, #f9ee91 100%);
+  --tedit-glass-btn-border: 1px solid rgba(255, 255, 255, 0.95);
+  --tedit-glass-btn-shadow: 0 4px 16px rgba(212, 180, 40, 0.15), 0 1px 0 rgba(255, 255, 255, 0.95) inset;
+  --tedit-glass-btn-hover-bg: linear-gradient(135deg, #ffffff 0%, #fff9d8 50%, #f9ee91 100%);
+  --tedit-glass-btn-hover-shadow: 0 6px 24px rgba(212, 180, 40, 0.2), 0 1px 0 rgba(255, 255, 255, 1) inset;
+}
+
+.tedit{
+  min-height: 100vh;
+  background: var(--tedit-page-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px 60px;
+}
+
+/* ========== Шапка как на «Ваши шаблоны»: лейбл + лого + кнопки ========== */
+.tedit .tpl-header {
+  width: 100%;
+  padding: 32px 0 30px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: transparent;
+  margin: -32px -16px 0 -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+}
+.tedit .tpl-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: transparent;
+}
+.tedit .tpl-header__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.tedit .tpl-header__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+.tedit .tpl-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.tedit .tpl-header__logo {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 33px;
+  font-weight: 900;
+  color: inherit;
+  text-decoration: none;
+}
+.tedit .tpl-header__logo-chat {
+  color: rgba(0, 0, 0, 0.9);
+}
+.tedit .tpl-header__logo-accent {
+  background: radial-gradient(circle at 0% 0%, #fff8d2 0, #f9ee91 40%, #f4e36b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 0.6px rgba(0, 0, 0, 0.45);
+}
+.tedit .tpl-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+/* Кнопки шапки — как hero-button на главной (барельеф) */
+.tedit .tpl-header__pill {
+  /* визуальный стиль задаёт .ui-action-btn (globals.css); тут — только компоновка/размер */
+  cursor: pointer;
+}
+.tedit .tpl-header__pill:hover:not(:disabled) {
+  /* hover/active делает .ui-action-btn */
+}
+.tedit .tpl-header__pill:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.tedit .tpl-header__pill--primary {
+  /* primary поверх базового .ui-action-btn */
+  background: var(--app-accent);
+  border-color: var(--app-accent-strong);
+  color: #1a1a1a;
+}
+.tedit .tpl-header__pill--primary:hover:not(:disabled) {
+  background: var(--app-accent-strong);
+}
+@media (max-width: 768px) {
+  .tedit .tpl-header__row {
+    flex-wrap: wrap;
+  }
+  .tedit .tpl-header__nav {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  /* размер шапочных кнопок унифицирован через .ui-header-btn (globals.css) */
+}
+
+.tedit__wrap{
+  width: 100%;
+  max-width: 1200px;
+  margin: 0;
+  padding: 0 20px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.tedit__title{
+  margin: 0 0 20px;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--app-text);
+  text-align: center;
+}
+
+.tedit__card{
+  margin: 0 auto;
+  margin-top: 8px;
+  background: var(--tedit-glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: var(--tedit-glass-border);
+  box-shadow: var(--tedit-glass-shadow);
+  border-radius: 32px;
+  padding: 24px 24px 32px;
+  position: relative;
+  overflow: hidden;
+}
+.tedit__card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 20% 0%, rgba(255,255,255,0.5), transparent 50%),
+    radial-gradient(circle at 80% 100%, rgba(255,255,255,0.28), transparent 50%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+.tedit__card > * { position: relative; z-index: 0; }
+
+.tedit__form{
+  text-align: left;
+}
+
+.tedit__intro{
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: var(--app-text-muted);
+  text-align: center;
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ====== fields like in mock ====== */
+.tedit-field{
+  margin: 25px auto;
+  max-width: 520px;
+}
+
+.tedit-field__label{
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--app-text);
+}
+
+.tedit-input {
+  background: var(--tedit-glass-btn-bg) !important;
+  border-radius: var(--app-radius) !important;
+  padding: 14px 16px !important;
+  box-shadow: var(--tedit-glass-inner-shadow) !important;
+  border: var(--tedit-glass-btn-border) !important;
+}
+
+/* Поле ввода сообщения — liquid glass */
+.tedit-textarea-editor {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-radius: var(--app-radius) !important;
+  padding: 14px 16px !important;
+  box-shadow: var(--tedit-glass-inner-shadow) !important;
+  border: var(--tedit-glass-inner-border) !important;
+}
+
+.tedit-input {
+  padding-right: 16px !important; /* Для обычного input не нужен отступ */
+}
+
+.tedit-textarea-wrapper .tedit-textarea-editor {
+  padding-right: 48px !important; /* Место для кнопки эмодзи */
+  min-height: 180px;
+  max-height: min(420px, 50vh);
+  overflow-y: auto; /* скролл только когда текст не помещается */
+}
+
+.tedit-textarea-wrapper:has(.tedit-format-toolbar) .tedit-textarea-editor {
+  border-radius: 0 0 var(--app-radius) var(--app-radius) !important;
+  border-top: none !important;
+}
+
+.tedit-input input{
+  background: transparent !important;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.tedit-input:focus-within,
+.tedit-textarea-editor:focus{
+  border-color: var(--app-accent) !important;
+  box-shadow: 0 0 0 2px var(--app-focus-ring) !important;
+  outline: none;
+}
+
+.tedit-textarea-editor {
+  background: var(--app-bg) !important;
+  font-size: 15px;
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: var(--app-text);
+  line-height: 1.4;
+  word-wrap: break-word;
+  min-height: 180px;
+  max-height: min(420px, 50vh);
+  overflow-y: auto;
+}
+
+.tedit-textarea-editor:empty:before{
+  content: 'Введите текст...';
+  color: var(--app-text-muted);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.tedit-textarea-editor:focus{
+  outline: none;
+}
+
+/* Жирный текст - как в Telegram */
+.tedit-textarea-editor strong,
+.tedit-textarea-editor b{
+  font-weight: 600;
+  color: var(--app-text);
+  font-family: inherit;
+}
+
+/* Курсив - как в Telegram */
+.tedit-textarea-editor em,
+.tedit-textarea-editor i{
+  font-style: italic;
+  color: var(--app-text);
+  font-family: inherit;
+}
+
+/* Подчёркнутый - как в Telegram */
+.tedit-textarea-editor u{
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  color: var(--app-text);
+  font-family: inherit;
+}
+
+/* Моноширинный код - как в Telegram (серый фон, моноширинный шрифт) */
+.tedit-textarea-editor code{
+  background: rgba(0, 0, 0, 0.06);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Source Code Pro', 'Menlo', 'Consolas', 'DejaVu Sans Mono', monospace;
+  font-size: 0.9em;
+  font-weight: 400;
+  color: var(--app-text);
+  line-height: 1.4;
+  display: inline-block;
+}
+
+/* Списки - как в Telegram */
+.tedit-textarea-editor ul,
+.tedit-textarea-editor ol{
+  margin: 6px 0;
+  padding-left: 20px;
+  color: var(--app-text);
+  font-family: inherit;
+}
+
+.tedit-textarea-editor ul{
+  list-style-type: disc;
+}
+
+.tedit-textarea-editor ol{
+  list-style-type: decimal;
+}
+
+.tedit-textarea-editor li{
+  margin: 2px 0;
+  color: var(--app-text);
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.tedit-textarea-editor br{
+  line-height: 1.4;
+}
+
+/* Комбинированное форматирование (жирный + курсив) */
+.tedit-textarea-editor strong em,
+.tedit-textarea-editor em strong,
+.tedit-textarea-editor b i,
+.tedit-textarea-editor i b{
+  font-weight: 600;
+  font-style: italic;
+  color: var(--app-text);
+}
+
+/* Жирный + подчёркнутый */
+.tedit-textarea-editor strong u,
+.tedit-textarea-editor u strong,
+.tedit-textarea-editor b u,
+.tedit-textarea-editor u b{
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  color: var(--app-text);
+}
+
+/* Курсив + подчёркнутый */
+.tedit-textarea-editor em u,
+.tedit-textarea-editor u em,
+.tedit-textarea-editor i u,
+.tedit-textarea-editor u i{
+  font-style: italic;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  color: var(--app-text);
+}
+
+.tedit-field__hint{
+  margin-top: 15px;
+  font-size: 13px;
+  color: var(--app-text-muted);
+}
+
+.tedit-char-count{
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--app-text-muted);
+}
+.tedit-char-count__nums strong{
+  color: var(--app-text);
+}
+.tedit-char-count__tg{
+  margin-left: 4px;
+  opacity: 0.9;
+}
+
+/* ===== upload block ===== */
+.tedit-upload{
+  margin: 26px auto 10px;
+  max-width: 520px;
+}
+
+.tedit-upload__label{
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--app-text);
+}
+
+.tedit-upload__row{
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.tedit-upload__drop{
+  background: var(--tedit-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: var(--tedit-glass-btn-border);
+  box-shadow: var(--tedit-glass-inner-shadow);
+  border-radius: var(--app-radius-lg);
+  width: 260px;
+  max-width: 100%;
+  height: 124px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.tedit-upload__btn{
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 16px 12px;
+  border-radius: var(--app-radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--app-text-muted);
+  font-weight: 500;
+  font-size: 13px;
+  text-align: center;
+}
+
+.tedit-upload__btn:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.tedit-upload__icon{
+  font-size: 18px;
+}
+
+.tedit-upload__note{
+  padding-top: 6px;
+}
+
+.tedit-upload__noteTitle{
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.tedit-upload__noteText{
+  font-size: 13px;
+  color: var(--app-text-muted);
+  line-height: 1.35;
+}
+
+.tedit-upload__current-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.tedit-upload__current{
+  margin-top: 10px;
+  font-size: 12px;
+  color: rgba(0,0,0,.65);
+}
+
+.tedit-upload__previewBtn {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--app-radius);
+  margin-bottom: 4px;
+}
+
+.tedit-upload__previewHint {
+  font-size: 12px;
+  color: var(--app-text-muted);
+  margin-bottom: 8px;
+}
+
+.tedit-upload__preview{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.tedit-upload__actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Превью медиа — крупное, удобный просмотр */
+.tedit-upload__preview {
+  max-width: 100%;
+}
+.tedit-upload__previewImg,
+.tedit-upload__previewMedia {
+  width: min(400px, 100%);
+  height: min(400px, 70vh);
+  max-height: 420px;
+  border-radius: var(--app-radius);
+  object-fit: contain;
+  background: #111;
+}
+
+.tedit-upload__previewAudio{
+  width: min(320px, 100%);
+}
+
+/* Обертка для textarea с кнопкой эмодзи — лаконично в карточке, не белая */
+.tedit-textarea-wrapper {
+  position: relative;
+  background: var(--app-bg);
+  border-radius: var(--app-radius);
+}
+
+/* Панель инструментов форматирования — кнопки как закладки: выбранная сливается с полем ввода */
+.tedit-format-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  padding: 0 10px 0 0;
+  background: var(--tedit-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: var(--tedit-glass-inner-border);
+  border-bottom: none;
+  border-radius: var(--app-radius) var(--app-radius) 0 0;
+  box-shadow: var(--tedit-glass-inner-shadow);
+  flex-wrap: wrap;
+  min-height: 44px;
+}
+
+.tedit-format-btn {
+  width: 38px;
+  height: 36px;
+  margin-top: 6px;
+  border: var(--tedit-glass-btn-border);
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--app-radius) var(--app-radius) 0 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text-muted);
+  transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, margin 0.2s;
+  padding: 0;
+  margin-right: 2px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Символы на кнопках — всегда свой стиль, не наследуют форматирование страницы */
+.tedit-format-btn__char {
+  font-weight: 700;
+  font-style: normal;
+  text-decoration: none;
+  font-family: inherit;
+  line-height: 1;
+}
+.tedit-format-btn__char--italic {
+  font-style: italic;
+  font-weight: 600;
+}
+.tedit-format-btn__char--underline {
+  text-decoration: underline;
+}
+.tedit-format-btn__char--strike {
+  text-decoration: line-through;
+}
+.tedit-format-btn__char--code {
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+}
+
+.tedit-format-btn:hover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.95);
+  color: var(--app-text);
+}
+
+/* Выбранная кнопка — как закладка: сливается с полем ввода */
+.tedit-format-btn.is-active {
+  background: var(--app-bg);
+  border-color: var(--tedit-glass-inner-border);
+  border-bottom: 1px solid var(--app-bg);
+  margin-bottom: -1px;
+  color: var(--app-text);
+  box-shadow: none;
+  z-index: 1;
+}
+
+.tedit-format-btn:active {
+  transform: scale(0.98);
+}
+
+.tedit-format-separator {
+  width: 1px;
+  height: 20px;
+  background: var(--app-border-strong);
+  margin: 0 6px;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+/* Контекстное меню */
+.tedit-context-menu {
+  background: var(--app-bg);
+  border: 1px solid var(--app-border-strong);
+  border-radius: var(--app-radius);
+  box-shadow: var(--app-shadow-lg);
+  padding: 4px;
+  z-index: 2000;
+  min-width: 180px;
+}
+
+.tedit-context-menu-item {
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--app-text);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background var(--app-transition-fast);
+}
+
+.tedit-context-menu-item:hover {
+  background: var(--app-card);
+}
+
+.tedit-context-menu-separator {
+  height: 1px;
+  background: var(--app-border);
+  margin: 4px 0;
+}
+
+.tedit-emoji-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border: var(--tedit-glass-btn-border);
+  background: var(--tedit-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--tedit-glass-btn-shadow);
+  border-radius: var(--app-radius);
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  z-index: 10;
+}
+
+.tedit-emoji-btn:hover {
+  background: var(--tedit-glass-btn-hover-bg);
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: var(--tedit-glass-btn-hover-shadow);
+  transform: scale(1.05);
+}
+
+/* Окно выбора эмодзи — liquid glass */
+.tedit-emoji-picker {
+  background: var(--tedit-glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: var(--tedit-glass-border);
+  box-shadow: var(--tedit-glass-shadow);
+  border-radius: var(--app-radius);
+  padding: 12px;
+  z-index: 1000;
+  max-width: 300px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.tedit-emoji-picker::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tedit-emoji-picker::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+}
+
+.tedit-emoji-picker::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.tedit-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.tedit-emoji-item {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: var(--app-radius);
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  padding: 0;
+}
+
+.tedit-emoji-item:hover {
+  background: var(--tedit-glass-btn-hover-bg);
+  box-shadow: var(--tedit-glass-btn-shadow);
+  transform: scale(1.15);
+}
+
+.tedit-emoji-img {
+  width: 24px;
+  height: 24px;
+  display: block;
+  pointer-events: none;
+}
+
+.tedit-emoji-char {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tedit-linkbtn{
+  border: 0;
+  background: transparent;
+  padding: 8px 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 600;
+  color: var(--app-text);
+  transition: color var(--app-transition);
+}
+
+.tedit-linkbtn:hover {
+  color: var(--app-text-muted);
+}
+
+.tedit-linkbtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tedit-upload__current-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.tedit-upload__actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+/* ===== Включен и Order (видны, с подсказками) ===== */
+.tedit-mini{
+  margin: 20px auto 0;
+  max-width: 640px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.tedit-mini__item{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tedit-mini__item .ant-form-item{
+  margin-bottom: 0 !important;
+}
+
+.tedit-mini__item .ant-slider{
+  width: 240px;
+  min-width: 200px;
+  max-width: 100%;
+}
+
+.tedit-mini__item--pauseBlock{
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+}
+.tedit-mini__item--pauseBlock .ant-slider{
+  width: 100%;
+  max-width: 100%;
+}
+.tedit-pauseBetweenGroups__head{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+.tedit-pauseBetweenGroups__tag{
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.tedit-mini__item .ant-slider-mark-text{
+  font-size: 11px;
+  opacity: 0.8;
+  pointer-events: none; /* метки не должны перехватывать drag-ручку */
+}
+
+/* В speed-slider скрываем служебные точки меток,
+   чтобы не выглядело как "залипший второй бегунок". */
+.tedit-speed-slider .ant-slider-dot {
+  display: none !important;
+}
+
+/* Ant Slider marks/tooltip иногда перекрывают клики по handle (особенно слева).
+   Чтобы ползунок точно перетаскивался, запрещаем pointer-events у всего,
+   кроме самой ручки. */
+.tedit-speed-slider .ant-slider-mark,
+.tedit-speed-slider .ant-slider-mark-text,
+.tedit-speed-slider .ant-tooltip,
+.tedit-speed-slider .ant-slider-dot {
+  pointer-events: none !important;
+}
+
+.tedit-speed-slider .ant-slider-handle {
+  pointer-events: auto !important;
+  z-index: 3;
+}
+
+.tedit-mini__label{
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.tedit-mini__hint{
+  font-size: 12px;
+  color: var(--app-text-muted);
+  margin-top: 2px;
+  width: 100%;
+}
+
+@media (max-width: 560px){
+  .tedit-mini{
+    width: 100%;
+    max-width: 520px;
+  }
+  .tedit-mini__item{
+    width: 100%;
+    justify-content: space-between;
+  }
+  .tedit-mini__item .ant-slider{
+    width: 100%;
+    min-width: 200px;
+  }
+}
+
+/* ===== targets ===== */
+.tedit-targets{
+  margin: 26px auto 0;
+  max-width: 760px;
+  padding-top: 10px;
+}
+
+.tedit-targets__head{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  min-height: 48px;
+}
+
+.tedit-targets__title{
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--app-text);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Переключатель каналов WA/TG — liquid glass */
+.tedit-targets__head .ant-segmented{
+  background: var(--tedit-glass-btn-bg) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: var(--tedit-glass-btn-border) !important;
+  border-radius: var(--app-radius-pill) !important;
+  padding: 4px !important;
+  box-shadow: var(--tedit-glass-btn-shadow) !important;
+  width: 100%;
+  max-width: 300px;
+  flex-shrink: 0;
+}
+
+.tedit-targets__head .ant-segmented-item{
+  padding-inline: 16px !important;
+  padding-block: 8px !important;
+  border-radius: 999px !important;
+  transition: all 0.2s ease !important;
+  font-weight: 500 !important;
+  flex: 1 1 0;
+  min-width: 0;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+.tedit-targets__head .ant-segmented-item:hover{
+  background: rgba(255, 255, 255, 0.5) !important;
+}
+
+.tedit-targets__head .ant-segmented-item-selected{
+  background: var(--tedit-glass-btn-hover-bg) !important;
+  border-color: var(--app-accent) !important;
+  box-shadow: var(--tedit-glass-btn-hover-shadow) !important;
+  font-weight: 700 !important;
+}
+
+.tedit-targets__head .ant-segmented-item-selected .tedit-channelTab__text{
+  color: var(--app-text) !important;
+}
+
+/* Убираем заливку ползунка Ant Design — только наша подсветка */
+.tedit-targets__head .ant-segmented .ant-segmented-group .ant-segmented-item-selected::after,
+.tedit-targets__head .ant-segmented-thumb{
+  background: transparent !important;
+}
+
+.tedit-channelTab{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tedit-channelTab__icon{
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.tedit-channelTab__icon svg{
+  width: 100%;
+  height: 100%;
+}
+
+.tedit-targets__head .ant-segmented-item-selected .tedit-channelTab__icon{
+  transform: scale(1.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.tedit-targets__countBlock{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.tedit-targets__countHint{
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--app-text-muted);
+  max-width: 36rem;
+}
+
+.tedit-targets__counts{
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.tedit-targets__countItem{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tedit-targets__legend{
+  flex-basis: 100%;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--app-text-muted);
+  max-width: 42rem;
+  margin-top: 2px;
+}
+
+.tedit-channelTab__text{
+  font-size: 14px;
+  font-weight: inherit;
+  color: var(--app-text-muted);
+  transition: color 0.2s ease;
+}
+
+.tedit-channelTab__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+  font-size: 12px;
+  color: var(--app-text-muted);
+  opacity: 0.9;
+  min-width: 78px;
+  justify-content: flex-end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tedit-channelTab__load {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.18);
+  border-top-color: var(--app-accent-strong);
+  animation: tedit-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.tedit-targets__meta{
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--app-text-muted);
+  padding: 8px 14px;
+  background: var(--tedit-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: var(--tedit-glass-inner-border);
+  box-shadow: var(--tedit-glass-inner-shadow);
+  border-radius: var(--app-radius);
+  border-left: 3px solid;
+  border-left-color: var(--channel-color, var(--app-accent));
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  min-height: 44px;
+}
+
+.tedit-targets__meta-channel{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--app-text);
+  margin-right: 6px;
+}
+
+.tedit-targets__meta-channel svg{
+  flex-shrink: 0;
+}
+
+.tedit-targets__meta b{
+  color: var(--app-text);
+  font-weight: 700;
+}
+
+.tedit-targets__meta-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 0;
+  color: var(--app-text-muted);
+  font-weight: 500;
+  min-height: 20px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Строка под вкладками WA/TG всегда занимает место — без «прыжка» после снятия спиннера */
+.tedit-targets__meta-idle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 0;
+  color: var(--app-text-muted);
+  font-weight: 500;
+  min-height: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tedit-targets__meta-idle b {
+  color: var(--app-text);
+  font-weight: 700;
+}
+
+.tedit-targets__meta-hint{
+  flex-basis: 100%;
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--app-text-muted);
+}
+
+.tedit-targets__meta-hint--warn{
+  color: var(--app-text);
+}
+
+/* Фиксированное место для предупреждения о невыбранных группах */
+.tedit-warning-placeholder {
+  min-height: 70px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.tedit-warning-message {
+  padding: 10px 12px;
+  border-radius: var(--app-radius);
+  background: var(--tedit-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: var(--tedit-glass-inner-border);
+  box-shadow: var(--tedit-glass-inner-shadow);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--app-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.tedit-warning-message--connect,
+.tedit-warning-message--empty {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  margin-bottom: 12px;
+}
+.tedit-warning-message--empty .tedit-link {
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.tedit-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--app-accent-strong);
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color var(--app-transition);
+}
+
+.tedit-link:hover {
+  color: var(--app-text);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Спиннер загрузки */
+.tedit-loadingSpinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--app-border);
+  border-top-color: var(--app-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.tedit-targets__filter {
+  margin-top: 12px;
+  width: 100%;
+  max-width: 520px;
+}
+.tedit-targets__filter .tedit-filter-input {
+  width: 100%;
+  border-radius: var(--app-radius);
+}
+.tedit-targets__buttons{
+  margin-top: 12px;
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  min-height: 44px;
+  align-items: center;
+}
+
+.tedit-targets__bulk-interval {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tedit-bulk-interval-select {
+  font-size: 13px;
+}
+
+.tedit-pill{
+  border: var(--tedit-glass-btn-border);
+  background: var(--tedit-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--tedit-glass-btn-shadow);
+  border-radius: var(--app-radius-pill);
+  padding: 10px 18px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--app-text);
+  transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  white-space: nowrap;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+}
+
+.tedit-pill:hover:not(:disabled){
+  background: var(--tedit-glass-btn-hover-bg);
+  box-shadow: var(--tedit-glass-btn-hover-shadow);
+  transform: translateY(-2px);
+}
+
+.tedit-pill:disabled{
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.tedit-spinner{
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--app-border);
+  border-top-color: var(--app-text);
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: -2px;
+  animation: tedit-spin 0.8s linear infinite;
+}
+
+@keyframes tedit-spin{
+  to { transform: rotate(360deg); }
+}
+
+/* Панель для таблицы групп — фиксированная высота, без резких прыжков при выборе */
+.tedit-table-panel {
+  width: 100%;
+  max-width: 520px;
+  background: var(--tedit-glass-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: var(--tedit-glass-border);
+  box-shadow: var(--tedit-glass-shadow);
+  border-radius: var(--app-radius-lg);
+  padding: 24px 20px 28px;
+  margin-top: 12px;
+  position: relative;
+  min-height: 280px;
+  /* Фиксируем высоту контейнера списка — не меняется при смене выбора */
+  display: flex;
+  flex-direction: column;
+}
+
+.tedit-scroll-container {
+  position: relative;
+  height: min(55vh, 500px);
+  min-height: 260px;
+  max-height: 500px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  flex-shrink: 0;
+  /* Плавная адаптация без скачков */
+  transition: none;
+}
+
+.tedit-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tedit-scroll-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.tedit-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.tedit-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.tedit-table{
+  margin-top: 0;
+  background: transparent;
+}
+
+/* Стили таблицы как в управлении группами */
+.tedit-table .ant-table {
+  background: transparent;
+}
+
+.tedit-table .ant-table-container {
+  background: transparent;
+  overflow: visible !important;
+}
+
+.tedit-table .ant-table-body {
+  overflow: visible !important;
+}
+
+.tedit-table .ant-table-thead {
+  display: none;
+}
+
+.tedit-table .ant-table-tbody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 520px;
+  margin: 0;
+}
+
+.tedit-table .ant-table-tbody > tr {
+  position: relative;
+  display: flex;
+  width: 100%;
+  background: var(--app-bg);
+  border-radius: var(--app-radius);
+  border: 1px solid var(--app-border);
+  min-height: 46px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tedit-table .ant-table-tbody > tr:hover {
+  background: var(--app-card-soft);
+  border-color: var(--app-border-medium);
+  transform: translateY(-1px);
+  box-shadow: var(--app-shadow-sm);
+}
+
+/* Выбранная группа — сразу видно: фон, рамка, бейдж «✓ Выбрано» */
+.tedit-table-row.rowSelected {
+  background: var(--app-card-strong) !important;
+  border: 2px solid var(--app-accent) !important;
+  box-shadow: 0 0 0 2px var(--app-focus-ring) !important;
+}
+
+.tedit-table-row.rowSelected:hover {
+  background: var(--app-card-strong) !important;
+  border: 2px solid var(--app-accent-strong) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 0 0 3px var(--app-focus-ring) !important;
+}
+
+/* Внутри строки группы */
+.tedit-group-row-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  min-width: 0;
+  row-gap: 8px;
+}
+
+.tedit-group-row-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.tedit-group-avatar-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--app-card-soft);
+}
+
+.tedit-group-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tedit-group-avatar--placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--app-text-muted);
+  background: var(--app-card-strong);
+  flex-shrink: 0;
+}
+
+.tedit-group-row-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.tedit-group-row-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.tedit-group-row-id {
+  display: block;
+  max-width: 100%;
+  font-size: 11px;
+  color: var(--app-text-muted);
+  margin-top: 2px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tedit-info-icon{
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.85);
+  color: var(--app-text);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.tedit-info-icon:hover{
+  transform: translateY(-1px);
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.16);
+}
+.tedit-info-icon:active{
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.tedit-info-refresh{
+  min-width: 96px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line, #d9d9d9);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tedit-info-refresh:hover{
+  background: #f7f9fc;
+}
+
+.tedit-info-close{
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: #f3f4f6;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.tedit-reason-info{
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border: none;
+  border-radius: 50%;
+  background: #eef2ff;
+  color: #1d4ed8;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+}
+
+.tedit-group-row-badge {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--app-text);
+  background: var(--app-accent);
+  padding: 4px 10px;
+  border-radius: var(--app-radius-pill);
+  margin-left: 8px;
+  white-space: nowrap;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+}
+
+.tedit-group-row-interval {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-width: 120px;
+  margin-left: auto;
+  margin-right: 6px;
+}
+
+.tedit-group-interval-select {
+  width: 100%;
+  min-width: 120px;
+  max-width: 170px;
+}
+
+.tedit-group-row-count {
+  font-size: 12px;
+  color: var(--app-text-muted);
+  flex: 0 0 auto;
+  margin-left: 8px;
+  margin-top: 2px;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tedit-table-row.rowDisabled {
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+.tedit-table-row.rowDisabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.tedit-table .ant-table-tbody > tr > td {
+  border-bottom: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  width: 100%;
+  display: block;
+}
+
+/* Кастомная галочка как в управлении группами */
+.tedit-custom-checkbox {
+  width: 22px;
+  height: 22px;
+  border-radius: var(--app-radius);
+  border: 2px solid var(--app-border-medium);
+  background: var(--app-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  position: relative;
+  cursor: pointer;
+}
+
+.tedit-custom-checkbox:hover {
+  border-color: var(--app-accent);
+  background: var(--app-card-soft);
+}
+
+.tedit-custom-checkbox.checked {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 1px var(--app-focus-ring);
+}
+
+.tedit-custom-checkbox.checked:hover {
+  background: var(--app-card-strong);
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 2px var(--app-focus-ring);
+}
+
+.tedit-check-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--app-text);
+  stroke-width: 2;
+  animation: tedit-checkmarkAppear 0.2s ease;
+}
+
+@keyframes tedit-checkmarkAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.5) rotate(-10deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes rowSelect {
+  from {
+    background: var(--app-bg);
+  }
+  to {
+    background: var(--app-card);
+  }
+}
+
+.tedit-table-row.rowSelected {
+  animation: rowSelect 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Скрываем стандартные чекбоксы Ant Design */
+.tedit-table .ant-checkbox-wrapper {
+  display: none;
+}
+
+.tedit-table .ant-table-selection-column {
+  display: none;
+}
+
+.tedit-table .ant-checkbox:hover .ant-checkbox-inner {
+  border-color: var(--app-accent);
+  background: var(--app-card-soft);
+}
+
+.tedit-table .ant-checkbox-checked .ant-checkbox-inner {
+  background: var(--app-accent);
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 1px var(--app-focus-ring);
+}
+
+.tedit-table .ant-checkbox-checked:hover .ant-checkbox-inner {
+  background: var(--app-card-strong);
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 2px var(--app-focus-ring);
+}
+
+.tedit-table .ant-checkbox-checked .ant-checkbox-inner::after {
+  border-color: var(--app-text);
+  width: 6px;
+  height: 10px;
+  animation: checkmarkAppear 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes checkmarkAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.5) rotate(-10deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.tedit-targets__hint{
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: .65;
+}
+
+/* Кнопка «Назад» — liquid glass */
+.tedit-back-link {
+  border: var(--tedit-glass-btn-border);
+  background: var(--tedit-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--tedit-glass-btn-shadow);
+  border-radius: var(--app-radius-pill);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+  cursor: pointer;
+  transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tedit-back-link:hover {
+  background: var(--tedit-glass-btn-hover-bg);
+  box-shadow: var(--tedit-glass-btn-hover-shadow);
+  transform: translateY(-2px);
+}
+
+/* ===== actions — кнопки как .tpl-btn ===== */
+.tedit-actions{
+  margin: 24px auto 0;
+  max-width: 520px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  min-height: 44px;
+  align-items: center;
+}
+
+.tedit-btn{
+  border: var(--tedit-glass-btn-border);
+  background: var(--tedit-glass-btn-bg);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--tedit-glass-btn-shadow);
+  border-radius: var(--app-radius-pill);
+  padding: 10px 18px;
+  font-weight: 600;
+  color: var(--app-text);
+  cursor: pointer;
+  min-width: 140px;
+  transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+  text-align: center;
+  font-size: 14px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  box-sizing: border-box;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+
+.tedit-btn:hover:not(:disabled){
+  background: var(--tedit-glass-btn-hover-bg);
+  box-shadow: var(--tedit-glass-btn-hover-shadow);
+  transform: translateY(-2px);
+}
+
+.tedit-btn--primary{
+  background: var(--app-accent);
+  border-color: var(--app-accent-strong);
+  color: #1a1a1a;
+  box-shadow: 0 4px 16px rgba(180, 150, 40, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+}
+
+.tedit-btn--primary:hover:not(:disabled){
+  background: var(--app-accent-strong);
+  border-color: var(--app-accent-strong);
+  box-shadow: 0 6px 22px rgba(180, 150, 40, 0.35), 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+}
+
+.tedit-btn:disabled{
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ===== responsive ===== */
+@media (max-width: 1100px) {
+  
+  .tedit-input,
+  .tedit-textarea{
+    width: 380px;
+  }
+}
+@media (max-width: 920px){
+  .tedit__title{ font-size: 28px; margin: 0 0 16px; }
+  .tedit-cont{
+    display: flex;
+    gap: 20px;
+    flex-direction: column;
+  }
+  .tedit-input,
+  .tedit-textarea{
+    max-width: 520px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px){
+  .tedit{ padding: 16px 12px 40px; overflow-x: hidden; }
+  .tedit__wrap{ padding: 0 12px; max-width: 100%; box-sizing: border-box; overflow-x: hidden; }
+  .tedit__form{ max-width: 100%; overflow-x: hidden; }
+  .tedit__card .ant-form-item{ max-width: 100%; }
+  .tedit__card .ant-input,
+  .tedit__card .ant-input-number{ max-width: 100% !important; }
+  .tedit__title{
+    font-size: 22px;
+    margin: 0 0 12px;
+    line-height: 1.25;
+  }
+  .tedit__intro{
+    font-size: 13px;
+    margin: 0 0 16px;
+    padding: 0 4px;
+  }
+  .tedit__card{
+    padding: 16px 14px 24px;
+    border-radius: 24px;
+    margin-top: 4px;
+  }
+  .tedit-back-link{
+    font-size: 13px;
+    padding: 8px 14px;
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .tedit-cont{ flex-direction: column; align-items: stretch; gap: 16px; }
+  .tedit-cont-one{ width: 100%; max-width: 100%; min-width: 0; }
+  .tedit-field,
+  .tedit-upload,
+  .tedit-mini,
+  .tedit-actions{
+    max-width: 100%;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .tedit-field{ margin: 20px auto; }
+  .tedit-field__label{ font-size: 13px; }
+  .tedit-field__hint{ font-size: 12px; margin-top: 8px; }
+  .tedit-input,
+  .tedit-textarea,
+  .tedit-textarea-wrapper{ max-width: 100% !important; width: 100% !important; box-sizing: border-box; }
+  .tedit-textarea-wrapper .tedit-textarea-editor{ min-height: 140px; padding: 12px 44px 12px 14px !important; }
+  .tedit-format-toolbar{ flex-wrap: wrap; padding: 6px 10px; gap: 4px; }
+  .tedit-format-btn{ width: 32px; height: 32px; font-size: 13px; }
+  .tedit-emoji-btn{ width: 32px; height: 32px; top: 6px; right: 6px; font-size: 16px; }
+  .tedit-emoji-picker{ max-width: min(300px, calc(100vw - 24px)); max-height: 50vh; }
+
+  .tedit-upload__row{ grid-template-columns: 1fr; gap: 12px; }
+  .tedit-upload__drop{
+    width: 100%;
+    max-width: 100%;
+    height: 110px;
+    min-height: 110px;
+  }
+  .tedit-upload__btn{ padding: 12px 10px; font-size: 12px; }
+  .tedit-upload__noteTitle{ font-size: 12px; }
+  .tedit-upload__noteText{ font-size: 12px; line-height: 1.4; }
+  .tedit-upload__previewImg,
+  .tedit-upload__previewMedia{ width: 100%; max-width: 100%; height: auto; max-height: 50vh; }
+  .tedit-upload__previewAudio{ width: 100%; max-width: 100%; }
+
+  .tedit-mini{ flex-direction: column; gap: 16px; margin: 16px auto 0; }
+  .tedit-mini__item{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+  .tedit-mini__label{ font-size: 13px; }
+  .tedit-mini__hint{ font-size: 11px; }
+
+  .tedit-targets{ margin: 20px auto 0; max-width: 100%; padding-top: 8px; }
+  .tedit-targets__head{
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    text-align: left;
+    gap: 12px;
+  }
+  .tedit-targets__head .ant-segmented{
+    max-width: 100%;
+    width: 100%;
+  }
+  .tedit-targets__title{ font-size: 15px; }
+  .tedit-targets__meta{
+    font-size: 12px;
+    padding: 10px 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-height: auto;
+  }
+  .tedit-targets__meta-channel{ margin-right: 0; margin-bottom: 2px; }
+  .tedit-warning-placeholder{ min-height: 50px; }
+  .tedit-warning-message{ font-size: 12px; padding: 8px 10px; }
+  .tedit-targets__filter{ margin-top: 10px; max-width: 100%; }
+  .tedit-targets__buttons{ margin-top: 10px; gap: 8px; justify-content: flex-start; }
+  .tedit-pill{
+    font-size: 12px;
+    padding: 8px 14px;
+    min-width: 0;
+    height: 40px;
+  }
+
+  .tedit-table-panel{
+    max-width: 100%;
+    width: 100%;
+    padding: 16px 12px 20px;
+    margin-top: 10px;
+    min-height: 240px;
+  }
+  .tedit-scroll-container{
+    height: min(50vh, 420px);
+    min-height: 220px;
+    max-height: 420px;
+    padding-right: 4px;
+  }
+  .tedit-table .ant-table-tbody{ max-width: 100%; }
+  .tedit-table .ant-table-tbody > tr{ padding: 8px 10px; min-height: 44px; }
+  .tedit-group-row-inner{ gap: 8px; }
+  .tedit-group-row-main{ flex: 1 1 100%; min-width: 0; }
+  .tedit-group-row-title{
+    font-size: 13px;
+    white-space: normal;
+    word-break: break-word;
+    overflow: visible;
+  }
+  .tedit-group-row-id{
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    word-break: break-all;
+    line-height: 1.25;
+  }
+  .tedit-group-row-badge{ margin-left: 0; margin-top: 4px; }
+  .tedit-group-row-interval{
+    width: 100%;
+    margin-left: 0;
+    margin-top: 4px;
+  }
+  .tedit-group-interval-select{ width: 100%; }
+  .tedit-group-row-count{ margin-left: 0; }
+
+  .tedit-actions{ margin: 20px auto 0; gap: 10px; flex-direction: column; align-items: stretch; }
+  .tedit-btn{
+    min-width: 0;
+    width: 100%;
+    font-size: 14px;
+    padding: 10px 16px;
+  }
+  .tedit-context-menu{ max-width: min(280px, calc(100vw - 24px)); }
+}
+
+@media (max-width: 480px){
+  .tedit__title{ font-size: 20px; }
+  .tedit__card{ padding: 14px 12px 20px; }
+  .tedit-channelTab__text{ font-size: 13px; }
+  .tedit-targets__meta{ font-size: 11px; }
+  .tedit-pill{ padding: 6px 12px; font-size: 11px; }
+  .tedit-group-row-count{
+    white-space: normal;
+    line-height: 1.25;
+  }
+}
+
+.tedit-cont{
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.tedit-pill--primary{
+  background: var(--app-accent);
+  border-color: var(--app-accent-strong);
+  color: #1a1a1a;
+  box-shadow: 0 4px 16px rgba(180, 150, 40, 0.25), 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+}
+
+.tedit-btn--danger{
+  border-color: var(--app-danger, #ff4d4f);
+  color: var(--app-danger, #ff4d4f);
+}
+.tedit-btn--danger:hover:not(:disabled){
+  background: rgba(255, 77, 79, 0.08);
+}
+
+/* Ant Design без синего hover на странице редактирования шаблона */
+.tedit .ant-btn,
+.tedit .ant-btn:hover,
+.tedit .ant-btn:focus,
+.tedit .ant-btn:focus-visible {
+  border-color: var(--app-border-strong) !important;
+  background: var(--app-card-soft) !important;
+  color: var(--app-text) !important;
+}
+.tedit .ant-btn:hover {
+  background: var(--app-hover-bg) !important;
+}
+.tedit .ant-btn-primary,
+.tedit .ant-btn-primary:hover,
+.tedit .ant-btn-primary:focus {
+  background: var(--app-accent) !important;
+  border-color: var(--app-accent) !important;
+  color: var(--app-bg, #fff) !important;
+}
+.tedit .ant-btn-primary:hover {
+  filter: brightness(1.06);
+}
+.tedit .ant-btn-link,
+.tedit .ant-btn-link:hover,
+.tedit .ant-btn-link:focus {
+  background: transparent !important;
+  border-color: transparent !important;
+  color: var(--app-text) !important;
+}
+.tedit .ant-btn-link:hover {
+  background: var(--app-hover-bg) !important;
+}

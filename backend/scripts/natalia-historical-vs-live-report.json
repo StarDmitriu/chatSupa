@@ -1,0 +1,152 @@
+{
+  "userId": "f972f369-a9ca-44ad-97c9-52775caeec6c",
+  "at": "2026-04-09T04:06:45.268Z",
+  "syncGroups": {
+    "success": true,
+    "count": 126
+  },
+  "comparison": {
+    "historicalSnapshotCampaign": "762e806f-b906-4681-9a4b-bc2faf8ce997",
+    "historicalUniqueGroupsNormalized": 187,
+    "liveDialogsScopedGroups": 126,
+    "liveSelectedInScope": 126,
+    "historicalIntersectLiveScoped": 1,
+    "sampleIntersection": [
+      "-1003805396421"
+    ]
+  },
+  "dbAfter": {
+    "totalGroupRows": 567,
+    "byTgPhonePrefix": {
+      "null": 441,
+      "tgid:1765787": 126
+    }
+  },
+  "activeTgAccountKey": "tgid:1765787339",
+  "targetsEffective": {
+    "enabledPairsTotal": 10000,
+    "estimatedJobsIfCampaignStart": 259,
+    "perTemplate": [
+      {
+        "templateId": "030bc7af-d7ad-43fb-b49b-9ddebe53648a",
+        "title": "030bc7af-d7ad-43fb-b49b-9ddebe53648a",
+        "enabledPairs": 11,
+        "effectiveSendableNow": 1
+      },
+      {
+        "templateId": "04aa1904-d01a-4cc3-974e-4f678e9a8972",
+        "title": "04aa1904-d01a-4cc3-974e-4f678e9a8972",
+        "enabledPairs": 120,
+        "effectiveSendableNow": 0
+      },
+      {
+        "templateId": "0d233b43-8fcf-4666-88a0-b11d48cd5552",
+        "title": "0d233b43-8fcf-4666-88a0-b11d48cd5552",
+        "enabledPairs": 151,
+        "effectiveSendableNow": 7
+      },
+      {
+        "templateId": "15cf7860-5fbc-4b2d-96d3-c67826ebf85c",
+        "title": "15cf7860-5fbc-4b2d-96d3-c67826ebf85c",
+        "enabledPairs": 64,
+        "effectiveSendableNow": 1
+      },
+      {
+        "templateId": "195bb09a-edf3-46ea-a28c-13a85d9defa7",
+        "title": "195bb09a-edf3-46ea-a28c-13a85d9defa7",
+        "enabledPairs": 173,
+        "effectiveSendableNow": 5
+      },
+      {
+        "templateId": "1d0441f6-8755-456c-bbf3-a9fdb1531fb1",
+        "title": "1d0441f6-8755-456c-bbf3-a9fdb1531fb1",
+        "enabledPairs": 73,
+        "effectiveSendableNow": 2
+      },
+      {
+        "templateId": "30d8d9fc-21ac-4c72-a3d4-30adde14aa6c",
+        "title": "30d8d9fc-21ac-4c72-a3d4-30adde14aa6c",
+        "enabledPairs": 87,
+        "effectiveSendableNow": 1
+      },
+      {
+        "templateId": "310365b1-d332-4162-8be0-1f56e877c445",
+        "title": "310365b1-d332-4162-8be0-1f56e877c445",
+        "enabledPairs": 180,
+        "effectiveSendableNow": 6
+      },
+      {
+        "templateId": "315320c1-ec79-4587-a520-bbed0ba6f902",
+        "title": "315320c1-ec79-4587-a520-bbed0ba6f902",
+        "enabledPairs": 172,
+        "effectiveSendableNow": 6
+      },
+      {
+        "templateId": "3367c7c7-8de1-40b1-9e25-24891099ce65",
+        "title": "3367c7c7-8de1-40b1-9e25-24891099ce65",
+        "enabledPairs": 171,
+        "effectiveSendableNow": 6
+      },
+      {
+        "templateId": "37148414-49f0-4912-b8af-820a04f31e91",
+        "title": "37148414-49f0-4912-b8af-820a04f31e91",
+        "enabledPairs": 119,
+        "effectiveSendableNow": 0
+      },
+      {
+        "templateId": "37a784a3-50d7-48fa-86c3-5944929458e4",
+        "title": "37a784a3-50d7-48fa-86c3-5944929458e4",
+        "enabledPairs": 146,
+        "effectiveSendableNow": 6
+      },
+      {
+        "templateId": "37f611c4-b008-4422-87a9-816dd781bee9",
+        "title": "37f611c4-b008-4422-87a9-816dd781bee9",
+        "enabledPairs": 87,
+        "effectiveSendableNow": 1
+      },
+      {
+        "templateId": "3dcae5bf-b2ad-4981-b1d7-a4eed5b95224",
+        "title": "3dcae5bf-b2ad-4981-b1d7-a4eed5b95224",
+        "enabledPairs": 194,
+        "effectiveSendableNow": 9
+      },
+      {
+        "templateId": "3f97b17b-49e1-46a3-bc1d-3eaf2e86dc7d",
+        "title": "3f97b17b-49e1-46a3-bc1d-3eaf2e86dc7d",
+        "enabledPairs": 120,
+        "effectiveSendableNow": 6
+      },
+      {
+        "templateId": "44efcb87-d1af-4c51-adaf-4c62e5cc0c5a",
+        "title": "44efcb87-d1af-4c51-adaf-4c62e5cc0c5a",
+        "enabledPairs": 171,
+        "effectiveSendableNow": 5
+      },
+      {
+        "templateId": "45ec4d29-998d-4d48-9446-8ed3bd6e323d",
+        "title": "45ec4d29-998d-4d48-9446-8ed3bd6e323d",
+        "enabledPairs": 94,
+        "effectiveSendableNow": 1
+      },
+      {
+        "templateId": "4e5c1b6b-eb69-4f41-81d5-44e57f958d2d",
+        "title": "4e5c1b6b-eb69-4f41-81d5-44e57f958d2d",
+        "enabledPairs": 112,
+        "effectiveSendableNow": 2
+      },
+      {
+        "templateId": "506a8c04-a37a-4a7d-b54b-ed3f30339d43",
+        "title": "506a8c04-a37a-4a7d-b54b-ed3f30339d43",
+        "enabledPairs": 164,
+        "effectiveSendableNow": 5
+      },
+      {
+        "templateId": "556bac7d-0ac5-44d9-8d40-e9abc2644507",
+        "title": "556bac7d-0ac5-44d9-8d40-e9abc2644507",
+        "enabledPairs": 98,
+        "effectiveSendableNow": 1
+      }
+    ]
+  }
+}

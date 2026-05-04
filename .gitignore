@@ -1,0 +1,44 @@
+
+# secrets
+.env
+*.env
+.env.*
+
+# letsencrypt / certbot (do not commit)
+deploy/certbot/
+
+# deploy copy (for VPS clone)
+deploy-copy/
+
+# editor / temp
+*.save
+
+# local editor / agent data
+.cursor/
+
+# dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# build artifacts
+.next/
+frontend/.next/
+backend/dist/
+dist/
+coverage/
+*.tsbuildinfo
+
+# runtime / local state
+backend/wa_auth/
+backend/*.log
+*.log
+
+# local uploads / scratch
+incoming/
+document_errors/
+_zip_review_tg/
+
+# archives
+*.tar.gz
+*.zip

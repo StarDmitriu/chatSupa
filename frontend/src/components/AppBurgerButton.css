@@ -1,0 +1,78 @@
+.app-burger{
+  --burger-size: 44px;
+  --burger-radius: 999px;
+  --burger-bg: rgba(255, 255, 255, 0.82);
+  --burger-border: 1px solid rgba(0,0,0,0.10);
+  --burger-shadow: 0 12px 26px rgba(0, 0, 0, 0.18), 0 1px 0 rgba(255, 255, 255, 0.85) inset;
+  --burger-line: var(--app-text, #1f1f1f);
+  --burger-line-w: 22px;
+  --burger-line-h: 2px;
+  --burger-gap: 6px;
+
+  width: var(--burger-size);
+  height: var(--burger-size);
+  border-radius: var(--burger-radius);
+  border: var(--burger-border);
+  background: var(--burger-bg);
+  box-shadow: var(--burger-shadow);
+  backdrop-filter: blur(10px) saturate(135%);
+  -webkit-backdrop-filter: blur(10px) saturate(135%);
+  cursor: pointer;
+  padding: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--burger-gap);
+  position: relative;
+  flex-shrink: 0;
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+.app-burger:hover{
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+}
+
+.app-burger:active{
+  transform: translateY(0) scale(0.98);
+}
+
+.app-burger:focus-visible{
+  outline: none;
+  box-shadow: 0 0 0 2px var(--app-bg, #fff), 0 0 0 4px var(--app-accent, #f4e36b), var(--burger-shadow);
+}
+
+.app-burger__line{
+  width: var(--burger-line-w);
+  height: var(--burger-line-h);
+  background: var(--burger-line);
+  border-radius: 999px;
+  transform-origin: center;
+  transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1), opacity 180ms ease, width 200ms ease;
+}
+
+/* чуть “характернее”: средняя линия короче */
+.app-burger__line:nth-child(2){
+  width: calc(var(--burger-line-w) - 6px);
+  opacity: 0.9;
+}
+
+.app-burger.is-open .app-burger__line:nth-child(1){
+  transform: translateY(calc(var(--burger-gap) + 2px)) rotate(45deg);
+}
+.app-burger.is-open .app-burger__line:nth-child(2){
+  opacity: 0;
+  transform: scaleX(0.6);
+}
+.app-burger.is-open .app-burger__line:nth-child(3){
+  transform: translateY(calc((var(--burger-gap) + 2px) * -1)) rotate(-45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-burger,
+  .app-burger__line{
+    transition-duration: 0.01ms;
+  }
+}
+

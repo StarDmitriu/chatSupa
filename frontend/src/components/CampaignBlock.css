@@ -1,0 +1,50 @@
+.newsletters{
+  max-width: 750px;
+  width: 100%;
+  margin: 0 auto;
+  margin-top: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.newsletters-button{
+  width: 400px;
+  height: 151px;
+  background-color: var(--app-card-strong);
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  align-items: center;
+  border-radius: var(--app-radius-lg);
+  margin-top: 40px;
+}
+.newsletters-button button{
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 20px;
+  border: 1px solid var(--app-border-medium);
+  background: transparent;
+  border-radius: var(--app-radius-pill);
+  cursor: pointer;
+  transition: background var(--app-transition), border-color var(--app-transition), color var(--app-transition);
+  color: var(--app-text);
+}
+.newsletters-button button:hover{
+  background: var(--app-hover-bg);
+  border-color: var(--app-border-strong);
+  color: var(--app-text);
+}
+
+.newsletters-title{
+  font-size: 48px;
+  font-weight: 700;
+  margin: 0;
+  margin-bottom: 20px;
+}
+
+.newsletters-text{
+  font-size: 20px;
+  text-align: center;
+  font-weight: 700;
+}
