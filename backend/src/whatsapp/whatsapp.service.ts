@@ -1246,7 +1246,7 @@ export class WhatsappService {
         return {
           ...status,
           status: 'connected',
-          lastError: null,
+          lastError: undefined,
           disconnectSinceAt: null,
           disconnectDurationSec: null,
         };
