@@ -22,7 +22,10 @@ import {
   RuntimeCoordinationService,
   type MessengerChannel,
 } from '../runtime/runtime-coordination.service';
-import { runtimeCapabilitiesLabel } from '../runtime/runtime-role';
+import {
+  runtimeCapabilitiesLabel,
+  runtimeHasCapability,
+} from '../runtime/runtime-role';
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -465,6 +468,34 @@ export class WhatsappService {
         runtimeRole: runtimeCapabilitiesLabel(),
       })
       .catch(() => undefined);
+  }
+
+  private async releaseConnectedSessionOwnership(
+    userId: string,
+    reason: string,
+  ): Promise<void> {
+    const s = this.sessions.get(userId);
+    if (!s) {
+      await this.runtimeCoordinationService
+        .releaseMessengerLease(this.channel, userId)
+        .catch(() => undefined);
+      return;
+    }
+
+    this.stopLeaseRenewTimer(s);
+    try {
+      s.sock?.end?.(new Error(`release_connected_session_ownership:${reason}`));
+    } catch {}
+    s.sock = undefined;
+    s.starting = undefined;
+    s.lastLeaseTouchAt = 0;
+    s.info = { status: 'not_connected' };
+    s.lastChangeAt = Date.now();
+    await this.publishSessionState(userId, s);
+    await this.runtimeCoordinationService
+      .releaseMessengerLease(this.channel, userId)
+      .catch(() => undefined);
+    this.logger.log(`[WA lease] released owner userId=${userId} reason=${reason}`);
   }
 
   private async ensureSessionLease(
@@ -1413,7 +1444,7 @@ export class WhatsappService {
       // Важно: не вызывать startSession во время показа QR / активного коннекта / авто‑рестарта.
       // Иначе любой поллинг account-info (шаблоны, другие вкладки) обрывает сокет Baileys —
       // QR «мигает» или исчезает через несколько секунд, пользователь не успевает отсканировать.
-      if (s.info.status !== 'connected' && hasCreds) {
+      if (s.info.status !== 'connected' && hasCreds && runtimeHasCapability('worker')) {
         const skipAutoRecover =
           s.info.status === 'pending_qr' ||
           s.info.status === 'connecting' ||
@@ -1929,21 +1960,31 @@ export class WhatsappService {
   async syncGroups(userId: string) {
     const startTime = Date.now();
     this.logger.log(`[WA syncGroups] START for userId=${userId}`);
+    const shouldReleaseOwnershipAfterSync = !runtimeHasCapability('worker');
+    const finish = async <T>(result: T): Promise<T> => {
+      if (shouldReleaseOwnershipAfterSync) {
+        await this.releaseConnectedSessionOwnership(
+          userId,
+          `sync_groups_complete_${runtimeCapabilitiesLabel()}`,
+        ).catch(() => undefined);
+      }
+      return result;
+    };
 
     if (!(await this.ensureSessionLease(userId, 'sync_groups'))) {
-      return {
+      return finish({
         success: false,
         message: 'whatsapp_session_busy',
-      };
+      });
     }
 
     const s = this.ensureSession(userId);
 
     if (!s.sock || s.info.status !== 'connected') {
-      return {
+      return finish({
         success: false,
         message: 'whatsapp_not_connected',
-      };
+      });
     }
 
     const { data: existingRows, error: timeErr } = await this.supabase
@@ -1958,11 +1999,11 @@ export class WhatsappService {
         'Supabase select whatsapp_groups send_time error',
         timeErr as any,
       );
-      return {
+      return finish({
         success: false,
         message: 'supabase_select_error',
         error: timeErr,
-      };
+      });
     }
 
     const existingMap = new Map<string, any>();
@@ -2046,7 +2087,7 @@ export class WhatsappService {
 
     if (error) {
       this.logger.error('Supabase upsert whatsapp_groups error', error as any);
-      return { success: false, message: 'supabase_upsert_error', error };
+      return finish({ success: false, message: 'supabase_upsert_error', error });
     }
 
     this.clearGroupsCountCacheForUser(userId);
@@ -2068,7 +2109,7 @@ export class WhatsappService {
       this.scheduleBackgroundGroupHydration(userId);
     }
 
-    return {
+    return finish({
       success: true,
       count: rows.length,
       apiEntries: finalAttempt.entriesCount,
@@ -2077,7 +2118,7 @@ export class WhatsappService {
       repairedSubject: repaired.repairedSubjectCount,
       repairedParticipants: repaired.repairedParticipantsCount,
       remainingMissingSubject: repaired.remainingMissingSubject,
-    };
+    });
   }
 
   private async buildSyncRows(

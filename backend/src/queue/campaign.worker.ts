@@ -1154,6 +1154,7 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
       const msg = e?.message ?? String(e);
 
       if (
+        msg === 'whatsapp_session_busy' ||
         msg === 'whatsapp_not_connected' ||
         msg === 'telegram_session_busy' ||
         msg === 'telegram_not_connected' ||
@@ -1162,7 +1163,7 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
         const reason =
           msg === 'telegram_not_connected' || msg === 'telegram_session_busy'
             ? 'telegram_not_connected'
-            : msg === 'whatsapp_not_connected'
+            : msg === 'whatsapp_not_connected' || msg === 'whatsapp_session_busy'
               ? 'wa_not_connected'
               : channel === 'tg'
                 ? 'telegram_not_connected'
