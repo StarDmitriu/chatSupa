@@ -13,6 +13,11 @@ import { CustomFile } from 'telegram/client/uploads';
 import { applyTelegramGroupsTgPhoneScope } from './telegram-groups-phone-scope';
 import { Buffer } from 'buffer';
 import bigInt from 'big-integer';
+import {
+  RuntimeCoordinationService,
+  type MessengerChannel,
+} from '../runtime/runtime-coordination.service';
+import { runtimeCapabilitiesLabel } from '../runtime/runtime-role';
 
 type TgStatus =
   | 'not_connected'
@@ -177,6 +182,40 @@ function videoSupportsStreaming(filename: string): boolean {
   return f.endsWith('.mp4') || f.endsWith('.mov');
 }
 
+function extractTelegramGroupTitle(...values: any[]): string | null {
+  const seen = new Set<any>();
+  const queue = [...values];
+
+  while (queue.length > 0) {
+    const value = queue.shift();
+    if (value == null || seen.has(value)) continue;
+    seen.add(value);
+
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+
+    if (typeof value !== 'object') continue;
+
+    const nestedCandidates = [
+      (value as any).title,
+      (value as any).name,
+      (value as any).displayName,
+      (value as any).formattedTitle,
+      (value as any).formattedName,
+      (value as any).chat,
+      (value as any).entity,
+      (value as any).dialog,
+    ];
+
+    for (const candidate of nestedCandidates) {
+      if (candidate != null) queue.push(candidate);
+    }
+  }
+
+  return null;
+}
+
 /** Конвертирует разметку шаблона в Telegram HTML: *жирный* _курсив_ ~подчёркнутый~ ~~зачёркнутый~~ `код`. */
 function templateMarkdownToTelegramHtml(text: string): string {
   if (!text) return '';
@@ -241,9 +280,30 @@ async function fetchWithTimeout(url: string, timeoutMs: number) {
 @Injectable()
 export class TelegramService implements OnModuleDestroy {
   private readonly logger = new Logger(TelegramService.name);
+  private readonly channel: MessengerChannel = 'tg';
+  private readonly sessionLeaseTtlMs = Math.max(
+    Number(process.env.TG_SESSION_LEASE_TTL_MS || 45_000) || 45_000,
+    15_000,
+  );
+  private readonly sessionLeaseRenewEveryMs = Math.max(
+    Number(process.env.TG_SESSION_LEASE_RENEW_MS || 15_000) || 15_000,
+    5_000,
+  );
+  private readonly sessionIdleReleaseMs = Math.max(
+    Number(process.env.TG_SESSION_IDLE_RELEASE_MS || 5 * 60_000) ||
+      5 * 60_000,
+    60_000,
+  );
+  private readonly pendingAuthIdleReleaseMs = Math.max(
+    Number(process.env.TG_AUTH_PENDING_IDLE_RELEASE_MS || 15 * 60_000) ||
+      15 * 60_000,
+    120_000,
+  );
 
   private sessions = new Map<string, TelegramClient>(); // userId -> connected client
   private pending = new Map<string, PendingAuth>(); // userId -> auth flow
+  private sessionLeaseTimers = new Map<string, NodeJS.Timeout>();
+  private sessionLeaseTouchedAt = new Map<string, number>();
 
   /** Кэш счётчиков списка: ключ = userId + selected + tgPhone; rowCount — строки БД (пагинация), chatCount — уникальные чаты */
   private groupsCountCache = new Map<
@@ -265,7 +325,118 @@ export class TelegramService implements OnModuleDestroy {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly moduleRef: ModuleRef,
+    private readonly runtimeCoordinationService: RuntimeCoordinationService,
   ) {}
+
+  private stopSessionLeaseTimer(userId: string) {
+    const timer = this.sessionLeaseTimers.get(userId);
+    if (timer) {
+      clearInterval(timer);
+      this.sessionLeaseTimers.delete(userId);
+    }
+    this.sessionLeaseTouchedAt.delete(userId);
+  }
+
+  private touchSessionLease(userId: string) {
+    this.sessionLeaseTouchedAt.set(userId, Date.now());
+  }
+
+  private async publishRuntimeState(params: {
+    userId: string;
+    status: TgStatus;
+    lastError?: string | null;
+    cooldownSeconds?: number | null;
+  }) {
+    await this.runtimeCoordinationService
+      .writeMessengerState(this.channel, params.userId, {
+        success: true,
+        status: params.status,
+        lastError: params.lastError ?? null,
+        cooldownSeconds: params.cooldownSeconds ?? null,
+        runtimeRole: runtimeCapabilitiesLabel(),
+      })
+      .catch(() => undefined);
+  }
+
+  private async ensureSessionLease(
+    userId: string,
+    reason: string,
+  ): Promise<boolean> {
+    const lease = await this.runtimeCoordinationService.acquireMessengerLease({
+      channel: this.channel,
+      userId,
+      ttlMs: this.sessionLeaseTtlMs,
+    });
+    if (!lease.acquired) {
+      this.logger.warn(
+        `[TG lease] busy userId=${userId} reason=${reason} owner=${lease.ownerInstanceId ?? 'unknown'}`,
+      );
+      return false;
+    }
+
+    this.touchSessionLease(userId);
+    if (!this.sessionLeaseTimers.has(userId)) {
+      const timer = setInterval(() => {
+        const client = this.sessions.get(userId);
+        const pending = this.pending.get(userId);
+        const touchedAt = this.sessionLeaseTouchedAt.get(userId) ?? 0;
+        const idleForMs = Date.now() - touchedAt;
+
+        if (!client && !pending) {
+          this.stopSessionLeaseTimer(userId);
+          void this.runtimeCoordinationService
+            .releaseMessengerLease(this.channel, userId)
+            .catch(() => undefined);
+          return;
+        }
+
+        if (idleForMs >= this.pendingAuthIdleReleaseMs && pending) {
+          this.logger.log(
+            `[TG lease] idle pending-auth release userId=${userId} idleMs=${idleForMs}`,
+          );
+          this.stopSessionLeaseTimer(userId);
+          void pending.client.disconnect().catch(() => undefined);
+          this.pending.delete(userId);
+          void this.publishRuntimeState({
+            userId,
+            status: 'not_connected',
+          });
+          void this.runtimeCoordinationService
+            .releaseMessengerLease(this.channel, userId)
+            .catch(() => undefined);
+          return;
+        }
+
+        if (idleForMs >= this.sessionIdleReleaseMs && client) {
+          this.logger.log(
+            `[TG lease] idle release userId=${userId} idleMs=${idleForMs}`,
+          );
+          this.stopSessionLeaseTimer(userId);
+          void client.disconnect().catch(() => undefined);
+          this.sessions.delete(userId);
+          void this.publishRuntimeState({
+            userId,
+            status: 'not_connected',
+          });
+          void this.runtimeCoordinationService
+            .releaseMessengerLease(this.channel, userId)
+            .catch(() => undefined);
+          return;
+        }
+
+        void this.runtimeCoordinationService
+          .acquireMessengerLease({
+            channel: this.channel,
+            userId,
+            ttlMs: this.sessionLeaseTtlMs,
+          })
+          .catch(() => undefined);
+      }, this.sessionLeaseRenewEveryMs);
+      this.sessionLeaseTimers.set(userId, timer);
+    }
+
+    return true;
+  }
 
   /**
    * После успешного TG-соединения — вернуть в очередь paused jobs (без CAMPAIGN_REPEAT_*).
@@ -397,7 +568,7 @@ export class TelegramService implements OnModuleDestroy {
   async getActiveTgAccountKey(userId: string): Promise<string | null> {
     const cached = this.activeTgAccountCache.get(userId);
     if (cached && cached.expiresAt > Date.now()) return cached.key;
-    const client = await this.getConnectedClient(userId);
+    const client = this.sessions.get(userId) ?? null;
     if (!client) {
       const dbKey = await this.getLastKnownTgAccountKeyFromDb(userId);
       this.activeTgAccountCache.set(userId, {
@@ -710,15 +881,26 @@ export class TelegramService implements OnModuleDestroy {
 
   // Graceful shutdown
   async onModuleDestroy() {
+    for (const userId of this.sessionLeaseTimers.keys()) {
+      this.stopSessionLeaseTimer(userId);
+    }
+
     // disconnect connected clients
-    for (const c of this.sessions.values()) {
+    for (const [userId, c] of this.sessions.entries()) {
       await c.disconnect().catch(() => undefined);
+      await this.runtimeCoordinationService
+        .releaseMessengerLease(this.channel, userId)
+        .catch(() => undefined);
     }
     this.sessions.clear();
+    this.sessionLeaseTouchedAt.clear();
 
     // disconnect pending auth clients
-    for (const p of this.pending.values()) {
+    for (const [userId, p] of this.pending.entries()) {
       await p.client.disconnect().catch(() => undefined);
+      await this.runtimeCoordinationService
+        .releaseMessengerLease(this.channel, userId)
+        .catch(() => undefined);
     }
     this.pending.clear();
   }
@@ -728,7 +910,7 @@ export class TelegramService implements OnModuleDestroy {
     userId: string,
   ): Promise<{ success: boolean; isPremium: boolean; maxFileSize: number }> {
     try {
-      const client = await this.getConnectedClient(userId);
+      const client = this.sessions.get(userId) ?? null;
       if (!client) {
         // Если не подключен - возвращаем консервативный лимит (без премиума)
         return {
@@ -805,7 +987,7 @@ export class TelegramService implements OnModuleDestroy {
       let signedUrl = await signExisting();
 
       if (!signedUrl) {
-        const client = await this.getConnectedClient(userId);
+        const client = this.sessions.get(userId) ?? null;
         if (!client) return { success: false, message: 'telegram_not_connected' };
 
         const me = await client.getMe().catch(() => null);
@@ -873,7 +1055,7 @@ export class TelegramService implements OnModuleDestroy {
     is_premium?: boolean;
   }> {
     try {
-      const client = await this.getConnectedClient(userId);
+      const client = this.sessions.get(userId) ?? null;
 
       if (client) {
         const me = await client.getMe().catch(() => null);
@@ -915,6 +1097,10 @@ export class TelegramService implements OnModuleDestroy {
   // ---------- status ----------
   async getStatus(userId: string) {
     if (this.sessions.has(userId)) {
+      await this.publishRuntimeState({
+        userId,
+        status: 'connected',
+      });
       return { success: true, status: 'connected' as TgStatus };
     }
 
@@ -925,11 +1111,32 @@ export class TelegramService implements OnModuleDestroy {
           ? Math.ceil((p.cooldownUntil - Date.now()) / 1000)
           : 0;
 
+      await this.publishRuntimeState({
+        userId,
+        status: p.status,
+        lastError: p.lastError || null,
+        cooldownSeconds: left || null,
+      });
       return {
         success: true,
         status: p.status,
         lastError: p.lastError || null,
         cooldownSeconds: left || null,
+      };
+    }
+
+    const shared = await this.runtimeCoordinationService.readMessengerState<{
+      success?: boolean;
+      status?: TgStatus;
+      lastError?: string | null;
+      cooldownSeconds?: number | null;
+    }>(this.channel, userId);
+    if (shared?.status) {
+      return {
+        success: shared.success !== false,
+        status: shared.status,
+        lastError: shared.lastError ?? null,
+        cooldownSeconds: shared.cooldownSeconds ?? null,
       };
     }
 
@@ -942,24 +1149,7 @@ export class TelegramService implements OnModuleDestroy {
       .maybeSingle();
 
     if (!error && (user as any)?.tg_session) {
-      try {
-        await this.connectFromSavedSession(
-          userId,
-          String((user as any).tg_session),
-        );
-        return { success: true, status: 'connected' as TgStatus };
-      } catch (e: any) {
-        const msg = String(e?.message ?? e);
-        this.logger.warn(`TG connectFromSavedSession failed: ${msg}`);
-
-        // IMPORTANT: if duplicated, burn saved session, otherwise it will "randomly" break forever
-        if (msg.includes('AUTH_KEY_DUPLICATED')) {
-          await supabase
-            .from('users')
-            .update({ tg_session: null })
-            .eq('id', userId);
-        }
-      }
+      return { success: true, status: 'connected' as TgStatus };
     }
 
     return { success: true, status: 'not_connected' as TgStatus };
@@ -977,6 +1167,9 @@ export class TelegramService implements OnModuleDestroy {
   ) {
     // maybe already connected while we waited for lock
     if (this.sessions.has(userId)) return;
+    if (!(await this.ensureSessionLease(userId, 'connect_saved_session'))) {
+      throw new Error('telegram_session_busy');
+    }
 
     const session = new StringSession(sessionStr);
     const client = new TelegramClient(session, this.apiId(), this.apiHash(), {
@@ -988,10 +1181,23 @@ export class TelegramService implements OnModuleDestroy {
     const me = await client.getMe().catch(() => null);
     if (!me) {
       await client.disconnect().catch(() => undefined);
+      await this.publishRuntimeState({
+        userId,
+        status: 'not_connected',
+        lastError: 'tg_saved_session_invalid',
+      });
+      await this.runtimeCoordinationService
+        .releaseMessengerLease(this.channel, userId)
+        .catch(() => undefined);
       throw new Error('tg_saved_session_invalid');
     }
 
     this.sessions.set(userId, client);
+    this.touchSessionLease(userId);
+    await this.publishRuntimeState({
+      userId,
+      status: 'connected',
+    });
     this.scheduleCampaignResumeAfterTgConnected(userId);
   }
 
@@ -1011,19 +1217,36 @@ export class TelegramService implements OnModuleDestroy {
     return this.withLock(userId, async () => {
       const supabase = this.supabaseService.getClient();
       const existing = this.sessions.get(userId);
+      const shared =
+        await this.runtimeCoordinationService.readMessengerState<{
+          status?: TgStatus;
+        }>(this.channel, userId);
 
       if (existing) {
         try {
           const me = await existing.getMe().catch(() => null);
           if (me) {
+            this.touchSessionLease(userId);
+            await this.publishRuntimeState({
+              userId,
+              status: 'connected',
+            });
             return { connected: true };
           }
           await existing.disconnect().catch(() => undefined);
           this.sessions.delete(userId);
+          this.stopSessionLeaseTimer(userId);
           await supabase
             .from('users')
             .update({ tg_session: null })
             .eq('id', userId);
+          await this.publishRuntimeState({
+            userId,
+            status: 'not_connected',
+          });
+          await this.runtimeCoordinationService
+            .releaseMessengerLease(this.channel, userId)
+            .catch(() => undefined);
           return {
             connected: false,
             errorDetail: 'getMe_null_existing_client',
@@ -1039,13 +1262,38 @@ export class TelegramService implements OnModuleDestroy {
           ) {
             await existing.disconnect().catch(() => undefined);
             this.sessions.delete(userId);
+            this.stopSessionLeaseTimer(userId);
             await supabase
               .from('users')
               .update({ tg_session: null })
               .eq('id', userId);
+            await this.publishRuntimeState({
+              userId,
+              status: 'not_connected',
+              lastError: msg,
+            });
+            await this.runtimeCoordinationService
+              .releaseMessengerLease(this.channel, userId)
+              .catch(() => undefined);
           }
           return { connected: false, errorDetail: msg };
         }
+      }
+
+      if (shared?.status === 'connected') {
+        return { connected: true };
+      }
+
+      if (
+        !(await this.ensureSessionLease(
+          userId,
+          'validate_saved_session_for_qr_poll',
+        ))
+      ) {
+        return {
+          connected: false,
+          errorDetail: 'session_owned_by_other_runtime',
+        };
       }
 
       try {
@@ -1066,6 +1314,14 @@ export class TelegramService implements OnModuleDestroy {
             .update({ tg_session: null })
             .eq('id', userId);
         }
+        await this.publishRuntimeState({
+          userId,
+          status: 'not_connected',
+          lastError: msg,
+        });
+        await this.runtimeCoordinationService
+          .releaseMessengerLease(this.channel, userId)
+          .catch(() => undefined);
         return { connected: false, errorDetail: msg };
       }
     });
@@ -1075,6 +1331,21 @@ export class TelegramService implements OnModuleDestroy {
   async startAuth(userId: string) {
     return this.withLock(userId, async () => {
       this.logger.log(`[TG] startAuth userId=${userId}`);
+      if (!(await this.ensureSessionLease(userId, 'start_auth'))) {
+        const shared =
+          await this.runtimeCoordinationService.readMessengerState<{
+            success?: boolean;
+            status?: TgStatus;
+            lastError?: string | null;
+            cooldownSeconds?: number | null;
+          }>(this.channel, userId);
+        return (
+          shared ?? {
+            success: false,
+            message: 'telegram_session_busy',
+          }
+        );
+      }
 
       const supabase = this.supabaseService.getClient();
       const { data: user, error } = await supabase
@@ -1083,16 +1354,28 @@ export class TelegramService implements OnModuleDestroy {
         .eq('id', userId)
         .maybeSingle();
 
-      if (error || !user) return { success: false, message: 'user_not_found' };
+      if (error || !user) {
+        await this.runtimeCoordinationService
+          .releaseMessengerLease(this.channel, userId)
+          .catch(() => undefined);
+        return { success: false, message: 'user_not_found' };
+      }
 
       const phone = normalizePhoneE164(String((user as any).phone || ''));
       if (!phone.startsWith('+')) {
+        await this.runtimeCoordinationService
+          .releaseMessengerLease(this.channel, userId)
+          .catch(() => undefined);
         return { success: false, message: 'user_phone_invalid_format' };
       }
       this.logger.log(`[TG] normalized phone for ${userId}: ${phone}`);
 
       // если уже подключён — ок
       if (this.sessions.has(userId)) {
+        await this.publishRuntimeState({
+          userId,
+          status: 'connected',
+        });
         return {
           success: true,
           status: 'connected' as TgStatus,
@@ -1104,6 +1387,12 @@ export class TelegramService implements OnModuleDestroy {
       const existing = this.pending.get(userId);
       if (existing?.cooldownUntil && Date.now() < existing.cooldownUntil) {
         const left = Math.ceil((existing.cooldownUntil - Date.now()) / 1000);
+        await this.publishRuntimeState({
+          userId,
+          status: existing.status,
+          lastError: existing.lastError || null,
+          cooldownSeconds: left,
+        });
         return {
           success: false,
           status: existing.status,
@@ -1113,6 +1402,11 @@ export class TelegramService implements OnModuleDestroy {
       }
 
       if (existing && Date.now() - existing.createdAt < 5 * 60_000) {
+        await this.publishRuntimeState({
+          userId,
+          status: existing.status,
+          lastError: existing.lastError || null,
+        });
         return {
           success: true,
           status: existing.status,
@@ -1125,7 +1419,19 @@ export class TelegramService implements OnModuleDestroy {
         connectionRetries: 2,
       });
 
-      await client.connect();
+      try {
+        await client.connect();
+      } catch (e) {
+        await this.publishRuntimeState({
+          userId,
+          status: 'error',
+          lastError: String((e as any)?.message ?? e),
+        });
+        await this.runtimeCoordinationService
+          .releaseMessengerLease(this.channel, userId)
+          .catch(() => undefined);
+        throw e;
+      }
 
       const sendCode = (client as any).sendCode?.bind(client);
       if (sendCode) {
@@ -1192,6 +1498,10 @@ export class TelegramService implements OnModuleDestroy {
           p.status = 'awaiting_password';
           p.lastError = undefined;
           this.pending.set(userId, p);
+          void this.publishRuntimeState({
+            userId,
+            status: p.status,
+          });
 
           const pass = await p.password.promise;
           p.password = deferred<string>(); // allow retries
@@ -1216,6 +1526,12 @@ export class TelegramService implements OnModuleDestroy {
             p.lastError = `flood_wait_${seconds}`;
             p.cooldownUntil = Date.now() + seconds * 1000;
             this.pending.set(userId, p);
+            void this.publishRuntimeState({
+              userId,
+              status: p.status,
+              lastError: p.lastError,
+              cooldownSeconds: seconds,
+            });
             void p.client.disconnect().catch(() => undefined);
             return;
           }
@@ -1225,6 +1541,11 @@ export class TelegramService implements OnModuleDestroy {
             p.status = 'error';
             p.lastError = 'auth_key_duplicated';
             this.pending.set(userId, p);
+            void this.publishRuntimeState({
+              userId,
+              status: p.status,
+              lastError: p.lastError,
+            });
             void p.client.disconnect().catch(() => undefined);
             return;
           }
@@ -1232,6 +1553,11 @@ export class TelegramService implements OnModuleDestroy {
           p.status = 'error';
           p.lastError = msg;
           this.pending.set(userId, p);
+          void this.publishRuntimeState({
+            userId,
+            status: p.status,
+            lastError: p.lastError,
+          });
         },
       });
 
@@ -1251,6 +1577,12 @@ export class TelegramService implements OnModuleDestroy {
           p.lastError = `flood_wait_${seconds}`;
           p.cooldownUntil = Date.now() + seconds * 1000;
           this.pending.set(userId, p);
+          void this.publishRuntimeState({
+            userId,
+            status: p.status,
+            lastError: p.lastError,
+            cooldownSeconds: seconds,
+          });
           void p.client.disconnect().catch(() => undefined);
           return;
         }
@@ -1259,6 +1591,11 @@ export class TelegramService implements OnModuleDestroy {
           p.status = 'error';
           p.lastError = 'auth_key_dupliclicated';
           this.pending.set(userId, p);
+          void this.publishRuntimeState({
+            userId,
+            status: p.status,
+            lastError: p.lastError,
+          });
           void p.client.disconnect().catch(() => undefined);
           return;
         }
@@ -1266,10 +1603,19 @@ export class TelegramService implements OnModuleDestroy {
         p.status = 'error';
         p.lastError = msg;
         this.pending.set(userId, p);
+        void this.publishRuntimeState({
+          userId,
+          status: p.status,
+          lastError: p.lastError,
+        });
         this.logger.warn(`[TG] startPromise failed: ${msg}`);
       });
 
       this.pending.set(userId, p);
+      await this.publishRuntimeState({
+        userId,
+        status: 'awaiting_code',
+      });
       return { success: true, status: 'awaiting_code' as TgStatus };
     });
   }
@@ -1277,12 +1623,39 @@ export class TelegramService implements OnModuleDestroy {
   // ---------- auth confirm code ----------
   async confirmCode(userId: string, code: string) {
     return this.withLock(userId, async () => {
+      if (!(await this.ensureSessionLease(userId, 'confirm_code'))) {
+        const shared =
+          await this.runtimeCoordinationService.readMessengerState<{
+            success?: boolean;
+            status?: TgStatus;
+            lastError?: string | null;
+            cooldownSeconds?: number | null;
+          }>(this.channel, userId);
+        return (
+          shared ?? {
+            success: false,
+            message: 'telegram_session_busy',
+          }
+        );
+      }
+
       const p = this.pending.get(userId);
-      if (!p) return { success: false, message: 'auth_not_started' };
+      if (!p) {
+        await this.runtimeCoordinationService
+          .releaseMessengerLease(this.channel, userId)
+          .catch(() => undefined);
+        return { success: false, message: 'auth_not_started' };
+      }
 
       // если floodwait ещё активен — не принимаем код и не дёргаем start
       if (p.cooldownUntil && Date.now() < p.cooldownUntil) {
         const left = Math.ceil((p.cooldownUntil - Date.now()) / 1000);
+        await this.publishRuntimeState({
+          userId,
+          status: p.status,
+          lastError: p.lastError || null,
+          cooldownSeconds: left,
+        });
         return {
           success: false,
           message: 'tg_flood_wait',
@@ -1292,7 +1665,9 @@ export class TelegramService implements OnModuleDestroy {
       }
 
       const c = String(code || '').trim();
-      if (!c) return { success: false, message: 'code_required' };
+      if (!c) {
+        return { success: false, message: 'code_required' };
+      }
 
       try {
         p.phoneCode.resolve(c);
@@ -1315,11 +1690,21 @@ export class TelegramService implements OnModuleDestroy {
 
           this.sessions.set(userId, p.client);
           this.pending.delete(userId);
+          this.touchSessionLease(userId);
+          await this.publishRuntimeState({
+            userId,
+            status: 'connected',
+          });
           this.scheduleCampaignResumeAfterTgConnected(userId);
 
           return { success: true, status: 'connected' as TgStatus };
         }
 
+        await this.publishRuntimeState({
+          userId,
+          status: p.status,
+          lastError: p.lastError || null,
+        });
         return {
           success: true,
           status: p.status,
@@ -1331,11 +1716,21 @@ export class TelegramService implements OnModuleDestroy {
         if (msg.includes('PHONE_CODE_INVALID')) {
           p.lastError = 'invalid_code';
           this.pending.set(userId, p);
+          await this.publishRuntimeState({
+            userId,
+            status: p.status,
+            lastError: p.lastError,
+          });
           return { success: false, message: 'invalid_code' };
         }
         if (msg.includes('PHONE_CODE_EXPIRED')) {
           p.lastError = 'code_expired';
           this.pending.set(userId, p);
+          await this.publishRuntimeState({
+            userId,
+            status: p.status,
+            lastError: p.lastError,
+          });
           return { success: false, message: 'code_expired' };
         }
 
@@ -1346,6 +1741,12 @@ export class TelegramService implements OnModuleDestroy {
           p.lastError = `flood_wait_${seconds}`;
           p.cooldownUntil = Date.now() + seconds * 1000;
           this.pending.set(userId, p);
+          await this.publishRuntimeState({
+            userId,
+            status: p.status,
+            lastError: p.lastError,
+            cooldownSeconds: seconds,
+          });
           return { success: false, message: 'tg_flood_wait', seconds };
         }
 
@@ -1361,11 +1762,21 @@ export class TelegramService implements OnModuleDestroy {
             .update({ tg_session: null })
             .eq('id', userId);
 
+          await this.publishRuntimeState({
+            userId,
+            status: p.status,
+            lastError: p.lastError,
+          });
           return { success: false, message: 'tg_auth_key_duplicated' };
         }
 
         p.lastError = msg;
         this.pending.set(userId, p);
+        await this.publishRuntimeState({
+          userId,
+          status: p.status,
+          lastError: p.lastError,
+        });
         return {
           success: false,
           message: 'tg_confirm_code_failed',
@@ -1378,8 +1789,29 @@ export class TelegramService implements OnModuleDestroy {
   // ---------- auth confirm password (2FA) ----------
   async confirmPassword(userId: string, password: string) {
     return this.withLock(userId, async () => {
+      if (!(await this.ensureSessionLease(userId, 'confirm_password'))) {
+        const shared =
+          await this.runtimeCoordinationService.readMessengerState<{
+            success?: boolean;
+            status?: TgStatus;
+            lastError?: string | null;
+            cooldownSeconds?: number | null;
+          }>(this.channel, userId);
+        return (
+          shared ?? {
+            success: false,
+            message: 'telegram_session_busy',
+          }
+        );
+      }
+
       const p = this.pending.get(userId);
-      if (!p) return { success: false, message: 'auth_not_started' };
+      if (!p) {
+        await this.runtimeCoordinationService
+          .releaseMessengerLease(this.channel, userId)
+          .catch(() => undefined);
+        return { success: false, message: 'auth_not_started' };
+      }
 
       const pass = String(password || '').trim();
       if (!pass) return { success: false, message: 'password_required' };
@@ -1402,6 +1834,11 @@ export class TelegramService implements OnModuleDestroy {
 
         this.sessions.set(userId, p.client);
         this.pending.delete(userId);
+        this.touchSessionLease(userId);
+        await this.publishRuntimeState({
+          userId,
+          status: 'connected',
+        });
         this.scheduleCampaignResumeAfterTgConnected(userId);
 
         return { success: true, status: 'connected' as TgStatus };
@@ -1415,6 +1852,12 @@ export class TelegramService implements OnModuleDestroy {
           p.lastError = `flood_wait_${seconds}`;
           p.cooldownUntil = Date.now() + seconds * 1000;
           this.pending.set(userId, p);
+          await this.publishRuntimeState({
+            userId,
+            status: p.status,
+            lastError: p.lastError,
+            cooldownSeconds: seconds,
+          });
           return { success: false, message: 'tg_flood_wait', seconds };
         }
 
@@ -1429,12 +1872,22 @@ export class TelegramService implements OnModuleDestroy {
             .update({ tg_session: null })
             .eq('id', userId);
 
+          await this.publishRuntimeState({
+            userId,
+            status: p.status,
+            lastError: p.lastError,
+          });
           return { success: false, message: 'tg_auth_key_duplicated' };
         }
 
         p.lastError = msg;
         p.status = 'awaiting_password';
         this.pending.set(userId, p);
+        await this.publishRuntimeState({
+          userId,
+          status: p.status,
+          lastError: p.lastError,
+        });
         return { success: false, message: 'tg_password_failed', error: msg };
       }
     });
@@ -1442,6 +1895,7 @@ export class TelegramService implements OnModuleDestroy {
 
   async disconnect(userId: string) {
     return this.withLock(userId, async () => {
+      await this.ensureSessionLease(userId, 'disconnect').catch(() => false);
       const c = this.sessions.get(userId);
       if (c) {
         await c.disconnect().catch(() => undefined);
@@ -1461,6 +1915,15 @@ export class TelegramService implements OnModuleDestroy {
         .update({ tg_session: null })
         .eq('id', userId);
 
+      this.stopSessionLeaseTimer(userId);
+      this.sessionLeaseTouchedAt.delete(userId);
+      await this.publishRuntimeState({
+        userId,
+        status: 'not_connected',
+      });
+      await this.runtimeCoordinationService
+        .releaseMessengerLease(this.channel, userId)
+        .catch(() => undefined);
       return { success: true };
     });
   }
@@ -1469,6 +1932,13 @@ export class TelegramService implements OnModuleDestroy {
   async syncGroups(userId: string) {
     const startTime = Date.now();
     this.logger.log(`[TG syncGroups] START for userId=${userId}`);
+
+    if (!(await this.ensureSessionLease(userId, 'sync_groups'))) {
+      return {
+        success: false,
+        message: 'telegram_session_busy',
+      };
+    }
 
     let client = await this.getConnectedClient(userId);
     if (!client) return { success: false, message: 'telegram_not_connected' };
@@ -1549,8 +2019,17 @@ export class TelegramService implements OnModuleDestroy {
           if (existing) {
             await existing.disconnect().catch(() => undefined);
             this.sessions.delete(userId);
+            this.stopSessionLeaseTimer(userId);
           }
         });
+        await this.publishRuntimeState({
+          userId,
+          status: 'not_connected',
+          lastError: msg,
+        });
+        await this.runtimeCoordinationService
+          .releaseMessengerLease(this.channel, userId)
+          .catch(() => undefined);
         client = await this.getConnectedClient(userId);
         if (!client) {
           return { success: false, message: 'telegram_not_connected' };
@@ -1697,7 +2176,7 @@ export class TelegramService implements OnModuleDestroy {
       const repliesCount =
         msg?.replies != null ? toInt(msg.replies?.replies) : null;
 
-      const rawTitle = d.title ?? ent?.title ?? '';
+      const rawTitle = extractTelegramGroupTitle(d, ent, d?.entity, ent?.entity);
       const title =
         String(rawTitle || '').trim() || `Без названия (${chatIdStr})`;
       const prevSel = selectedMap.get(chatIdStr);
@@ -2882,6 +3361,9 @@ export class TelegramService implements OnModuleDestroy {
     },
   ) {
     const sendStartTime = Date.now();
+    if (!(await this.ensureSessionLease(userId, 'send_to_group'))) {
+      throw new Error('telegram_session_busy');
+    }
     const client = await this.getConnectedClient(userId);
     if (!client) {
       this.logger.warn(
@@ -3184,7 +3666,21 @@ export class TelegramService implements OnModuleDestroy {
     // lock, so two parallel requests don't connect with same session
     return this.withLock(userId, async () => {
       const existing = this.sessions.get(userId);
-      if (existing) return existing;
+      if (existing) {
+        if (!(await this.ensureSessionLease(userId, 'reuse_connected_client'))) {
+          return null;
+        }
+        this.touchSessionLease(userId);
+        await this.publishRuntimeState({
+          userId,
+          status: 'connected',
+        });
+        return existing;
+      }
+
+      if (!(await this.ensureSessionLease(userId, 'get_connected_client'))) {
+        return null;
+      }
 
       const supabase = this.supabaseService.getClient();
       const { data: user, error } = await supabase
@@ -3193,13 +3689,19 @@ export class TelegramService implements OnModuleDestroy {
         .eq('id', userId)
         .maybeSingle();
 
-      if (error || !(user as any)?.tg_session) return null;
+      if (error || !(user as any)?.tg_session) {
+        await this.runtimeCoordinationService
+          .releaseMessengerLease(this.channel, userId)
+          .catch(() => undefined);
+        return null;
+      }
 
       try {
         await this.connectFromSavedSessionNoLock(
           userId,
           String((user as any).tg_session),
         );
+        this.touchSessionLease(userId);
         return this.sessions.get(userId) ?? null;
       } catch (e: any) {
         const msg = String(e?.message ?? e);
@@ -3211,6 +3713,15 @@ export class TelegramService implements OnModuleDestroy {
             .update({ tg_session: null })
             .eq('id', userId);
         }
+
+        await this.publishRuntimeState({
+          userId,
+          status: 'not_connected',
+          lastError: msg,
+        });
+        await this.runtimeCoordinationService
+          .releaseMessengerLease(this.channel, userId)
+          .catch(() => undefined);
 
         return null;
       }

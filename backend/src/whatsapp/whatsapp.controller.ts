@@ -82,7 +82,7 @@ export class WhatsappController {
     { success: false; message: string } | { success: true; status: SessionInfo }
   > {
     const userId = this.ensureUserParam(req, paramUserId);
-    const status = this.whatsapp.getStatus(userId);
+    const status = await this.whatsapp.getStatus(userId);
     return { success: true, status };
   }
 

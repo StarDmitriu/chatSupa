@@ -18,6 +18,11 @@ import {
   normalizePhoneForStorage,
 } from '../utils/phone.util';
 import { Buffer } from 'buffer';
+import {
+  RuntimeCoordinationService,
+  type MessengerChannel,
+} from '../runtime/runtime-coordination.service';
+import { runtimeCapabilitiesLabel } from '../runtime/runtime-role';
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -236,6 +241,8 @@ type InternalSession = {
   proxySettings?: WaProxySettings;
   proxyConsecutiveTimeouts?: number;
   proxyBypassUntil?: number;
+  leaseRenewTimer?: NodeJS.Timeout;
+  lastLeaseTouchAt?: number;
 };
 
 function withJitter(ms: number, jitterMs = 1000): number {
@@ -265,6 +272,20 @@ function truncateForDb(value: string, maxLen: number) {
 @Injectable()
 export class WhatsappService {
   private readonly logger = new Logger(WhatsappService.name);
+  private readonly channel: MessengerChannel = 'wa';
+  private readonly sessionLeaseTtlMs = Math.max(
+    Number(process.env.WA_SESSION_LEASE_TTL_MS || 45_000) || 45_000,
+    15_000,
+  );
+  private readonly sessionLeaseRenewEveryMs = Math.max(
+    Number(process.env.WA_SESSION_LEASE_RENEW_MS || 15_000) || 15_000,
+    5_000,
+  );
+  private readonly sessionIdleReleaseMs = Math.max(
+    Number(process.env.WA_SESSION_IDLE_RELEASE_MS || 5 * 60_000) ||
+      5 * 60_000,
+    60_000,
+  );
 
   private sessions = new Map<string, InternalSession>();
 
@@ -405,11 +426,99 @@ export class WhatsappService {
     }
   }
 
-  constructor(private readonly moduleRef: ModuleRef) {
+  constructor(
+    private readonly moduleRef: ModuleRef,
+    private readonly runtimeCoordinationService: RuntimeCoordinationService,
+  ) {
     this.supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_KEY,
     );
+  }
+
+  private stopLeaseRenewTimer(session: InternalSession) {
+    if (session.leaseRenewTimer) {
+      clearInterval(session.leaseRenewTimer);
+      session.leaseRenewTimer = undefined;
+    }
+  }
+
+  private async publishSessionState(userId: string, s?: InternalSession) {
+    const session = s ?? this.sessions.get(userId);
+    if (!session) {
+      await this.runtimeCoordinationService
+        .clearMessengerState(this.channel, userId)
+        .catch(() => undefined);
+      return;
+    }
+
+    await this.runtimeCoordinationService
+      .writeMessengerState(this.channel, userId, {
+        status: session.info.status,
+        qr: session.info.qr ?? null,
+        lastError: session.info.lastError ?? null,
+        stateSinceAt: session.info.stateSinceAt ?? null,
+        disconnectSinceAt: session.info.disconnectSinceAt ?? null,
+        retryAttempt: session.info.retryAttempt ?? null,
+        retryMax: session.info.retryMax ?? null,
+        nextRetryAt: session.info.nextRetryAt ?? null,
+        runtimeRole: runtimeCapabilitiesLabel(),
+      })
+      .catch(() => undefined);
+  }
+
+  private async ensureSessionLease(
+    userId: string,
+    reason: string,
+  ): Promise<boolean> {
+    const lease = await this.runtimeCoordinationService.acquireMessengerLease({
+      channel: this.channel,
+      userId,
+      ttlMs: this.sessionLeaseTtlMs,
+    });
+    if (!lease.acquired) {
+      this.logger.warn(
+        `[WA lease] busy userId=${userId} reason=${reason} owner=${lease.ownerInstanceId ?? 'unknown'}`,
+      );
+      return false;
+    }
+
+    const s = this.ensureSession(userId);
+    s.lastLeaseTouchAt = Date.now();
+    if (!s.leaseRenewTimer) {
+      s.leaseRenewTimer = setInterval(() => {
+        const latest = this.sessions.get(userId);
+        if (!latest) return;
+        const idleForMs = Date.now() - (latest.lastLeaseTouchAt ?? 0);
+        if (idleForMs >= this.sessionIdleReleaseMs) {
+          this.logger.log(
+            `[WA lease] idle release userId=${userId} idleMs=${idleForMs}`,
+          );
+          this.stopLeaseRenewTimer(latest);
+          if (latest.sock) {
+            try {
+              latest.sock.end?.(new Error('idle_release'));
+            } catch {}
+            latest.sock = undefined;
+          }
+          latest.info = { status: 'not_connected' };
+          latest.lastChangeAt = Date.now();
+          void this.publishSessionState(userId, latest);
+          void this.runtimeCoordinationService
+            .releaseMessengerLease(this.channel, userId)
+            .catch(() => undefined);
+          return;
+        }
+        void this.runtimeCoordinationService
+          .acquireMessengerLease({
+            channel: this.channel,
+            userId,
+            ttlMs: this.sessionLeaseTtlMs,
+          })
+          .catch(() => undefined);
+      }, this.sessionLeaseRenewEveryMs);
+    }
+    return true;
   }
 
   /**
@@ -530,18 +639,52 @@ export class WhatsappService {
   }
 
   private extractGroupSubject(metadata: any): string | null {
+    const pickText = (value: any): string | null => {
+      if (typeof value === 'string' && value.trim()) return value.trim();
+      if (!value || typeof value !== 'object') return null;
+
+      const nestedCandidates = [
+        value?.text,
+        value?.title,
+        value?.name,
+        value?.subject,
+        value?.displayName,
+        value?.formattedName,
+      ];
+
+      for (const candidate of nestedCandidates) {
+        if (typeof candidate === 'string' && candidate.trim()) {
+          return candidate.trim();
+        }
+      }
+
+      return null;
+    };
+
     const candidates = [
       metadata?.subject,
       metadata?.name,
       metadata?.groupName,
+      metadata?.displayName,
+      metadata?.title,
+      metadata?.subjectText,
       metadata?.notify,
       metadata?.pushName,
       metadata?.conversation,
+      metadata?.attrs?.subject,
+      metadata?.attrs?.displayName,
+      metadata?.groupMetadata?.subject,
+      metadata?.groupMetadata?.name,
+      metadata?.groupMetadata?.title,
+      metadata?.groupMetadata?.notify,
+      metadata?.groupMetadata?.conversation,
+      metadata?.subjectName,
     ];
 
     for (const candidate of candidates) {
-      if (typeof candidate === 'string' && candidate.trim()) {
-        return candidate.trim();
+      const text = pickText(candidate);
+      if (text) {
+        return text;
       }
     }
 
@@ -993,13 +1136,29 @@ export class WhatsappService {
       restartAttempts: 0,
       lastChangeAt: Date.now(),
       proxyConsecutiveTimeouts: 0,
+      lastLeaseTouchAt: 0,
     };
     this.sessions.set(userId, s);
     return s;
   }
 
-  getStatus(userId: string): SessionInfo {
-    const s = this.ensureSession(userId);
+  async getStatus(userId: string): Promise<SessionInfo> {
+    const s = this.sessions.get(userId);
+    if (!s) {
+      const shared = await this.runtimeCoordinationService.readMessengerState<SessionInfo>(
+        this.channel,
+        userId,
+      );
+      if (shared) return shared;
+      return {
+        status: 'not_connected',
+        stateSinceAt: new Date().toISOString(),
+        stateDurationSec: 0,
+        disconnectSinceAt: null,
+        disconnectDurationSec: null,
+      };
+    }
+
     const sinceMs = Number.isFinite(s.lastChangeAt) ? s.lastChangeAt : Date.now();
     const durationSec = Math.max(0, Math.floor((Date.now() - sinceMs) / 1000));
     const disconnectMs =
@@ -1008,7 +1167,7 @@ export class WhatsappService {
         : Number.isFinite(s.disconnectStartedAt)
           ? s.disconnectStartedAt!
           : null;
-    return {
+    const status = {
       ...s.info,
       stateSinceAt: new Date(sinceMs).toISOString(),
       stateDurationSec: durationSec,
@@ -1020,6 +1179,8 @@ export class WhatsappService {
         ? new Date(s.proxyBypassUntil!).toISOString()
         : null,
     };
+    await this.publishSessionState(userId, s);
+    return status;
   }
 
   getNetworkIncidentSummary() {
@@ -1348,6 +1509,7 @@ export class WhatsappService {
 
   resetSession(userId: string) {
     const s = this.ensureSession(userId);
+    this.stopLeaseRenewTimer(s);
     try {
       s.sock?.end?.(new Error('manual reset'));
     } catch {}
@@ -1367,6 +1529,11 @@ export class WhatsappService {
     s.info = { status: 'not_connected' };
     s.lastChangeAt = Date.now();
     s.disconnectStartedAt = undefined;
+    s.lastLeaseTouchAt = 0;
+    void this.publishSessionState(userId, s);
+    void this.runtimeCoordinationService
+      .releaseMessengerLease(this.channel, userId)
+      .catch(() => undefined);
   }
 
   /**
@@ -1379,6 +1546,7 @@ export class WhatsappService {
     userId: string,
     audit: WaDisconnectAuditContext,
   ): Promise<{ success: boolean; message?: string }> {
+    await this.ensureSessionLease(userId, 'disconnect').catch(() => false);
     const s = this.ensureSession(userId);
     const auditPrefix = `[WA AUDIT][disconnect] userId=${userId} requesterId=${audit.requesterId} source=${audit.source} ip=${audit.ip ?? '-'} ua=${audit.userAgent ?? '-'}`;
 
@@ -1416,6 +1584,19 @@ export class WhatsappService {
     userId: string,
     opts?: { force?: boolean },
   ): Promise<SessionInfo> {
+    if (!(await this.ensureSessionLease(userId, 'start_session'))) {
+      const shared = await this.runtimeCoordinationService.readMessengerState<SessionInfo>(
+        this.channel,
+        userId,
+      );
+      return (
+        shared ?? {
+          status: 'connecting',
+          lastError: 'session_owned_by_other_runtime',
+        }
+      );
+    }
+
     const s = this.ensureSession(userId);
     const force = opts?.force === true;
 
@@ -1437,6 +1618,7 @@ export class WhatsappService {
     });
 
     await s.starting.catch(() => undefined);
+    await this.publishSessionState(userId, s);
     return s.info;
   }
 
@@ -1747,6 +1929,13 @@ export class WhatsappService {
   async syncGroups(userId: string) {
     const startTime = Date.now();
     this.logger.log(`[WA syncGroups] START for userId=${userId}`);
+
+    if (!(await this.ensureSessionLease(userId, 'sync_groups'))) {
+      return {
+        success: false,
+        message: 'whatsapp_session_busy',
+      };
+    }
 
     const s = this.ensureSession(userId);
 
@@ -2619,6 +2808,9 @@ export class WhatsappService {
     },
   ) {
     const sendStartTime = Date.now();
+    if (!(await this.ensureSessionLease(userId, 'send_to_group'))) {
+      throw new Error('whatsapp_session_busy');
+    }
     const s = this.ensureSession(userId);
 
     if (!s.sock || s.info.status !== 'connected') {
@@ -2960,6 +3152,7 @@ export class WhatsappService {
         : null,
     };
     s.lastChangeAt = Date.now();
+    void this.publishSessionState(userId, s);
 
     const { state, saveCreds } = await useMultiFileAuthState(authDir);
     const { version } = await fetchLatestBaileysVersion();
@@ -3019,6 +3212,7 @@ export class WhatsappService {
         s.info = { status: 'pending_qr', qr };
         s.lastQrAt = Date.now();
         s.lastChangeAt = Date.now();
+        void this.publishSessionState(userId, s);
         this.logger.log(
           `[WA] QR emitted for userId=${userId}, length=${qr?.length ?? 0}`,
         );
@@ -3047,13 +3241,19 @@ export class WhatsappService {
             : null,
         };
         s.lastChangeAt = Date.now();
+        s.lastLeaseTouchAt = Date.now();
         this.clearGroupAvatarCache(userId);
+        void this.publishSessionState(userId, s);
         this.logger.log(`WhatsApp connected for user ${userId}`);
         this.scheduleCampaignResumeAfterWaConnected(userId);
         return;
       }
 
       if (connection === 'close') {
+        this.stopLeaseRenewTimer(s);
+        void this.runtimeCoordinationService
+          .releaseMessengerLease(this.channel, userId)
+          .catch(() => undefined);
         if (!Number.isFinite(s.disconnectStartedAt)) {
           s.disconnectStartedAt = Date.now();
         }
@@ -3073,6 +3273,7 @@ export class WhatsappService {
         this.logger.warn(
           `WhatsApp closed for ${userId}, code=${statusCode}, loggedOut=${loggedOut}, msg=${msg}, detail=${disconnectDetail}`,
         );
+        void this.publishSessionState(userId, s);
 
         // Понятные пользователю сообщения по кодам отключения (Baileys DisconnectReason).
         const userFriendlyError = (): string => {

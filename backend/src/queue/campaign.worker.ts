@@ -18,6 +18,11 @@ import {
 } from './queue.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
+import {
+  getRuntimeInstanceId,
+  runtimeCapabilitiesLabel,
+  runtimeHasCapability,
+} from '../runtime/runtime-role';
 
 type SendJobData = {
   jobId: string;
@@ -512,6 +517,13 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
+    if (!runtimeHasCapability('worker')) {
+      this.logger.log(
+        `Campaign worker skipped for runtime=${runtimeCapabilitiesLabel()} instance=${getRuntimeInstanceId()}`,
+      );
+      return;
+    }
+
     this.logger.warn(
       '### WORKER VERSION: 2026-04-06 campaign-send-sharded ###',
     );

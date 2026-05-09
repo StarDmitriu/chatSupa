@@ -20,6 +20,7 @@ services:
       retries: 10
 
   backend:
+    image: chatrassylka_backend_runtime:latest
     build:
       context: ./backend
     container_name: chatrassylka_backend
@@ -27,12 +28,23 @@ services:
       - ./.env.prod
     environment:
       NODE_ENV: production
+      APP_RUNTIME_ROLE: api
+      SERVICE_INSTANCE_ID: api-1
       PORT: 3000
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_URL: redis://redis:6379
       TELEGRAM_AUTOCONNECT: "false"
       CAMPAIGN_REPEAT_ENABLED: "true"
+      CAMPAIGN_REPEAT_LEADER_TTL_MS: ${CAMPAIGN_REPEAT_LEADER_TTL_MS:-30000}
+      CAMPAIGN_SEND_SHARD_COUNT: ${CAMPAIGN_SEND_SHARD_COUNT:-20}
+      WA_SESSION_LEASE_TTL_MS: ${WA_SESSION_LEASE_TTL_MS:-45000}
+      WA_SESSION_LEASE_RENEW_MS: ${WA_SESSION_LEASE_RENEW_MS:-15000}
+      WA_SESSION_IDLE_RELEASE_MS: ${WA_SESSION_IDLE_RELEASE_MS:-300000}
+      TG_SESSION_LEASE_TTL_MS: ${TG_SESSION_LEASE_TTL_MS:-45000}
+      TG_SESSION_LEASE_RENEW_MS: ${TG_SESSION_LEASE_RENEW_MS:-15000}
+      TG_SESSION_IDLE_RELEASE_MS: ${TG_SESSION_IDLE_RELEASE_MS:-300000}
+      TG_AUTH_PENDING_IDLE_RELEASE_MS: ${TG_AUTH_PENDING_IDLE_RELEASE_MS:-900000}
       DEFAULT_TZ: Europe/Moscow
     healthcheck:
       test:
@@ -51,8 +63,82 @@ services:
         condition: service_healthy
     restart: unless-stopped
     stop_grace_period: 15s
-    cpus: "1.00"
-    mem_limit: 1536m
+    cpus: "1.50"
+    mem_limit: 2048m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  backend_worker:
+    image: chatrassylka_backend_runtime:latest
+    container_name: chatrassylka_backend_worker
+    env_file:
+      - ./.env.prod
+    environment:
+      NODE_ENV: production
+      APP_RUNTIME_ROLE: worker
+      SERVICE_INSTANCE_ID: worker-1
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+      TELEGRAM_AUTOCONNECT: "false"
+      CAMPAIGN_REPEAT_ENABLED: "false"
+      CAMPAIGN_REPEAT_LEADER_TTL_MS: ${CAMPAIGN_REPEAT_LEADER_TTL_MS:-30000}
+      CAMPAIGN_SEND_SHARD_COUNT: ${CAMPAIGN_SEND_SHARD_COUNT:-20}
+      WA_SESSION_LEASE_TTL_MS: ${WA_SESSION_LEASE_TTL_MS:-45000}
+      WA_SESSION_LEASE_RENEW_MS: ${WA_SESSION_LEASE_RENEW_MS:-15000}
+      WA_SESSION_IDLE_RELEASE_MS: ${WA_SESSION_IDLE_RELEASE_MS:-300000}
+      TG_SESSION_LEASE_TTL_MS: ${TG_SESSION_LEASE_TTL_MS:-45000}
+      TG_SESSION_LEASE_RENEW_MS: ${TG_SESSION_LEASE_RENEW_MS:-15000}
+      TG_SESSION_IDLE_RELEASE_MS: ${TG_SESSION_IDLE_RELEASE_MS:-300000}
+      TG_AUTH_PENDING_IDLE_RELEASE_MS: ${TG_AUTH_PENDING_IDLE_RELEASE_MS:-900000}
+      DEFAULT_TZ: Europe/Moscow
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 45s
+    cpus: "1.50"
+    mem_limit: 2048m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  backend_scheduler:
+    image: chatrassylka_backend_runtime:latest
+    container_name: chatrassylka_backend_scheduler
+    env_file:
+      - ./.env.prod
+    environment:
+      NODE_ENV: production
+      APP_RUNTIME_ROLE: scheduler
+      SERVICE_INSTANCE_ID: scheduler-1
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+      TELEGRAM_AUTOCONNECT: "false"
+      CAMPAIGN_REPEAT_ENABLED: "true"
+      CAMPAIGN_REPEAT_LEADER_TTL_MS: ${CAMPAIGN_REPEAT_LEADER_TTL_MS:-30000}
+      CAMPAIGN_SEND_SHARD_COUNT: ${CAMPAIGN_SEND_SHARD_COUNT:-20}
+      WA_SESSION_LEASE_TTL_MS: ${WA_SESSION_LEASE_TTL_MS:-45000}
+      WA_SESSION_LEASE_RENEW_MS: ${WA_SESSION_LEASE_RENEW_MS:-15000}
+      WA_SESSION_IDLE_RELEASE_MS: ${WA_SESSION_IDLE_RELEASE_MS:-300000}
+      TG_SESSION_LEASE_TTL_MS: ${TG_SESSION_LEASE_TTL_MS:-45000}
+      TG_SESSION_LEASE_RENEW_MS: ${TG_SESSION_LEASE_RENEW_MS:-15000}
+      TG_SESSION_IDLE_RELEASE_MS: ${TG_SESSION_IDLE_RELEASE_MS:-300000}
+      TG_AUTH_PENDING_IDLE_RELEASE_MS: ${TG_AUTH_PENDING_IDLE_RELEASE_MS:-900000}
+      DEFAULT_TZ: Europe/Moscow
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    stop_grace_period: 30s
+    cpus: "0.75"
+    mem_limit: 1024m
     logging:
       driver: "json-file"
       options:
@@ -113,6 +199,10 @@ services:
         condition: service_healthy
       backend:
         condition: service_healthy
+      backend_worker:
+        condition: service_started
+      backend_scheduler:
+        condition: service_started
     restart: unless-stopped
     stop_grace_period: 10s
     cpus: "0.50"

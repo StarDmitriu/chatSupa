@@ -8,6 +8,12 @@ import {
 import { SupabaseService } from '../supabase/supabase.service';
 import { CampaignsService } from './campaigns.service';
 import { TelegramService } from '../telegram/telegram.service';
+import { RuntimeCoordinationService } from '../runtime/runtime-coordination.service';
+import {
+  getRuntimeInstanceId,
+  runtimeCapabilitiesLabel,
+  runtimeHasCapability,
+} from '../runtime/runtime-role';
 
 @Injectable()
 export class CampaignRepeatService implements OnModuleInit, OnModuleDestroy {
@@ -22,11 +28,20 @@ export class CampaignRepeatService implements OnModuleInit, OnModuleDestroy {
   private readonly intervalMs = Number(
     process.env.CAMPAIGN_REPEAT_TICK_MS || 10_000,
   );
+  private readonly schedulerLeaseKey = String(
+    process.env.CAMPAIGN_REPEAT_LEADER_KEY || 'runtime:scheduler:campaign-repeat',
+  ).trim();
+  private readonly schedulerLeaseTtlMs = Math.max(
+    Number(process.env.CAMPAIGN_REPEAT_LEADER_TTL_MS || this.intervalMs * 4) ||
+      this.intervalMs * 4,
+    this.intervalMs * 2,
+  );
 
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly campaignsService: CampaignsService,
     private readonly telegramService: TelegramService,
+    private readonly runtimeCoordinationService: RuntimeCoordinationService,
   ) {}
 
   private tgSyncCronEnabled(): boolean {
@@ -104,6 +119,13 @@ export class CampaignRepeatService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleInit() {
+    if (!runtimeHasCapability('scheduler')) {
+      this.logger.log(
+        `Campaign repeat watcher skipped for runtime=${runtimeCapabilitiesLabel()} instance=${getRuntimeInstanceId()}`,
+      );
+      return;
+    }
+
     const overlapRaw = String(
       process.env.CAMPAIGN_REPEAT_ALLOW_OVERLAP || '',
     ).toLowerCase();
@@ -134,9 +156,18 @@ export class CampaignRepeatService implements OnModuleInit, OnModuleDestroy {
   onModuleDestroy() {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
+    void this.runtimeCoordinationService
+      .releaseLease(this.schedulerLeaseKey)
+      .catch(() => undefined);
   }
 
   private async tick() {
+    const isLeader = await this.runtimeCoordinationService.acquireOrRenewLease(
+      this.schedulerLeaseKey,
+      this.schedulerLeaseTtlMs,
+    );
+    if (!isLeader) return;
+
     const supabase = this.supabaseService.getClient();
     const nowIso = new Date().toISOString();
     await this.campaignsService.detectAndApplyIncidentMode().catch(() => undefined);

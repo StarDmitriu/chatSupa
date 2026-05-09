@@ -2,10 +2,34 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
+import {
+  getRuntimeInstanceId,
+  runtimeCapabilitiesLabel,
+  runtimeHasCapability,
+} from './runtime/runtime-role';
 
 dotenv.config();
 
 async function bootstrap() {
+  const runtimeLabel = runtimeCapabilitiesLabel();
+  const instanceId = getRuntimeInstanceId();
+
+  if (!runtimeHasCapability('api')) {
+    const app = await NestFactory.createApplicationContext(AppModule);
+    console.log(
+      `[Runtime] started background context role=${runtimeLabel} instance=${instanceId}`,
+    );
+
+    const shutdown = async () => {
+      await app.close().catch(() => undefined);
+      process.exit(0);
+    };
+
+    process.once('SIGINT', () => void shutdown());
+    process.once('SIGTERM', () => void shutdown());
+    return;
+  }
+
   const app = await NestFactory.create(AppModule);
   const server = app.getHttpAdapter().getInstance();
 
@@ -48,5 +72,8 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   const host = (process.env.BIND_HOST || process.env.HOST || '0.0.0.0').trim();
   await app.listen(port, host);
+  console.log(
+    `[Runtime] listening http://${host}:${port} role=${runtimeLabel} instance=${instanceId}`,
+  );
 }
 bootstrap();

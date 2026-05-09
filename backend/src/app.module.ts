@@ -14,9 +14,11 @@ import { TelegramModule } from './telegram/telegram.module';
 import { AdminModule } from './admin/admin.module';
 import { PaymentsModule } from './payments/payments.module';
 import { LeadsModule } from './leads/leads.module';
+import { RuntimeModule } from './runtime/runtime.module';
 
 @Module({
   imports: [
+    RuntimeModule,
     AuthModule,
     SupabaseModule,
     WhatsappModule,

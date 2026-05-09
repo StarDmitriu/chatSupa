@@ -7,9 +7,11 @@ import { SupabaseModule } from '../supabase/supabase.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { TelegramModule } from '../telegram/telegram.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
+import { RuntimeModule } from '../runtime/runtime.module';
 
 @Module({
   imports: [
+    RuntimeModule,
     SupabaseModule,
     WhatsappModule,
     TelegramModule,
