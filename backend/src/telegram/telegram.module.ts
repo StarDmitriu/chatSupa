@@ -1,12 +1,13 @@
 //backend/src/telegram/telegram.module.ts
 import { Module } from '@nestjs/common';
+import { RuntimeModule } from '../runtime/runtime.module';
 import { SupabaseModule } from '../supabase/supabase.module';
 import { TelegramController } from './telegram.controller';
 import { TelegramService } from './telegram.service';
 import { TelegramQrService } from './telegram.qr';
 
 @Module({
-  imports: [SupabaseModule],
+  imports: [SupabaseModule, RuntimeModule],
   controllers: [TelegramController],
   providers: [TelegramService, TelegramQrService],
   exports: [TelegramService, TelegramQrService],
