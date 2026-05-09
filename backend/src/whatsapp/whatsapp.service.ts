@@ -237,6 +237,7 @@ type InternalSession = {
   sock?: WASocket;
   starting?: Promise<void>;
   restartAttempts: number;
+  restartTimer?: NodeJS.Timeout;
   lastQrAt?: number;
   lastChangeAt: number;
   disconnectStartedAt?: number;
@@ -446,6 +447,13 @@ export class WhatsappService {
     }
   }
 
+  private stopRestartTimer(session: InternalSession) {
+    if (session.restartTimer) {
+      clearTimeout(session.restartTimer);
+      session.restartTimer = undefined;
+    }
+  }
+
   private async publishSessionState(userId: string, s?: InternalSession) {
     const session = s ?? this.sessions.get(userId);
     if (!session) {
@@ -483,6 +491,7 @@ export class WhatsappService {
     }
 
     this.stopLeaseRenewTimer(s);
+    this.stopRestartTimer(s);
     try {
       s.sock?.end?.(new Error(`release_connected_session_ownership:${reason}`));
     } catch {}
@@ -3264,6 +3273,7 @@ export class WhatsappService {
       }
 
       if (connection === 'open') {
+        this.stopRestartTimer(s);
         s.restartAttempts = 0;
         s.disconnectStartedAt = undefined;
         s.proxyConsecutiveTimeouts = 0;
@@ -3326,6 +3336,7 @@ export class WhatsappService {
         void this.publishSessionState(userId, s);
 
         if (isIntentionalOwnershipRelease) {
+          this.stopRestartTimer(s);
           s.sock = undefined;
           s.starting = undefined;
           s.restartAttempts = 0;
@@ -3431,7 +3442,9 @@ export class WhatsappService {
           } catch {}
           s.sock = undefined;
 
-          setTimeout(() => {
+          this.stopRestartTimer(s);
+          s.restartTimer = setTimeout(() => {
+            s.restartTimer = undefined;
             if (s.restartAttempts <= maxAttempts) {
               this.logger.warn(
                 `Auto-restart WA after transient 408 for ${userId} (attempt ${s.restartAttempts}, delay=${delay}ms)`,
@@ -3455,7 +3468,9 @@ export class WhatsappService {
               };
               s.lastChangeAt = Date.now();
               const softDelay = withJitter(60_000, 10_000);
-              setTimeout(() => {
+              this.stopRestartTimer(s);
+              s.restartTimer = setTimeout(() => {
+                s.restartTimer = undefined;
                 this.logger.warn(
                   `Auto-restart WA in soft mode for ${userId} (attempt>${maxAttempts}, delay=${softDelay}ms)`,
                 );
@@ -3467,6 +3482,7 @@ export class WhatsappService {
         }
 
         if (statusCode === 408 && msg.includes('QR refs attempts ended')) {
+          this.stopRestartTimer(s);
           s.sock = undefined;
           s.restartAttempts = 0;
           s.info = { status: 'error', lastError: userFriendlyError() };
@@ -3480,6 +3496,7 @@ export class WhatsappService {
         // Конфликт/замена соединения: переводим в обычное состояние "не подключено" и очищаем authDir,
         // чтобы следующий старт гарантированно показал новый QR (без ручного "сброса" пользователем).
         if (isConflict401 || isConnectionReplaced) {
+          this.stopRestartTimer(s);
           try {
             s.sock?.end?.(new Error('conflict_or_replaced'));
           } catch {}
@@ -3492,6 +3509,7 @@ export class WhatsappService {
         }
 
         if (loggedOut) {
+          this.stopRestartTimer(s);
           s.restartAttempts = 0;
           // Важно: не удаляем папку авторизации прямо здесь.
           // У Baileys параллельно могут идти асинхронные записи creds/state, и удаление директории
@@ -3510,6 +3528,7 @@ export class WhatsappService {
         }
 
         if (statusCode !== undefined && noRetryCodes.has(statusCode)) {
+          this.stopRestartTimer(s);
           s.sock = undefined;
           s.restartAttempts = 0;
           s.info = { status: 'error', lastError: userFriendlyError() };
@@ -3522,7 +3541,9 @@ export class WhatsappService {
         s.lastChangeAt = Date.now();
 
         const delay = Math.min(2000 * s.restartAttempts, 10_000);
-        setTimeout(() => {
+        this.stopRestartTimer(s);
+        s.restartTimer = setTimeout(() => {
+          s.restartTimer = undefined;
           if (s.restartAttempts <= 5) {
             this.logger.warn(
               `Auto-restart WA for ${userId} (attempt ${s.restartAttempts})`,
