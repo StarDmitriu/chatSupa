@@ -559,6 +559,9 @@ export class WhatsappService {
    * Переопределение: WA_POST_CONNECT_RESUME_DELAY_MS (2000–15000).
    */
   private scheduleCampaignResumeAfterWaConnected(userId: string) {
+    if (!runtimeHasCapability('worker')) {
+      return;
+    }
     const raw = Number(process.env.WA_POST_CONNECT_RESUME_DELAY_MS);
     const delayMs = Number.isFinite(raw)
       ? Math.min(15_000, Math.max(2_000, Math.floor(raw)))
@@ -3286,7 +3289,9 @@ export class WhatsappService {
         this.clearGroupAvatarCache(userId);
         void this.publishSessionState(userId, s);
         this.logger.log(`WhatsApp connected for user ${userId}`);
-        this.scheduleCampaignResumeAfterWaConnected(userId);
+        if (runtimeHasCapability('worker')) {
+          this.scheduleCampaignResumeAfterWaConnected(userId);
+        }
         return;
       }
 
