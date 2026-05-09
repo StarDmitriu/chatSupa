@@ -25,7 +25,7 @@ export function getAppRuntimeCapabilities(): Set<AppRuntimeCapability> {
     return new Set(ALL_CAPABILITIES);
   }
 
-  return new Set(tokens);
+  return new Set(tokens as AppRuntimeCapability[]);
 }
 
 export function runtimeHasCapability(capability: AppRuntimeCapability): boolean {

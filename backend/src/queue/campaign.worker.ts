@@ -1068,14 +1068,14 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
         if (rescheduled) return;
       }
     } else {
-      let waStatus = this.whatsapp.getStatus(dbJob.user_id);
+      let waStatus = await this.whatsapp.getStatus(dbJob.user_id);
       if (waStatus.status !== 'connected') {
         try {
           await this.whatsapp.startSession(dbJob.user_id);
         } catch {
           // best-effort
         }
-        waStatus = this.whatsapp.getStatus(dbJob.user_id);
+        waStatus = await this.whatsapp.getStatus(dbJob.user_id);
       }
       if (waStatus.status !== 'connected') {
         // Если WA требует явного переподключения через QR/ручного действия,

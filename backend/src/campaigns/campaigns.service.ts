@@ -1364,7 +1364,7 @@ export class CampaignsService {
 
     // ✅ Проверяем подключение перед запуском рассылки (после проверки already_running)
     if (ch === 'wa') {
-      const waStatus = this.whatsappService.getStatus(userId);
+      const waStatus = await this.whatsappService.getStatus(userId);
       if (waStatus.status !== 'connected') {
         return {
           success: false,
@@ -2656,14 +2656,14 @@ export class CampaignsService {
     // если канал не подключен, не создаём jobs, а ставим кампанию в paused до реконнекта.
     const channel: 'wa' | 'tg' = c.channel === 'tg' ? 'tg' : 'wa';
     if (channel === 'wa') {
-      let waStatus = this.whatsappService.getStatus(String(c.user_id));
+      let waStatus = await this.whatsappService.getStatus(String(c.user_id));
       if (waStatus.status !== 'connected') {
         try {
           await this.whatsappService.startSession(String(c.user_id));
         } catch {
           // best-effort
         }
-        waStatus = this.whatsappService.getStatus(String(c.user_id));
+        waStatus = await this.whatsappService.getStatus(String(c.user_id));
       }
       if (waStatus.status !== 'connected') {
         this.logger.warn(
@@ -4049,14 +4049,14 @@ export class CampaignsService {
       if (!batch.length) continue;
 
       if (batchWa.length) {
-        let waStatus = this.whatsappService.getStatus(userId);
+        let waStatus = await this.whatsappService.getStatus(userId);
         if (waStatus.status !== 'connected') {
           try {
             await this.whatsappService.startSession(userId);
           } catch {
             // best-effort
           }
-          waStatus = this.whatsappService.getStatus(userId);
+          waStatus = await this.whatsappService.getStatus(userId);
         }
         if (waStatus.status !== 'connected') continue;
       }
@@ -4791,7 +4791,7 @@ export class CampaignsService {
       if (!userId) continue;
 
       if (!gatePassUsers.has(userId)) {
-        const st = this.whatsappService.getStatus(userId);
+        const st = await this.whatsappService.getStatus(userId);
         const stableMs = this.whatsappService.getConnectedStableMs(userId);
         if (st.status !== 'connected' || stableMs < stableConnectedMs) {
           skippedByGate += 1;
@@ -5011,14 +5011,14 @@ export class CampaignsService {
 
       // Канал должен быть живой, иначе requeue сейчас только усилит шум.
       if (channel === 'wa') {
-        let st = this.whatsappService.getStatus(userId);
+        let st = await this.whatsappService.getStatus(userId);
         if (st.status !== 'connected') {
           try {
             await this.whatsappService.startSession(userId);
           } catch {
             // best-effort
           }
-          st = this.whatsappService.getStatus(userId);
+          st = await this.whatsappService.getStatus(userId);
         }
         if (st.status !== 'connected') continue;
       } else {
