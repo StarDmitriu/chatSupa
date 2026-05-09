@@ -17,7 +17,10 @@ import {
   RuntimeCoordinationService,
   type MessengerChannel,
 } from '../runtime/runtime-coordination.service';
-import { runtimeCapabilitiesLabel } from '../runtime/runtime-role';
+import {
+  runtimeCapabilitiesLabel,
+  runtimeHasCapability,
+} from '../runtime/runtime-role';
 
 type TgStatus =
   | 'not_connected'
