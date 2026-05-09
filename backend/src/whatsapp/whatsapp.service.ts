@@ -1186,13 +1186,25 @@ export class WhatsappService {
   }
 
   async getStatus(userId: string): Promise<SessionInfo> {
+    const authDir = this.getAuthDir(userId);
+    const credsPath = path.join(authDir, 'creds.json');
+    const hasCreds = fs.existsSync(credsPath);
+    const shared = await this.runtimeCoordinationService.readMessengerState<SessionInfo>(
+      this.channel,
+      userId,
+    );
     const s = this.sessions.get(userId);
     if (!s) {
-      const shared = await this.runtimeCoordinationService.readMessengerState<SessionInfo>(
-        this.channel,
-        userId,
-      );
       if (shared) return shared;
+      if (hasCreds) {
+        return {
+          status: 'connected',
+          stateSinceAt: new Date().toISOString(),
+          stateDurationSec: 0,
+          disconnectSinceAt: null,
+          disconnectDurationSec: null,
+        };
+      }
       return {
         status: 'not_connected',
         stateSinceAt: new Date().toISOString(),
@@ -1222,6 +1234,25 @@ export class WhatsappService {
         ? new Date(s.proxyBypassUntil!).toISOString()
         : null,
     };
+
+    if (status.status !== 'connected') {
+      if (shared?.status && shared.status !== 'not_connected') {
+        return shared;
+      }
+      if (
+        hasCreds &&
+        (status.status === 'not_connected' || status.status === 'error')
+      ) {
+        return {
+          ...status,
+          status: 'connected',
+          lastError: null,
+          disconnectSinceAt: null,
+          disconnectDurationSec: null,
+        };
+      }
+    }
+
     await this.publishSessionState(userId, s);
     return status;
   }
@@ -1447,8 +1478,8 @@ export class WhatsappService {
       const credsPath = path.join(authDir, 'creds.json');
       const hasCreds = fs.existsSync(credsPath);
 
-      const s = this.ensureSession(userId);
-      const connected = s.info.status === 'connected';
+      const s = this.sessions.get(userId);
+      const connected = s?.info.status === 'connected' || hasCreds;
 
       // Если сессия уже помечена как connected — считаем подключённым.
       // Если процесс перезапускался и память потерялась, но creds.json существует,
@@ -1456,12 +1487,16 @@ export class WhatsappService {
       // Важно: не вызывать startSession во время показа QR / активного коннекта / авто‑рестарта.
       // Иначе любой поллинг account-info (шаблоны, другие вкладки) обрывает сокет Baileys —
       // QR «мигает» или исчезает через несколько секунд, пользователь не успевает отсканировать.
-      if (s.info.status !== 'connected' && hasCreds && runtimeHasCapability('worker')) {
+      if (
+        s?.info.status !== 'connected' &&
+        hasCreds &&
+        runtimeHasCapability('worker')
+      ) {
         const skipAutoRecover =
-          s.info.status === 'pending_qr' ||
-          s.info.status === 'connecting' ||
-          s.info.status === 'temporary_network_issue' ||
-          Boolean(s.starting);
+          s?.info.status === 'pending_qr' ||
+          s?.info.status === 'connecting' ||
+          s?.info.status === 'temporary_network_issue' ||
+          Boolean(s?.starting);
         if (!skipAutoRecover) {
           this.startSession(userId).catch(() => undefined);
         }
