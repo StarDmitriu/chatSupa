@@ -341,6 +341,22 @@ export class TelegramService implements OnModuleDestroy {
     this.sessionLeaseTouchedAt.set(userId, Date.now());
   }
 
+  private async releaseConnectedSessionOwnership(
+    userId: string,
+    reason: string,
+  ): Promise<void> {
+    const client = this.sessions.get(userId);
+    this.sessions.delete(userId);
+    this.stopSessionLeaseTimer(userId);
+    if (client) {
+      await client.disconnect().catch(() => undefined);
+    }
+    await this.runtimeCoordinationService
+      .releaseMessengerLease(this.channel, userId)
+      .catch(() => undefined);
+    this.logger.log(`[TG lease] released owner userId=${userId} reason=${reason}`);
+  }
+
   private async publishRuntimeState(params: {
     userId: string;
     status: TgStatus;
@@ -1932,16 +1948,27 @@ export class TelegramService implements OnModuleDestroy {
   async syncGroups(userId: string) {
     const startTime = Date.now();
     this.logger.log(`[TG syncGroups] START for userId=${userId}`);
+    const shouldReleaseOwnershipAfterSync = !runtimeHasCapability('worker');
+    const finish = async <T>(result: T): Promise<T> => {
+      if (shouldReleaseOwnershipAfterSync) {
+        await this.releaseConnectedSessionOwnership(
+          userId,
+          `sync_groups_complete_${runtimeCapabilitiesLabel()}`,
+        ).catch(() => undefined);
+      }
+      return result;
+    };
 
     if (!(await this.ensureSessionLease(userId, 'sync_groups'))) {
-      return {
+      return finish({
         success: false,
         message: 'telegram_session_busy',
-      };
+      });
     }
 
     let client = await this.getConnectedClient(userId);
-    if (!client) return { success: false, message: 'telegram_not_connected' };
+    if (!client)
+      return finish({ success: false, message: 'telegram_not_connected' });
 
     const supabase = this.supabaseService.getClient();
     let { data: existingTimes, error: timeErr } = await supabase
@@ -1969,11 +1996,11 @@ export class TelegramService implements OnModuleDestroy {
         'Supabase select telegram_groups send_time error',
         timeErr as any,
       );
-      return {
+      return finish({
         success: false,
         message: 'supabase_select_error',
         error: timeErr,
-      };
+      });
     }
 
     const sendTimeMap = new Map(
@@ -2010,7 +2037,11 @@ export class TelegramService implements OnModuleDestroy {
       const msg = String(e?.message ?? e);
       if (msg.includes('TIMEOUT')) {
         this.logger.warn(`TG getDialogs TIMEOUT: ${msg}`);
-        return { success: false, message: 'telegram_timeout', error: msg };
+        return finish({
+          success: false,
+          message: 'telegram_timeout',
+          error: msg,
+        });
       }
       if (msg.includes('AUTH_KEY_UNREGISTERED')) {
         this.logger.warn(`TG getDialogs AUTH_KEY_UNREGISTERED: ${msg}`);
@@ -2032,7 +2063,7 @@ export class TelegramService implements OnModuleDestroy {
           .catch(() => undefined);
         client = await this.getConnectedClient(userId);
         if (!client) {
-          return { success: false, message: 'telegram_not_connected' };
+          return finish({ success: false, message: 'telegram_not_connected' });
         }
         try {
           dialogs = await client.getDialogs({});
@@ -2040,22 +2071,26 @@ export class TelegramService implements OnModuleDestroy {
           const msg2 = String(e2?.message ?? e2);
           if (msg2.includes('TIMEOUT')) {
             this.logger.warn(`TG getDialogs TIMEOUT: ${msg2}`);
-            return { success: false, message: 'telegram_timeout', error: msg2 };
+            return finish({
+              success: false,
+              message: 'telegram_timeout',
+              error: msg2,
+            });
           }
           this.logger.error(`TG getDialogs failed(after reset): ${msg2}`);
-          return {
+          return finish({
             success: false,
             message: 'telegram_get_dialogs_failed',
             error: msg2,
-          };
+          });
         }
       } else {
         this.logger.error(`TG getDialogs failed: ${msg}`);
-        return {
+        return finish({
           success: false,
           message: 'telegram_get_dialogs_failed',
           error: msg,
-        };
+        });
       }
     }
 
@@ -2280,13 +2315,13 @@ export class TelegramService implements OnModuleDestroy {
       const { logLine, userMessage, code } = this.formatSupabaseError(error);
       this.logger.error(logLine);
       this.logger.error(`[TG syncGroups] Для пользователя: ${userMessage}`);
-      return {
+      return finish({
         success: false,
         message: 'supabase_upsert_error',
         error: error as any,
         userMessage,
         errorCode: code,
-      };
+      });
     }
 
     const staleCandidates = (existingTimes ?? [])
@@ -2394,7 +2429,7 @@ export class TelegramService implements OnModuleDestroy {
       );
     }
 
-    return { success: true, count: rows.length };
+    return finish({ success: true, count: rows.length });
   }
 
   async getGroupsFromDb(

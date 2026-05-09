@@ -1155,11 +1155,12 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
 
       if (
         msg === 'whatsapp_not_connected' ||
+        msg === 'telegram_session_busy' ||
         msg === 'telegram_not_connected' ||
         msg === 'send_timeout'
       ) {
         const reason =
-          msg === 'telegram_not_connected'
+          msg === 'telegram_not_connected' || msg === 'telegram_session_busy'
             ? 'telegram_not_connected'
             : msg === 'whatsapp_not_connected'
               ? 'wa_not_connected'
