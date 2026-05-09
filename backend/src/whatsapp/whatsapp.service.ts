@@ -3304,6 +3304,10 @@ export class WhatsappService {
         const loggedOut = statusCode === DisconnectReason.loggedOut;
         const msg = boom?.message ?? 'connection closed';
         const msgLower = String(msg || '').toLowerCase();
+        const isIntentionalOwnershipRelease =
+          msg.startsWith('release_connected_session_ownership:') ||
+          msg === 'idle_release' ||
+          msg === 'manual reset';
         const isConflict401 =
           statusCode === 401 && msgLower.includes('conflict');
         const isConnectionReplaced =
@@ -3315,6 +3319,16 @@ export class WhatsappService {
           `WhatsApp closed for ${userId}, code=${statusCode}, loggedOut=${loggedOut}, msg=${msg}, detail=${disconnectDetail}`,
         );
         void this.publishSessionState(userId, s);
+
+        if (isIntentionalOwnershipRelease) {
+          s.sock = undefined;
+          s.starting = undefined;
+          s.restartAttempts = 0;
+          s.info = { status: 'not_connected' };
+          s.lastChangeAt = Date.now();
+          void this.publishSessionState(userId, s);
+          return;
+        }
 
         // Понятные пользователю сообщения по кодам отключения (Baileys DisconnectReason).
         const userFriendlyError = (): string => {
