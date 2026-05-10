@@ -2030,10 +2030,35 @@ export class WhatsappService {
     const s = this.ensureSession(userId);
 
     if (!s.sock || s.info.status !== 'connected') {
-      return finish({
-        success: false,
-        message: 'whatsapp_not_connected',
-      });
+      const authDir = this.getAuthDir(userId);
+      const credsPath = path.join(authDir, 'creds.json');
+      const hasCreds = fs.existsSync(credsPath);
+
+      if (!hasCreds) {
+        return finish({
+          success: false,
+          message: 'whatsapp_not_connected',
+        });
+      }
+
+      this.logger.log(
+        `[WA syncGroups] no live socket but creds exist; reconnecting before sync userId=${userId}`,
+      );
+      if (!s.starting) {
+        s.starting = this.startInternal(userId).finally(() => {
+          s.starting = undefined;
+        });
+      }
+      await s.starting.catch(() => undefined);
+
+      if (!s.sock || s.info.status !== 'connected') {
+        return finish({
+          success: false,
+          message: 'whatsapp_reconnect_failed',
+          status: s.info.status,
+          lastError: s.info.lastError,
+        });
+      }
     }
 
     const { data: existingRows, error: timeErr } = await this.supabase
