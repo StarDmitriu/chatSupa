@@ -1189,6 +1189,8 @@ export class WhatsappService {
     const authDir = this.getAuthDir(userId);
     const credsPath = path.join(authDir, 'creds.json');
     const hasCreds = fs.existsSync(credsPath);
+    const allowCredsConnectedFallback =
+      hasCreds && !runtimeHasCapability('worker');
     const shared = await this.runtimeCoordinationService.readMessengerState<SessionInfo>(
       this.channel,
       userId,
@@ -1196,7 +1198,7 @@ export class WhatsappService {
     const s = this.sessions.get(userId);
     if (!s) {
       if (shared) return shared;
-      if (hasCreds) {
+      if (allowCredsConnectedFallback) {
         return {
           status: 'connected',
           stateSinceAt: new Date().toISOString(),
@@ -1240,7 +1242,7 @@ export class WhatsappService {
         return shared;
       }
       if (
-        hasCreds &&
+        allowCredsConnectedFallback &&
         (status.status === 'not_connected' || status.status === 'error')
       ) {
         return {
