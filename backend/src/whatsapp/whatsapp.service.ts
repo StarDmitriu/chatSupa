@@ -2717,6 +2717,23 @@ export class WhatsappService {
     }
   }
 
+  async clearSendError(userId: string, waGroupId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('whatsapp_groups')
+      .update({
+        last_send_error: null,
+        last_send_error_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId)
+      .eq('wa_group_id', waGroupId);
+    if (error) {
+      this.logger.debug(
+        `[WA clearSendError] update failed: ${(error as any)?.message ?? error} (userId=${userId}, waGroupId=${waGroupId})`,
+      );
+    }
+  }
+
   async setGroupSelected(params: {
     userId: string;
     waGroupId: string;

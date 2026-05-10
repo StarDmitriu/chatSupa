@@ -632,10 +632,17 @@ export default function GroupsPage() {
 					)
 					loader?.show?.('Подключение WhatsApp…')
 					router?.push?.('/cabinet#whatsapp')
+				} else if (data.message === 'whatsapp_session_busy') {
+					const busyText =
+						'WhatsApp сейчас занят активной отправкой. Список групп уже доступен из базы, повторите синхронизацию позже.'
+					message.warning(busyText)
+					setSyncInfo(busyText)
+					await fetchGroups(userId, true, waPhoneFilter || undefined)
+					await fetchPhones(userId)
 				} else {
 					message.error(`Ошибка синка групп: ${data.message || 'unknown'}`)
 				}
-				setSyncInfo(null)
+				if (data.message !== 'whatsapp_session_busy') setSyncInfo(null)
 				return;
 			}
 

@@ -1146,6 +1146,17 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
           sent_at: new Date().toISOString(),
         })
         .eq('id', dbJob.id);
+      if (channel === 'wa') {
+        const uid = String((dbJob as any).user_id ?? '');
+        const jid = String((dbJob as any).group_jid ?? '');
+        if (uid && jid) {
+          this.whatsapp.clearSendError(uid, jid).catch((err) =>
+            this.logger.warn(
+              `[CampaignBullWorker] clearSendError wa: ${err?.message ?? err}`,
+            ),
+          );
+        }
+      }
       if (campaignId) await this.stopCampaignIfDone(String(campaignId));
       if (useSendRhythm) {
         this.recordCampaignSendRhythm(String(campaignId), scheduledAtMs);
