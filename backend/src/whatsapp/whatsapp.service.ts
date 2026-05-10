@@ -1313,8 +1313,15 @@ export class WhatsappService {
       userId,
     );
     const s = this.sessions.get(userId);
+    const sharedIsUsablePendingQr = Boolean(
+      shared?.status === 'pending_qr' &&
+        typeof shared?.qr === 'string' &&
+        shared.qr.length > 0 &&
+        s?.info.status === 'pending_qr' &&
+        s?.sock,
+    );
     if (!s) {
-      if (shared) return shared;
+      if (shared && shared.status !== 'pending_qr') return shared;
       if (allowCredsConnectedFallback) {
         return {
           status: 'connected',
@@ -1355,7 +1362,11 @@ export class WhatsappService {
     };
 
     if (status.status !== 'connected') {
-      if (shared?.status && shared.status !== 'not_connected') {
+      if (
+        shared?.status &&
+        shared.status !== 'not_connected' &&
+        (shared.status !== 'pending_qr' || sharedIsUsablePendingQr)
+      ) {
         return shared;
       }
       if (
