@@ -565,6 +565,25 @@ export class WhatsappService {
     return true;
   }
 
+  private async waitForConnectedSession(
+    userId: string,
+    timeoutMs = 12_000,
+  ): Promise<boolean> {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeoutMs) {
+      const current = this.sessions.get(userId);
+      if (current?.sock && current.info.status === 'connected') {
+        return true;
+      }
+      const status = current?.info.status;
+      if (status === 'pending_qr' || status === 'error') {
+        return false;
+      }
+      await delay(250);
+    }
+    return false;
+  }
+
   /**
    * После реконнекта WA — вернуть в очередь paused jobs (без CAMPAIGN_REPEAT_*).
    * CampaignsService подгружаем через dynamic import, иначе цикл campaigns↔whatsapp ломает DI (WhatsappService = undefined).
@@ -2054,8 +2073,9 @@ export class WhatsappService {
         });
       }
       await s.starting.catch(() => undefined);
+      const connected = await this.waitForConnectedSession(userId);
 
-      if (!s.sock || s.info.status !== 'connected') {
+      if (!connected || !s.sock || s.info.status !== 'connected') {
         return finish({
           success: false,
           message: 'whatsapp_reconnect_failed',
