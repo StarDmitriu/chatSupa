@@ -592,6 +592,23 @@ export class WhatsappService {
     const uid = String(userId || '').trim();
     if (!uid) return false;
 
+    const { data: runningCampaigns, error: campaignErr } = await this.supabase
+      .from('campaigns')
+      .select('id')
+      .eq('user_id', uid)
+      .eq('channel', 'wa')
+      .eq('status', 'running')
+      .eq('paused', false)
+      .limit(1);
+
+    if (campaignErr) {
+      this.logger.warn(
+        `[WA syncGroups] running campaign probe failed userId=${uid}: ${campaignErr.message}`,
+      );
+      return true;
+    }
+    if (runningCampaigns?.length) return true;
+
     const { data: processingRows, error: processingErr } = await this.supabase
       .from('campaign_jobs')
       .select('id')
@@ -3679,7 +3696,7 @@ export class WhatsappService {
         }
 
         // Конфликт/замена соединения: переводим в обычное состояние "не подключено" и очищаем authDir,
-        // чтобы следующий старт гарантированно показал новый QR (без ручного "сброса" пользователем).
+        // но authDir НЕ очищаем: внутренний runtime-conflict не должен превращаться в обязательный QR.
         if (isConflict401 || isConnectionReplaced) {
           this.stopRestartTimer(s);
           try {
@@ -3689,7 +3706,6 @@ export class WhatsappService {
           s.restartAttempts = 0;
           s.info = { status: 'not_connected', lastError: userFriendlyError() };
           s.lastChangeAt = Date.now();
-          this.scheduleAuthDirCleanup(userId);
           return;
         }
 
