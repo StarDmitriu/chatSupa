@@ -61,6 +61,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    volumes:
+      - wa_auth_data:/app/wa_auth
     restart: unless-stopped
     stop_grace_period: 15s
     cpus: "1.50"
@@ -98,6 +100,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    volumes:
+      - wa_auth_data:/app/wa_auth
     restart: unless-stopped
     stop_grace_period: 45s
     cpus: "1.50"
@@ -135,6 +139,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    volumes:
+      - wa_auth_data:/app/wa_auth
     restart: unless-stopped
     stop_grace_period: 30s
     cpus: "0.75"
@@ -215,3 +221,4 @@ services:
 
 volumes:
   redis_data:
+  wa_auth_data:
