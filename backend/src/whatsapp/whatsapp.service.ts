@@ -507,6 +507,10 @@ export class WhatsappService {
     this.logger.log(`[WA lease] released owner userId=${userId} reason=${reason}`);
   }
 
+  async releaseSessionOwnership(userId: string, reason: string): Promise<void> {
+    await this.releaseConnectedSessionOwnership(userId, reason);
+  }
+
   private async ensureSessionLease(
     userId: string,
     reason: string,

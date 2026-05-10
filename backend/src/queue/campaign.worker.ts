@@ -507,6 +507,32 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  private async releaseWaOwnershipIfUserIdle(userId: string) {
+    const uid = String(userId || '').trim();
+    if (!uid) return;
+    const supabase = this.supabaseService.getClient();
+    try {
+      const { data: activeJobs } = await supabase
+        .from('campaign_jobs')
+        .select('id')
+        .eq('user_id', uid)
+        .eq('channel', 'wa')
+        .in('status', ['pending', 'processing', 'paused'])
+        .limit(1);
+
+      if (activeJobs?.length) return;
+
+      await this.whatsapp.releaseSessionOwnership(
+        uid,
+        'worker_no_active_jobs',
+      );
+    } catch (e: any) {
+      this.logger.warn(
+        `[CampaignBullWorker] releaseWaOwnershipIfUserIdle failed: ${e?.message ?? e} (userId=${uid})`,
+      );
+    }
+  }
+
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly whatsapp: WhatsappService,
@@ -1158,6 +1184,9 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
         }
       }
       if (campaignId) await this.stopCampaignIfDone(String(campaignId));
+      if (channel === 'wa') {
+        await this.releaseWaOwnershipIfUserIdle(String(dbJob.user_id));
+      }
       if (useSendRhythm) {
         this.recordCampaignSendRhythm(String(campaignId), scheduledAtMs);
       }
@@ -1194,6 +1223,9 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
           if (rescheduled) return;
         }
         await pauseCampaignForConnectivity(reason);
+        if (channel === 'wa') {
+          await this.releaseWaOwnershipIfUserIdle(String(dbJob.user_id));
+        }
         this.logger.warn(
           `[CampaignBullWorker] job=${data.jobId} paused on connectivity error: ${msg} (mapped=${reason}, userId=${dbJob.user_id}, campaignId=${campaignId || 'n/a'})`,
         );
@@ -1212,6 +1244,7 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
         );
         if (rescheduled) return;
         await pauseCampaignForConnectivity('wa_not_connected');
+        await this.releaseWaOwnershipIfUserIdle(String(dbJob.user_id));
         this.logger.warn(
           `[CampaignBullWorker] job=${data.jobId} paused on WA media-host upload failure: ${msg} (userId=${dbJob.user_id}, campaignId=${campaignId || 'n/a'})`,
         );
@@ -1310,6 +1343,9 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
         })
         .eq('id', dbJob.id);
       if (campaignId) await this.stopCampaignIfDone(String(campaignId));
+      if (channel === 'wa') {
+        await this.releaseWaOwnershipIfUserIdle(String(dbJob.user_id));
+      }
       if (useSendRhythm) {
         this.recordCampaignSendRhythm(String(campaignId), scheduledAtMs);
       }
