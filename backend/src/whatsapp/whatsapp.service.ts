@@ -290,6 +290,10 @@ export class WhatsappService {
       5 * 60_000,
     60_000,
   );
+  private readonly syncBusyPendingGraceMs = Math.max(
+    Number(process.env.WA_SYNC_BUSY_PENDING_GRACE_MS || 30_000) || 30_000,
+    5_000,
+  );
 
   private sessions = new Map<string, InternalSession>();
 
@@ -582,6 +586,79 @@ export class WhatsappService {
       await delay(250);
     }
     return false;
+  }
+
+  private async hasImmediateWaWork(userId: string): Promise<boolean> {
+    const uid = String(userId || '').trim();
+    if (!uid) return false;
+
+    const { data: processingRows, error: processingErr } = await this.supabase
+      .from('campaign_jobs')
+      .select('id')
+      .eq('user_id', uid)
+      .eq('channel', 'wa')
+      .eq('status', 'processing')
+      .limit(1);
+
+    if (processingErr) {
+      this.logger.warn(
+        `[WA syncGroups] processing probe failed userId=${uid}: ${processingErr.message}`,
+      );
+      return true;
+    }
+    if (processingRows?.length) return true;
+
+    const { data: pendingRows, error: pendingErr } = await this.supabase
+      .from('campaign_jobs')
+      .select('id, scheduled_at')
+      .eq('user_id', uid)
+      .eq('channel', 'wa')
+      .eq('status', 'pending')
+      .order('scheduled_at', { ascending: true, nullsFirst: true })
+      .limit(1);
+
+    if (pendingErr) {
+      this.logger.warn(
+        `[WA syncGroups] pending probe failed userId=${uid}: ${pendingErr.message}`,
+      );
+      return true;
+    }
+
+    const nextPending = pendingRows?.[0] as
+      | { scheduled_at?: string | null }
+      | undefined;
+    if (!nextPending) return false;
+
+    const scheduledAtMs = nextPending.scheduled_at
+      ? Date.parse(String(nextPending.scheduled_at))
+      : NaN;
+    if (!Number.isFinite(scheduledAtMs)) return true;
+
+    return scheduledAtMs <= Date.now() + this.syncBusyPendingGraceMs;
+  }
+
+  private async recoverStaleBusyLeaseForSync(userId: string): Promise<boolean> {
+    const uid = String(userId || '').trim();
+    if (!uid) return false;
+
+    const hasImmediateWork = await this.hasImmediateWaWork(uid);
+    if (hasImmediateWork) return false;
+
+    const owner = await this.runtimeCoordinationService.getMessengerLeaseOwner(
+      this.channel,
+      uid,
+    );
+    if (!owner) return false;
+
+    this.logger.warn(
+      `[WA syncGroups] force releasing stale lease userId=${uid} owner=${owner}`,
+    );
+    await this.runtimeCoordinationService.forceReleaseMessengerLease(
+      this.channel,
+      uid,
+    );
+
+    return this.ensureSessionLease(uid, 'sync_groups_recover_stale_lease');
   }
 
   /**
@@ -2044,10 +2121,15 @@ export class WhatsappService {
     };
 
     if (!(await this.ensureSessionLease(userId, 'sync_groups'))) {
-      return finish({
-        success: false,
-        message: 'whatsapp_session_busy',
-      });
+      const recovered = await this.recoverStaleBusyLeaseForSync(userId).catch(
+        () => false,
+      );
+      if (!recovered) {
+        return finish({
+          success: false,
+          message: 'whatsapp_session_busy',
+        });
+      }
     }
 
     const s = this.ensureSession(userId);

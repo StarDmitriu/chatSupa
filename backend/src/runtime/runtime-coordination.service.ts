@@ -117,6 +117,13 @@ export class RuntimeCoordinationService implements OnModuleDestroy {
     await this.releaseLease(this.messengerLeaseKey(channel, userId));
   }
 
+  async forceReleaseMessengerLease(
+    channel: MessengerChannel,
+    userId: string,
+  ): Promise<void> {
+    await this.redis.del(this.messengerLeaseKey(channel, userId));
+  }
+
   async getMessengerLeaseOwner(
     channel: MessengerChannel,
     userId: string,
