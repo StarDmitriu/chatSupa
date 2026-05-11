@@ -991,6 +991,10 @@ export default function GroupsPage() {
 			const bSel = b?.is_selected !== false && !b?.is_announcement
 			if (aSel && !bSel) return -1
 			if (!aSel && bSel) return 1
+			const aPlaceholder = isPlaceholderSubject(a?.subject)
+			const bPlaceholder = isPlaceholderSubject(b?.subject)
+			if (aPlaceholder && !bPlaceholder) return 1
+			if (!aPlaceholder && bPlaceholder) return -1
 			return 0
 		})
 	}, [groups, q])

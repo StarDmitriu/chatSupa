@@ -331,6 +331,7 @@ export class WhatsappService {
   private backgroundHydrationJobs = new Map<string, Promise<void>>();
   private backgroundHydrationTimers = new Map<string, NodeJS.Timeout>();
   private backgroundHydrationDeferredReleaseReasons = new Map<string, string>();
+  private backgroundHydrationCursorByUser = new Map<string, string>();
   private readonly GROUP_METADATA_BACKGROUND_DELAY_MS = 2500;
   private readonly GROUP_METADATA_BACKGROUND_BATCH_SIZE = 40;
   private readonly GROUP_METADATA_BACKGROUND_RETRY_DELAY_MS = 30_000;
@@ -812,6 +813,7 @@ export class WhatsappService {
     }
     this.backgroundHydrationJobs.delete(userId);
     this.backgroundHydrationDeferredReleaseReasons.delete(userId);
+    this.backgroundHydrationCursorByUser.delete(userId);
   }
 
   private touchSessionLease(userId: string) {
@@ -1028,7 +1030,10 @@ export class WhatsappService {
       patch.subject = normalized.subject;
       this.setCachedGroupMetadata(userId, jid, event);
     }
-    if (normalized.participantsCount != null) {
+    if (
+      normalized.participantsCount != null &&
+      normalized.participantsCount > 0
+    ) {
       patch.participants_count = normalized.participantsCount;
     }
     if (normalized.isAnnouncement != null) {
@@ -1241,9 +1246,8 @@ export class WhatsappService {
           )
           .eq('user_id', userId)
           .or('subject.is.null,subject.eq.,subject.like.Без названия%')
-          .order('updated_at', { ascending: true })
           .order('wa_group_id', { ascending: true })
-          .limit(this.GROUP_METADATA_BACKGROUND_BATCH_SIZE);
+          .limit(Math.max(this.GROUP_METADATA_BACKGROUND_BATCH_SIZE * 8, 200));
 
         if (error) {
           this.logger.error(
@@ -1253,16 +1257,45 @@ export class WhatsappService {
           return;
         }
 
-        const rows = Array.isArray(data) ? data : [];
-        if (rows.length === 0) {
+        const candidateRows = Array.isArray(data) ? data : [];
+        if (candidateRows.length === 0) {
+          this.backgroundHydrationCursorByUser.delete(userId);
           this.logger.log(
             `[WA bgHydrator] no missing subjects left for userId=${userId}`,
           );
           return;
         }
 
+        const cursor = this.backgroundHydrationCursorByUser.get(userId) ?? null;
+        const afterCursor = cursor
+          ? candidateRows.filter(
+              (row) => String(row?.wa_group_id || '').trim() > cursor,
+            )
+          : candidateRows;
+        const beforeCursor = cursor
+          ? candidateRows.filter(
+              (row) => String(row?.wa_group_id || '').trim() <= cursor,
+            )
+          : [];
+        const rows = [...afterCursor, ...beforeCursor].slice(
+          0,
+          this.GROUP_METADATA_BACKGROUND_BATCH_SIZE,
+        );
+
+        if (rows.length === 0) {
+          this.backgroundHydrationCursorByUser.delete(userId);
+          return;
+        }
+
+        const lastSelectedJid = String(
+          rows[rows.length - 1]?.wa_group_id || '',
+        ).trim();
+        if (lastSelectedJid) {
+          this.backgroundHydrationCursorByUser.set(userId, lastSelectedJid);
+        }
+
         this.logger.log(
-          `[WA bgHydrator] start for userId=${userId}, batch=${rows.length}`,
+          `[WA bgHydrator] start for userId=${userId}, batch=${rows.length}, pool=${candidateRows.length}, cursor=${cursor ?? 'none'}, nextCursor=${lastSelectedJid || 'none'}`,
         );
 
         const updates: Array<Record<string, any>> = [];
@@ -1374,6 +1407,7 @@ export class WhatsappService {
 
         shouldReschedule =
           rateLimitHits > 0 ||
+          candidateRows.length > rows.length ||
           rows.length === this.GROUP_METADATA_BACKGROUND_BATCH_SIZE;
         if (shouldReschedule) {
           this.scheduleBackgroundGroupHydration(
