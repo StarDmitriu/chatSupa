@@ -1234,6 +1234,7 @@ export class WhatsappService {
 
     const job = (async () => {
       let shouldReschedule = false;
+      let rescheduleDelayMs: number | null = null;
       try {
         const s = this.ensureSession(userId);
         if (!s.sock || s.info.status !== 'connected') return;
@@ -1410,13 +1411,16 @@ export class WhatsappService {
           candidateRows.length > rows.length ||
           rows.length === this.GROUP_METADATA_BACKGROUND_BATCH_SIZE;
         if (shouldReschedule) {
-          this.scheduleBackgroundGroupHydration(
-            userId,
-            this.GROUP_METADATA_BACKGROUND_RETRY_DELAY_MS,
-          );
+          rescheduleDelayMs = this.GROUP_METADATA_BACKGROUND_RETRY_DELAY_MS;
         }
       } finally {
         this.backgroundHydrationJobs.delete(userId);
+        if (shouldReschedule) {
+          this.scheduleBackgroundGroupHydration(
+            userId,
+            rescheduleDelayMs ?? this.GROUP_METADATA_BACKGROUND_RETRY_DELAY_MS,
+          );
+        }
         if (!shouldReschedule) {
           await this.releaseOwnershipIfDeferredAfterBackgroundHydration(userId);
         }
