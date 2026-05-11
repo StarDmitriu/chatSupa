@@ -1015,6 +1015,51 @@ export class WhatsappService {
     );
   }
 
+  private async patchGroupFromUpdateEvent(
+    userId: string,
+    jid: string,
+    event: any,
+    reason: string,
+  ) {
+    const normalized = this.normalizeGroupMetadata(event);
+    const patch: Record<string, any> = {};
+
+    if (normalized.subject) {
+      patch.subject = normalized.subject;
+      this.setCachedGroupMetadata(userId, jid, event);
+    }
+    if (normalized.participantsCount != null) {
+      patch.participants_count = normalized.participantsCount;
+    }
+    if (normalized.isAnnouncement != null) {
+      patch.is_announcement = normalized.isAnnouncement;
+    }
+    if (normalized.isRestricted != null) {
+      patch.is_restricted = normalized.isRestricted;
+    }
+
+    if (Object.keys(patch).length === 0) return;
+
+    const { error } = await this.supabase
+      .from('whatsapp_groups')
+      .update(patch)
+      .eq('user_id', userId)
+      .eq('wa_group_id', jid);
+
+    if (error) {
+      this.logger.debug(
+        `[WA groupUpdate] patch skipped userId=${userId}, jid=${jid}, reason=${reason}: ${String(
+          (error as any)?.message ?? error,
+        )}`,
+      );
+      return;
+    }
+
+    this.logger.log(
+      `[WA groupUpdate] patched from event userId=${userId}, jid=${jid}, reason=${reason}, subject=${normalized.subject ?? 'null'}, participants=${normalized.participantsCount ?? 'null'}`,
+    );
+  }
+
   private async repairRowsWithGroupMetadata(
     userId: string,
     sock: WASocket,
@@ -3542,10 +3587,10 @@ export class WhatsappService {
       for (const event of events ?? []) {
         const jid = String(event?.id || '').trim();
         if (!jid) continue;
-        this.refreshGroupMetadataCache(
+        this.patchGroupFromUpdateEvent(
           userId,
-          sock,
           jid,
+          event,
           'groups.update',
         ).catch(() => undefined);
       }
@@ -3554,12 +3599,7 @@ export class WhatsappService {
     sock.ev.on('group-participants.update', (event: any) => {
       const jid = String(event?.id || '').trim();
       if (!jid) return;
-      this.refreshGroupMetadataCache(
-        userId,
-        sock,
-        jid,
-        'group-participants.update',
-      ).catch(() => undefined);
+      this.touchSessionLease(userId);
     });
 
     sock.ev.on('connection.update', (update) => {

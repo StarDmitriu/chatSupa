@@ -481,19 +481,12 @@ export default function GroupsPage() {
 			if (updatedNames > 0) {
 				setGroups(merged)
 				message.success(`Названия обновлены у групп: ${updatedNames}`)
-				const placeholdersAfter = merged.filter(g =>
-					isPlaceholderSubject(g.subject)
-				).length
 				const dynamicLines: string[] = []
 				dynamicLines.push(
-					`• Названия дополнительно обновлены у групп: ${updatedNames}`,
+					`• Названия дополнительно обновлены у групп: ${updatedNames}.`,
 				)
 				dynamicLines.push(
-					`• Без названия осталось: ${placeholdersAfter}${
-						placeholdersAfter > 0
-							? ' — фоновая обработка продолжит попытки, если WhatsApp вернёт имя.'
-							: ''
-					}`,
+					'• Точный остаток без названия не пересчитываем по частично загруженному списку, чтобы не показывать ложные скачки.',
 				)
 				setSyncInfo(dynamicLines.join('\n'))
 			}
