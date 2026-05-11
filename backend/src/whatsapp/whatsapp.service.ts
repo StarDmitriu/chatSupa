@@ -221,10 +221,12 @@ type NormalizedWaGroupMetadata = {
 type WaRepairDiagnostics = {
   rows: Array<Record<string, any>>;
   attempted: number;
+  deferred: number;
   repairedSubjectCount: number;
   repairedParticipantsCount: number;
   remainingMissingSubject: number;
   failures: number;
+  rateLimitHits: number;
 };
 
 type WaGroupMetadataFetchResult = {
@@ -316,7 +318,10 @@ export class WhatsappService {
   private readonly GROUP_AVATAR_TTL_MS = 60 * 60 * 1000; // 1 час для успешных URL
   private readonly GROUP_AVATAR_NULL_TTL_MS = 2 * 60 * 1000; // 2 минуты для null, чтобы были повторы
   private groupMetadataCache = new Map<string, CachedWaGroupMetadata>();
-  private groupMetadataInFlight = new Map<string, Promise<any | null>>();
+  private groupMetadataInFlight = new Map<
+    string,
+    Promise<WaGroupMetadataFetchResult>
+  >();
   private readonly GROUP_METADATA_TTL_MS = 10 * 60 * 1000; // 10 минут
   // Важно: слишком высокая параллельность groupMetadata быстро приводит к rate-overlimit,
   // после чего WA-сессия может быть сброшена (stream error). Держим консервативно.
@@ -330,6 +335,21 @@ export class WhatsappService {
   private readonly GROUP_METADATA_BACKGROUND_RETRY_DELAY_MS = 30_000;
   private readonly GROUP_METADATA_BACKGROUND_START_DELAY_MS = 5_000;
   private readonly GROUP_METADATA_BACKGROUND_RATE_LIMIT_THRESHOLD = 3;
+  private readonly GROUP_METADATA_SYNC_REPAIR_MAX_CANDIDATES = Math.max(
+    Number(process.env.WA_GROUP_METADATA_SYNC_REPAIR_MAX_CANDIDATES || 24) ||
+      24,
+    1,
+  );
+  private readonly GROUP_METADATA_SYNC_REPAIR_LARGE_SYNC_THRESHOLD = Math.max(
+    Number(process.env.WA_GROUP_METADATA_SYNC_REPAIR_LARGE_SYNC_THRESHOLD || 300) ||
+      300,
+    50,
+  );
+  private readonly GROUP_METADATA_SYNC_REPAIR_MISSING_THRESHOLD = Math.max(
+    Number(process.env.WA_GROUP_METADATA_SYNC_REPAIR_MISSING_THRESHOLD || 80) ||
+      80,
+    10,
+  );
   private readonly SEND_RATE_LIMIT_RETRY_DELAY_MS = 30_000;
   private readonly WA_MEDIA_UPLOAD_RETRY_ATTEMPTS = 4;
   private readonly WA_MEDIA_UPLOAD_RETRY_DELAY_MS = 6_000;
@@ -891,8 +911,10 @@ export class WhatsappService {
     const key = this.getGroupMetadataCacheKey(userId, normalizedJid);
     const existing = this.groupMetadataInFlight.get(key);
     if (existing) {
-      const metadata = await existing.catch(() => null);
-      return { metadata, errorMessage: metadata ? null : 'inflight_failed' };
+      return await existing.catch(() => ({
+        metadata: null,
+        errorMessage: 'inflight_failed',
+      }));
     }
 
     const p = (async () => {
@@ -900,30 +922,28 @@ export class WhatsappService {
         const metadata = await sock.groupMetadata(normalizedJid);
         if (metadata)
           this.setCachedGroupMetadata(userId, normalizedJid, metadata);
-        return metadata ?? null;
+        return {
+          metadata: metadata ?? null,
+          errorMessage: metadata ? null : 'metadata_empty',
+        } satisfies WaGroupMetadataFetchResult;
       } catch (e: any) {
-        this.logger.warn(
-          `[WA groupMetadata] failed for userId=${userId}, jid=${normalizedJid}: ${e?.message ?? e}`,
-        );
-        return null;
+        const errorMessage = String(e?.message ?? e);
+        if (logErrors) {
+          this.logger.warn(
+            `[WA groupMetadata] failed for userId=${userId}, jid=${normalizedJid}: ${errorMessage}`,
+          );
+        }
+        return {
+          metadata: null,
+          errorMessage,
+        } satisfies WaGroupMetadataFetchResult;
       } finally {
         this.groupMetadataInFlight.delete(key);
       }
     })();
 
     this.groupMetadataInFlight.set(key, p);
-    try {
-      const metadata = await p;
-      return { metadata, errorMessage: metadata ? null : 'metadata_empty' };
-    } catch (e: any) {
-      const errorMessage = String(e?.message ?? e);
-      if (logErrors) {
-        this.logger.warn(
-          `[WA groupMetadata] failed for userId=${userId}, jid=${normalizedJid}: ${errorMessage}`,
-        );
-      }
-      return { metadata: null, errorMessage };
-    }
+    return await p;
   }
 
   private async fetchGroupMetadata(
@@ -970,7 +990,7 @@ export class WhatsappService {
     sock: WASocket,
     rows: Array<Record<string, any>>,
   ): Promise<WaRepairDiagnostics> {
-    const candidates = rows.filter((row) => {
+    const allCandidates = rows.filter((row) => {
       const sRaw =
         typeof row.subject === 'string' && row.subject.trim()
           ? row.subject.trim()
@@ -984,15 +1004,34 @@ export class WhatsappService {
       return !subject || participants === 0 || participants == null;
     });
 
-    if (candidates.length === 0) {
+    if (allCandidates.length === 0) {
       return {
         rows,
         attempted: 0,
+        deferred: 0,
         repairedSubjectCount: 0,
         repairedParticipantsCount: 0,
         remainingMissingSubject: 0,
         failures: 0,
+        rateLimitHits: 0,
       };
+    }
+
+    const shouldThrottleLargeSync =
+      rows.length >= this.GROUP_METADATA_SYNC_REPAIR_LARGE_SYNC_THRESHOLD ||
+      allCandidates.length >= this.GROUP_METADATA_SYNC_REPAIR_MISSING_THRESHOLD;
+    const candidates = shouldThrottleLargeSync
+      ? allCandidates.slice(
+          0,
+          this.GROUP_METADATA_SYNC_REPAIR_MAX_CANDIDATES,
+        )
+      : allCandidates;
+    const deferred = Math.max(0, allCandidates.length - candidates.length);
+
+    if (deferred > 0) {
+      this.logger.warn(
+        `[WA syncGroups] throttling groupMetadata repair for userId=${userId}: rows=${rows.length}, candidates=${allCandidates.length}, immediate=${candidates.length}, deferred=${deferred}`,
+      );
     }
 
     const rowMap = new Map(rows.map((row) => [String(row.wa_group_id), row]));
@@ -1095,16 +1134,18 @@ export class WhatsappService {
     }).length;
 
     this.logger.log(
-      `[WA syncGroups] groupMetadata repair for userId=${userId}: attempted=${candidates.length}, repairedSubject=${repairedSubjectCount}, repairedParticipants=${repairedParticipantsCount}, failures=${failures}, remainingMissingSubject=${remainingMissingSubject}`,
+      `[WA syncGroups] groupMetadata repair for userId=${userId}: attempted=${candidates.length}, deferred=${deferred}, repairedSubject=${repairedSubjectCount}, repairedParticipants=${repairedParticipantsCount}, failures=${failures}, rateLimitHits=${rateLimitHits}, remainingMissingSubject=${remainingMissingSubject}`,
     );
 
     return {
       rows: repairedRows,
       attempted: candidates.length,
+      deferred,
       repairedSubjectCount,
       repairedParticipantsCount,
       remainingMissingSubject,
       failures,
+      rateLimitHits,
     };
   }
 
@@ -1123,6 +1164,8 @@ export class WhatsappService {
           )
           .eq('user_id', userId)
           .or('subject.is.null,subject.eq.,subject.like.Без названия%')
+          .order('updated_at', { ascending: true })
+          .order('wa_group_id', { ascending: true })
           .limit(this.GROUP_METADATA_BACKGROUND_BATCH_SIZE);
 
         if (error) {
@@ -2448,9 +2491,13 @@ export class WhatsappService {
     attempt: WaSyncDiagnostics,
     existingCount: number,
   ): boolean {
+    const effectiveMissing = Math.max(
+      attempt.finalMissingSubjectIds.length,
+      attempt.apiMissingSubjectIds.length,
+    );
     if (attempt.entriesCount === 0) return existingCount > 0;
-    if (attempt.finalMissingSubjectIds.length >= 5) return true;
-    return attempt.finalMissingSubjectIds.length / attempt.entriesCount >= 0.1;
+    if (effectiveMissing >= 5) return true;
+    return effectiveMissing / attempt.entriesCount >= 0.1;
   }
 
   private pickBetterSyncAttempt(
