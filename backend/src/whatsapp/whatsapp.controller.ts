@@ -110,12 +110,16 @@ export class WhatsappController {
     @Param('userId') paramUserId: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
+    @Query('cursor') cursor?: string,
+    @Query('stable') stable?: string,
     @Query('selectedOnly') selectedOnly?: string,
     @Query('waPhone') waPhone?: string,
   ) {
     const userId = this.ensureUserParam(req, paramUserId);
     const limitNum = limit ? parseInt(limit, 10) : undefined;
     const offsetNum = offset ? parseInt(offset, 10) : undefined;
+    const cursorVal = cursor && cursor.trim() ? cursor.trim() : undefined;
+    const stableBool = stable === 'true' || stable === '1';
     const selectedOnlyBool = selectedOnly === 'true' || selectedOnly === '1';
     const waPhoneVal = waPhone && waPhone.trim() ? waPhone.trim() : undefined;
     return await this.whatsapp.getGroupsFromDb(
@@ -124,6 +128,8 @@ export class WhatsappController {
       offsetNum,
       selectedOnlyBool,
       waPhoneVal,
+      cursorVal,
+      stableBool,
     );
   }
 

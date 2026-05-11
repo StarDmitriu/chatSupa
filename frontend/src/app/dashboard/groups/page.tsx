@@ -37,7 +37,7 @@ type GroupRow = {
 }
 
 type GroupsResponse =
-	| { success: true; groups: GroupRow[]; total?: number; hasMore?: boolean }
+	| { success: true; groups: GroupRow[]; total?: number; hasMore?: boolean; nextCursor?: string | null }
 	| { success: false; message: string }
 
 function reasonDescription(reason: string): string {
@@ -67,7 +67,8 @@ export default function GroupsPage() {
 	const [totalGroups, setTotalGroups] = useState(0)
 	const [loadingMore, setLoadingMore] = useState(false)
 	const [hasMore, setHasMore] = useState(false)
-	const [loadedCount, setLoadedCount] = useState(0) // Счетчик загруженных групп для правильного offset
+	const [groupsCursor, setGroupsCursor] = useState<string | null>(null)
+	const [loadedCount, setLoadedCount] = useState(0) // Счетчик уже добавленных в список групп
 	const [animatedCount, setAnimatedCount] = useState(0) // Плавно увеличивающийся счетчик для отображения
 	const [syncInfo, setSyncInfo] = useState<string | null>(null)
 	const [lastSyncAt, setLastSyncAt] = useState<number | null>(null)
@@ -327,9 +328,15 @@ export default function GroupsPage() {
 
 	const fetchGroups = async (uid: string, reset = true, waPhone?: string) => {
 		if (!uid) return
+		const requestCursor = reset ? null : groupsCursor
+		if (!reset && !requestCursor) {
+			setHasMore(false)
+			return 0
+		}
 		if (reset) {
 			setLoadingGroups(true)
 			setGroups([])
+			setGroupsCursor(null)
 			setLoadedCount(0)
 			setAnimatedCount(0) // Сбрасываем анимированный счетчик
 			lastAutoLoadRef.current = 0 // Сбрасываем счетчик при новой загрузке
@@ -338,8 +345,8 @@ export default function GroupsPage() {
 		}
 
 		try {
-			const offset = reset ? 0 : loadedCount
-			const params = new URLSearchParams({ limit: String(BATCH_SIZE), offset: String(offset) })
+			const params = new URLSearchParams({ limit: String(BATCH_SIZE), stable: '1' })
+			if (requestCursor) params.set('cursor', requestCursor)
 			if (waPhone && waPhone.trim()) params.set('waPhone', waPhone.trim())
 			const url = `${BACKEND_URL}/whatsapp/groups/${uid}?${params.toString()}`
 
@@ -362,6 +369,10 @@ export default function GroupsPage() {
 				const next = Array.isArray(raw) ? raw : []
 				const total = data.total ?? 0
 				const hasMoreData = data.hasMore ?? false
+				const nextCursor =
+					typeof data.nextCursor === 'string' && data.nextCursor.trim()
+						? data.nextCursor.trim()
+						: null
 
 				// Дедупликация: убираем группы с одинаковым wa_group_id
 				const uniqueNext = next.filter((group: GroupRow, index: number, self: GroupRow[]) =>
@@ -403,6 +414,7 @@ export default function GroupsPage() {
 
 				setTotalGroups(total)
 				setHasMore(hasMoreData)
+				setGroupsCursor(nextCursor)
 				return uniqueNext.length
 			}
 			const msg = (data as any).message
@@ -431,7 +443,7 @@ export default function GroupsPage() {
 				Math.max(loadedCount || list.length || BATCH_SIZE, BATCH_SIZE),
 				REFRESH_NAMES_MAX_LIMIT,
 			)
-			const params = new URLSearchParams({ limit: String(limit), offset: '0' })
+			const params = new URLSearchParams({ limit: String(limit), stable: '1' })
 			if (waPhoneFilter?.trim()) params.set('waPhone', waPhoneFilter.trim())
 			const url = `${BACKEND_URL}/whatsapp/groups/${userId}?${params.toString()}`
 
@@ -867,8 +879,10 @@ export default function GroupsPage() {
 			} catch {}
 		}
 		loadingGroupsStartedRef.current = true
+		let cancelled = false
 		void (async () => {
 			const accountInfo = await fetchWaAccountInfo(userId)
+			if (cancelled) return
 			setWaConnected(accountInfo.connected)
 			if (!accountInfo.connected) return
 			const currentPhoneE164 = accountInfo.wa_id
@@ -891,21 +905,30 @@ export default function GroupsPage() {
 				}
 
 				firstLoadFilter = savedFilter || currentPhoneE164 || ''
-				setWaPhoneFilter(firstLoadFilter)
 				defaultWaFilterUserIdRef.current = userId
+				if (firstLoadFilter !== (waPhoneFilter?.trim() || '')) {
+					setWaPhoneFilter(firstLoadFilter)
+					return
+				}
 			}
 			await fetchPhones(userId)
+			if (cancelled) return
 			const effectiveFilter = isFirstLoadForUser
 				? (firstLoadFilter || undefined)
 				: (waPhoneFilter?.trim() || undefined)
 			const count = await fetchGroups(userId, true, effectiveFilter)
+			if (cancelled) return
 			// Синхронизируем, когда групп нет и смотрим текущий номер или «все номера»
 			const viewingCurrentOrAll = !effectiveFilter || effectiveFilter === currentPhoneE164
 			if (!count && viewingCurrentOrAll) {
 				await syncGroups()
+				if (cancelled) return
 				await fetchGroups(userId, true, effectiveFilter)
 			}
 		})()
+		return () => {
+			cancelled = true
+		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [userId, waPhoneFilter])
 
@@ -995,7 +1018,13 @@ export default function GroupsPage() {
 			const bPlaceholder = isPlaceholderSubject(b?.subject)
 			if (aPlaceholder && !bPlaceholder) return 1
 			if (!aPlaceholder && bPlaceholder) return -1
-			return 0
+			const aTitle = (a?.subject || a?.wa_group_id || '').trim()
+			const bTitle = (b?.subject || b?.wa_group_id || '').trim()
+			const cmp = aTitle.localeCompare(bTitle, 'ru', { sensitivity: 'base' })
+			if (cmp !== 0) return cmp
+			return String(a?.wa_group_id || '').localeCompare(String(b?.wa_group_id || ''), 'ru', {
+				sensitivity: 'base',
+			})
 		})
 	}, [groups, q])
 

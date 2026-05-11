@@ -2670,6 +2670,8 @@ export class WhatsappService {
     offset?: number,
     selectedOnly?: boolean,
     waPhone?: string | null,
+    cursor?: string | null,
+    stablePagination = false,
   ) {
     const startTime = Date.now();
 
@@ -2684,6 +2686,9 @@ export class WhatsappService {
       offset === undefined
         ? undefined
         : Math.max(0, Math.floor(Number(offset)) || 0);
+    const safeCursor =
+      typeof cursor === 'string' && cursor.trim() ? cursor.trim() : null;
+    const useStablePagination = stablePagination || !!safeCursor;
 
     // Оптимизация: выбираем только нужные колонки вместо select('*')
     const selectFields =
@@ -2711,13 +2716,23 @@ export class WhatsappService {
         q = q.eq('wa_phone', safeWaPhone);
       }
 
-      q = q.order('updated_at', { ascending: false });
+      if (useStablePagination) {
+        q = q.order('wa_group_id', { ascending: true });
+        if (safeCursor) {
+          q = q.gt('wa_group_id', safeCursor);
+        }
+        if (safeLimit !== undefined) {
+          q = q.limit(safeLimit + 1);
+        }
+      } else {
+        q = q.order('updated_at', { ascending: false });
 
-      if (safeLimit !== undefined) {
-        q = q.limit(safeLimit);
-      }
-      if (safeOffset !== undefined) {
-        q = q.range(safeOffset, safeOffset + (safeLimit || 1000) - 1);
+        if (safeLimit !== undefined) {
+          q = q.limit(safeLimit);
+        }
+        if (safeOffset !== undefined) {
+          q = q.range(safeOffset, safeOffset + (safeLimit || 1000) - 1);
+        }
       }
 
       return q;
@@ -2856,6 +2871,19 @@ export class WhatsappService {
       }
     }
 
+    const pagedGroups =
+      useStablePagination && safeLimit !== undefined
+        ? uniqueGroups.slice(0, safeLimit)
+        : uniqueGroups;
+    const hasMoreStable =
+      useStablePagination &&
+      safeLimit !== undefined &&
+      uniqueGroups.length > safeLimit;
+    const nextCursor =
+      hasMoreStable && pagedGroups.length > 0
+        ? String(pagedGroups[pagedGroups.length - 1]?.wa_group_id || '').trim()
+        : null;
+
     // Если запрашиваем с пагинацией - возвращаем также общее количество
     if (safeLimit !== undefined) {
       const cacheKey = [
@@ -2892,24 +2920,29 @@ export class WhatsappService {
       // Анализ производительности: предупреждаем о медленных запросах
       // Особенно обращаем внимание на большие offset, которые могут быть очень медленными
       if (totalTime > 1000) {
-        const offsetInfo =
-          safeOffset !== undefined
+        const paginationInfo = useStablePagination
+          ? `cursor=${safeCursor ?? 'none'}, stable=true, hasMore=${hasMoreStable}`
+          : safeOffset !== undefined
             ? `offset=${safeOffset} (${safeOffset > 200 ? 'LARGE OFFSET - consider cursor pagination' : 'normal'})`
             : 'no offset';
         this.logger.warn(
-          `[WA getGroupsFromDb] SLOW QUERY: total=${totalTime}ms (query=${actualQueryTime}ms, count=${countTime}ms, dedup=${dedupTime}ms) userId=${userId}, limit=${safeLimit}, ${offsetInfo}, returned=${uniqueGroups.length}, total=${totalCount}`,
+          `[WA getGroupsFromDb] SLOW QUERY: total=${totalTime}ms (query=${actualQueryTime}ms, count=${countTime}ms, dedup=${dedupTime}ms) userId=${userId}, limit=${safeLimit}, ${paginationInfo}, returned=${pagedGroups.length}, total=${totalCount}`,
         );
       } else {
+        const paginationInfo = useStablePagination
+          ? `cursor=${safeCursor ?? 'none'}, stable=true, hasMore=${hasMoreStable}`
+          : `offset=${safeOffset}`;
         this.logger.log(
-          `[WA getGroupsFromDb] COMPLETE: total=${totalTime}ms (query=${actualQueryTime}ms, count=${countTime}ms, dedup=${dedupTime}ms), limit=${safeLimit}, offset=${safeOffset}, returned=${uniqueGroups.length}, total=${totalCount}`,
+          `[WA getGroupsFromDb] COMPLETE: total=${totalTime}ms (query=${actualQueryTime}ms, count=${countTime}ms, dedup=${dedupTime}ms), limit=${safeLimit}, ${paginationInfo}, returned=${pagedGroups.length}, total=${totalCount}`,
         );
       }
 
       // Логирование проблем с пагинацией
       if (
+        !useStablePagination &&
         safeOffset !== undefined &&
         safeOffset > 0 &&
-        uniqueGroups.length === 0 &&
+        pagedGroups.length === 0 &&
         (totalCount ?? 0) > 0
       ) {
         this.logger.warn(
@@ -2919,9 +2952,12 @@ export class WhatsappService {
 
       return {
         success: true,
-        groups: uniqueGroups,
+        groups: pagedGroups,
         total: totalCount ?? 0,
-        hasMore: (safeOffset || 0) + uniqueGroups.length < (totalCount || 0),
+        hasMore: useStablePagination
+          ? hasMoreStable
+          : (safeOffset || 0) + pagedGroups.length < (totalCount || 0),
+        nextCursor,
       };
     }
 
