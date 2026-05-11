@@ -330,6 +330,7 @@ export class WhatsappService {
   private readonly GROUP_METADATA_EVENT_REFRESH_COOLDOWN_MS = 60 * 1000;
   private backgroundHydrationJobs = new Map<string, Promise<void>>();
   private backgroundHydrationTimers = new Map<string, NodeJS.Timeout>();
+  private backgroundHydrationDeferredReleaseReasons = new Map<string, string>();
   private readonly GROUP_METADATA_BACKGROUND_DELAY_MS = 2500;
   private readonly GROUP_METADATA_BACKGROUND_BATCH_SIZE = 40;
   private readonly GROUP_METADATA_BACKGROUND_RETRY_DELAY_MS = 30_000;
@@ -810,6 +811,35 @@ export class WhatsappService {
       this.backgroundHydrationTimers.delete(userId);
     }
     this.backgroundHydrationJobs.delete(userId);
+    this.backgroundHydrationDeferredReleaseReasons.delete(userId);
+  }
+
+  private touchSessionLease(userId: string) {
+    const s = this.sessions.get(userId);
+    if (!s) return;
+    s.lastLeaseTouchAt = Date.now();
+  }
+
+  private deferOwnershipReleaseAfterBackgroundHydration(
+    userId: string,
+    reason: string,
+  ) {
+    this.backgroundHydrationDeferredReleaseReasons.set(userId, reason);
+    this.touchSessionLease(userId);
+  }
+
+  private async releaseOwnershipIfDeferredAfterBackgroundHydration(
+    userId: string,
+  ) {
+    const reason = this.backgroundHydrationDeferredReleaseReasons.get(userId);
+    if (!reason) return;
+    if (this.backgroundHydrationJobs.has(userId)) return;
+    if (this.backgroundHydrationTimers.has(userId)) return;
+
+    this.backgroundHydrationDeferredReleaseReasons.delete(userId);
+    await this.releaseConnectedSessionOwnership(userId, reason).catch(
+      () => undefined,
+    );
   }
 
   private isPlaceholderSubject(subject: string | null | undefined): boolean {
@@ -1153,9 +1183,11 @@ export class WhatsappService {
     if (this.backgroundHydrationJobs.has(userId)) return;
 
     const job = (async () => {
+      let shouldReschedule = false;
       try {
         const s = this.ensureSession(userId);
         if (!s.sock || s.info.status !== 'connected') return;
+        this.touchSessionLease(userId);
 
         const { data, error } = await this.supabase
           .from('whatsapp_groups')
@@ -1197,6 +1229,7 @@ export class WhatsappService {
         for (const row of rows) {
           const session = this.ensureSession(userId);
           if (!session.sock || session.info.status !== 'connected') break;
+          this.touchSessionLease(userId);
 
           const jid = String(row.wa_group_id || '').trim();
           if (!jid) continue;
@@ -1271,6 +1304,7 @@ export class WhatsappService {
           }
 
           if (changed) updates.push(patch);
+          this.touchSessionLease(userId);
           await delay(this.GROUP_METADATA_BACKGROUND_DELAY_MS);
         }
 
@@ -1293,10 +1327,10 @@ export class WhatsappService {
           `[WA bgHydrator] complete for userId=${userId}: attempted=${rows.length}, repairedSubject=${repairedSubjectCount}, repairedParticipants=${repairedParticipantsCount}, failures=${failures}, rateLimitHits=${rateLimitHits}, upserts=${updates.length}`,
         );
 
-        if (
+        shouldReschedule =
           rateLimitHits > 0 ||
-          rows.length === this.GROUP_METADATA_BACKGROUND_BATCH_SIZE
-        ) {
+          rows.length === this.GROUP_METADATA_BACKGROUND_BATCH_SIZE;
+        if (shouldReschedule) {
           this.scheduleBackgroundGroupHydration(
             userId,
             this.GROUP_METADATA_BACKGROUND_RETRY_DELAY_MS,
@@ -1304,6 +1338,9 @@ export class WhatsappService {
         }
       } finally {
         this.backgroundHydrationJobs.delete(userId);
+        if (!shouldReschedule) {
+          await this.releaseOwnershipIfDeferredAfterBackgroundHydration(userId);
+        }
       }
     })();
 
@@ -2181,8 +2218,12 @@ export class WhatsappService {
     const startTime = Date.now();
     this.logger.log(`[WA syncGroups] START for userId=${userId}`);
     const shouldReleaseOwnershipAfterSync = !runtimeHasCapability('worker');
+    let deferOwnershipReleaseToBackgroundHydration = false;
     const finish = async <T>(result: T): Promise<T> => {
-      if (shouldReleaseOwnershipAfterSync) {
+      if (
+        shouldReleaseOwnershipAfterSync &&
+        !deferOwnershipReleaseToBackgroundHydration
+      ) {
         await this.releaseConnectedSessionOwnership(
           userId,
           `sync_groups_complete_${runtimeCapabilitiesLabel()}`,
@@ -2357,6 +2398,13 @@ export class WhatsappService {
     }
 
     if (repaired.remainingMissingSubject > 0) {
+      if (shouldReleaseOwnershipAfterSync) {
+        deferOwnershipReleaseToBackgroundHydration = true;
+        this.deferOwnershipReleaseAfterBackgroundHydration(
+          userId,
+          `sync_groups_complete_${runtimeCapabilitiesLabel()}_bg_hydration`,
+        );
+      }
       this.scheduleBackgroundGroupHydration(userId);
     }
 
