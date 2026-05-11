@@ -173,17 +173,8 @@
   justify-content: flex-end;
 }
 
-/* На странице шаблонов не переносим элементы шапки: иначе «Создать шаблон»/«Действия»
-   визуально съезжают вниз и воспринимаются как не входящие в шапку. */
-.dashboard-layout .tpl .tpl-header__row {
-  flex-wrap: nowrap;
-}
-.dashboard-layout .tpl .tpl-header__nav {
-  flex-wrap: nowrap;
-}
-.dashboard-layout .tpl .tpl-header__pill {
-  white-space: nowrap;
-}
+/* Для dashboard-шапки на странице шаблонов не запрещаем переносы:
+   длинные статусы WA/TG иначе расширяют viewport и дают горизонтальный скролл. */
 
 /* Кнопки шапки — как hero-button на главной (барельеф) */
 .tpl-header__pill {

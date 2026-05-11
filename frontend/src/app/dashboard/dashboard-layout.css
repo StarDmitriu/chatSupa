@@ -3,6 +3,23 @@
   /* Высота зарезервирована под глобальную шапку: вторая sticky-шапка страницы цепляется ниже, без наложения */
   --dashboard-global-nav-h: 116px;
 }
+@media (max-width: 1360px) {
+  .dashboard-layout .tpl-header .tpl-header__row {
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .dashboard-layout .tpl-header .tpl-header__nav {
+    width: 100%;
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+
+  .dashboard-layout .tpl-header .tpl-header__pill {
+    white-space: normal;
+  }
+}
+
 @media (max-width: 768px) {
   .dashboard-layout {
     --dashboard-global-nav-h: 100px;
@@ -57,18 +74,23 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+  flex-wrap: wrap;
 }
 .dashboard-layout .tpl-header__logoWrap {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
+  flex: 1 1 280px;
+  min-width: 0;
 }
 .dashboard-layout .tpl-header__brandRow {
   display: flex;
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+  min-width: 0;
+  max-width: 100%;
 }
 .dashboard-layout .tpl-header__pageTitle {
   font-size: 13px;
@@ -117,12 +139,37 @@
   gap: 12px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  flex: 1 1 520px;
+  min-width: 0;
 }
 .dashboard-layout .tpl-header__pill {
   /* визуальный стиль задаёт .ui-action-btn (globals.css); тут — только компоновка */
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  text-align: left;
+}
+.dashboard-layout .tpl-header__pillText {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+.dashboard-layout .tpl-header__pillMain {
+  min-width: 0;
+  word-break: break-word;
+}
+.dashboard-layout .tpl-header__pillStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
 }
 .dashboard-layout .tpl-header__chanIcon {
   display: inline-flex;

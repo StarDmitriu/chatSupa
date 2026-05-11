@@ -202,14 +202,14 @@ export function DashboardHeader() {
     const base = parts[0] ?? text
     const status = parts[1] ?? ''
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        <span>{base}</span>
+      <span className="tpl-header__pillText">
+        <span className="tpl-header__pillMain">{base}</span>
         {status ? (
-          <>
+          <span className="tpl-header__pillStatus">
             <span>·</span>
             <span
               aria-hidden
-          className={isRefreshing ? 'tpl-header__statusDot--refreshing' : undefined}
+              className={isRefreshing ? 'tpl-header__statusDot--refreshing' : undefined}
               style={{
                 width: 8,
                 height: 8,
@@ -220,7 +220,7 @@ export function DashboardHeader() {
               }}
             />
             <span>{status}</span>
-          </>
+          </span>
         ) : null}
       </span>
     )
