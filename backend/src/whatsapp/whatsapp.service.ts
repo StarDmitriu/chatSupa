@@ -2225,10 +2225,6 @@ export class WhatsappService {
     const jid = String(waGroupId || '').trim();
     if (!jid) return { success: false, message: 'wa_group_id is required' };
 
-    const resolved = await this.resolveGroupAvatarSourceUrl(userId, jid);
-    if (!resolved.success) return resolved;
-    if (!resolved.url) return { success: true, url: null };
-
     return {
       success: true,
       url: this.buildGroupAvatarProxyUrl(userId, jid),
