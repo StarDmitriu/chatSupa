@@ -924,7 +924,7 @@ export default function TemplateCreatePage() {
 									<div className='tedit-upload__note'>
 										<div className='tedit-upload__noteTitle'>Внимание!</div>
 										<div className='tedit-upload__noteText'>
-											Можно добавить только 1 файл (изображение, видео или аудио)
+											Можно добавить только 1 файл (изображение)
 											<br />
 											Советуем сделать коллаж из фото
 										</div>
