@@ -1143,9 +1143,6 @@ export default function TemplateEditPage() {
 									<span className='tedit-group-row-title'>
 										{row.title || 'без названия'}
 									</span>
-									<span className='tedit-group-row-id'>
-										ID: {row.jid}
-									</span>
 								</div>
 								{checked && (
 									<span className='tedit-group-row-badge'>✓ Выбрано</span>

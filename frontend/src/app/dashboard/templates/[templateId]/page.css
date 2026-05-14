@@ -1405,21 +1405,20 @@
 /* Внутри строки группы */
 .tedit-group-row-inner {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   width: 100%;
-  justify-content: flex-start;
-  flex-wrap: wrap;
+  justify-content: space-between;
+  flex-wrap: nowrap;
   min-width: 0;
-  row-gap: 8px;
+  row-gap: 0;
 }
 
 .tedit-group-row-main {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
-  min-width: 0;
-  flex: 1 1 180px;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -1585,12 +1584,10 @@
   font-size: 12px;
   color: var(--app-text-muted);
   flex: 0 0 auto;
-  margin-left: 8px;
-  margin-top: 2px;
+  margin-left: auto;
   white-space: nowrap;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .tedit-table-row.rowDisabled {
@@ -1957,7 +1954,11 @@
   }
   .tedit-table .ant-table-tbody{ max-width: 100%; }
   .tedit-table .ant-table-tbody > tr{ padding: 8px 10px; min-height: 44px; }
-  .tedit-group-row-inner{ gap: 8px; }
+  .tedit-group-row-inner{
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
   .tedit-group-row-main{ flex: 1 1 100%; min-width: 0; }
   .tedit-group-row-title{
     font-size: 13px;
@@ -1979,7 +1980,11 @@
     margin-top: 4px;
   }
   .tedit-group-interval-select{ width: 100%; }
-  .tedit-group-row-count{ margin-left: 0; }
+  .tedit-group-row-count{
+    margin-left: 0;
+    width: 100%;
+    text-align: left;
+  }
 
   .tedit-actions{ margin: 20px auto 0; gap: 10px; flex-direction: column; align-items: stretch; }
   .tedit-btn{

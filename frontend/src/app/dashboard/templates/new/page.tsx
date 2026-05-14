@@ -613,9 +613,6 @@ export default function TemplateCreatePage() {
 									<span className="tedit-group-row-title">
 										{row.title || 'без названия'}
 									</span>
-									<span className="tedit-group-row-id">
-										ID: {row.jid}
-									</span>
 								</div>
 							</div>
 							{channel === 'tg' && (
