@@ -29,9 +29,7 @@
 .dashboard-layout .tpl-header {
   width: 100%;
   padding: 32px 0 30px;
-  position: sticky;
-  top: 0;
-  z-index: 50;
+  position: relative;
   background: transparent;
   margin: -32px -16px 0 -16px;
   padding-left: 16px;
@@ -40,8 +38,7 @@
 
 /* Глобальная навигация — выше контента страницы, чтобы при скролле клики не «уходили» под блоки */
 .dashboard-layout > header.tpl-header {
-  z-index: 300;
-  top: 0;
+  z-index: auto;
 }
 
 /* Вторая шапка на странице (Рассылки, Шаблоны, …) — под глобальной, без перекрытия кнопок */
@@ -50,8 +47,7 @@
 .dashboard-layout .grp > header.tpl-header,
 .dashboard-layout .analytics > header.tpl-header,
 .dashboard-layout .tedit > header.tpl-header {
-  top: var(--dashboard-global-nav-h);
-  z-index: 150;
+  z-index: auto;
 }
 .dashboard-layout .tpl-header::before {
   content: '';
