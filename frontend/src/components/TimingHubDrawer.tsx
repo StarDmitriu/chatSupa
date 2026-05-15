@@ -993,8 +993,8 @@ export function TimingHubDrawer() {
 				cap,
 				periodPlan,
 				repeatEnabled: Boolean(wave?.adv.repeatEnabled),
-				repeatMinMinutes: 24 * 60,
-				repeatScheduleKind: 'next_day',
+				repeatMinMinutes: 120,
+				repeatScheduleKind: 'minutes',
 			}),
 		[cap, periodPlan, wave],
 	)
@@ -1642,4 +1642,3 @@ export function TimingHubDrawer() {
 		</Drawer>
 	)
 }
-

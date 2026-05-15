@@ -115,7 +115,7 @@ export class CampaignsController {
         ? (kind as 'minutes' | 'next_day' | 'clock_time')
         : undefined;
     if (repOn && !repeatScheduleKind) {
-      repeatScheduleKind = 'next_day';
+      repeatScheduleKind = 'minutes';
     }
 
     return this.campaigns.startMulti(userId, {

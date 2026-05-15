@@ -413,7 +413,9 @@ export default function CampaignsHomePage() {
 			timeFrom: payload.timeFrom,
 			timeTo: payload.timeTo,
 			repeatEnabled: repOn,
-			repeatScheduleKind: repOn ? 'next_day' : undefined,
+			repeatScheduleKind: repOn ? 'minutes' : undefined,
+			repeatMinMin: repOn ? 120 : undefined,
+			repeatMinMax: repOn ? 180 : undefined,
 			betweenGroupsScaleTemplate: true,
 			channel,
 		})) as StartMultiResponse
@@ -754,8 +756,8 @@ export default function CampaignsHomePage() {
 									checked={adv.repeatEnabled}
 									onChange={(v) => setAdv((a) => ({ ...a, repeatEnabled: v }))}
 								/>
-								<span style={{ opacity: 0.88 }} title='Следующая волна — на следующий календарный день в начале окна'>
-									Ежедневно повторять рассылки
+								<span style={{ opacity: 0.88 }} title='Следующая волна стартует через 2–3 часа после предыдущей, если хвост рассылки уже завершён'>
+									Повторять рассылки каждые 2–3 часа
 								</span>
 							</div>
 						</div>

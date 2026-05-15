@@ -23,7 +23,9 @@ export class CampaignRepeatService implements OnModuleInit, OnModuleDestroy {
   private campaignPausedColumnSupported = true;
 
   private readonly enabled =
-    String(process.env.CAMPAIGN_REPEAT_ENABLED || '').toLowerCase() === 'true';
+    String(process.env.CAMPAIGN_REPEAT_ENABLED ?? 'true')
+      .toLowerCase()
+      .trim() !== 'false';
 
   private readonly intervalMs = Number(
     process.env.CAMPAIGN_REPEAT_TICK_MS || 10_000,
@@ -140,7 +142,7 @@ export class CampaignRepeatService implements OnModuleInit, OnModuleDestroy {
 
     if (!this.enabled) {
       this.logger.warn(
-        'Campaign repeat watcher disabled (set CAMPAIGN_REPEAT_ENABLED=true to enable)',
+        'Campaign repeat watcher disabled (CAMPAIGN_REPEAT_ENABLED=false)',
       );
       return;
     }

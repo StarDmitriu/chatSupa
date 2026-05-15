@@ -145,10 +145,11 @@ type GroupScheduleSpec =
   | { kind: 'fixed'; hhmm: string }
   | { kind: 'interval'; minMinutes: number; maxMinutes: number };
 
-/** Лимиты выборок для защиты от перегрузки памяти (ранее 50k/100k). */
-const JOBS_SELECT_LIMIT = 10_000;
-const GROUPS_SELECT_LIMIT = 10_000;
-const TARGETS_SELECT_LIMIT = 20_000;
+/** Supabase/PostgREST often caps one response at 1000 rows, so large campaigns are paginated. */
+const SELECT_PAGE_SIZE = 1000;
+const JOBS_SELECT_LIMIT = 50_000;
+const GROUPS_SELECT_LIMIT = 100_000;
+const TARGETS_SELECT_LIMIT = 200_000;
 
 const GROUP_INTERVALS: Record<
   string,
@@ -350,6 +351,44 @@ export class CampaignsService {
     private readonly telegramService: TelegramService,
     private readonly subscriptionsService: SubscriptionsService,
   ) {}
+
+  private async fetchCampaignJobsPage(
+    campaignId: string,
+    offset: number,
+    limit: number,
+  ): Promise<{ data: any[] | null; error: any }> {
+    const safeLimit = Math.max(1, Math.min(SELECT_PAGE_SIZE, Math.floor(limit)));
+    const supabase = this.supabaseService.getClient();
+    const { data, error } = await supabase
+      .from('campaign_jobs')
+      .select('id, group_jid, template_id, status, scheduled_at, sent_at, error')
+      .eq('campaign_id', campaignId)
+      .order('scheduled_at', { ascending: true })
+      .range(offset, offset + safeLimit - 1);
+    return { data: data ?? null, error };
+  }
+
+  private async fetchCampaignJobsAll(
+    campaignId: string,
+    maxRows = JOBS_SELECT_LIMIT,
+  ): Promise<{ data: any[] | null; error: any; truncated: boolean }> {
+    const out: any[] = [];
+    for (let offset = 0; offset < maxRows; offset += SELECT_PAGE_SIZE) {
+      const remaining = maxRows - offset;
+      const { data, error } = await this.fetchCampaignJobsPage(
+        campaignId,
+        offset,
+        Math.min(SELECT_PAGE_SIZE, remaining),
+      );
+      if (error) return { data: null, error, truncated: false };
+      const rows = data ?? [];
+      out.push(...rows);
+      if (rows.length < Math.min(SELECT_PAGE_SIZE, remaining)) {
+        return { data: out, error: null, truncated: false };
+      }
+    }
+    return { data: out, error: null, truncated: true };
+  }
 
   private isMissingCampaignPausedColumnError(err: unknown): boolean {
     return String((err as any)?.message ?? err).includes('campaigns.paused');
@@ -1194,12 +1233,8 @@ export class CampaignsService {
         const userId = String(c.user_id || '');
         const channel: 'wa' | 'tg' = c.channel === 'tg' ? 'tg' : 'wa';
 
-        const { data: jobs, error: jErr } = await supabase
-          .from('campaign_jobs')
-          .select('status, error, scheduled_at, sent_at')
-          .eq('campaign_id', campaignId)
-          .order('scheduled_at', { ascending: true })
-          .limit(JOBS_SELECT_LIMIT);
+        const { data: jobs, error: jErr } =
+          await this.fetchCampaignJobsAll(campaignId);
 
         if (jErr) {
           return {
@@ -1498,10 +1533,10 @@ export class CampaignsService {
 
     const repeat_min_min = Number.isFinite(opts.repeatMinMin)
       ? Number(opts.repeatMinMin)
-      : 2;
+      : 120;
     const repeat_min_max = Number.isFinite(opts.repeatMinMax)
       ? Number(opts.repeatMinMax)
-      : 3;
+      : 180;
 
     const next_repeat_at = repeat_enabled
       ? computeNextRepeatAtLuxon(
@@ -1708,14 +1743,8 @@ export class CampaignsService {
     if (cErr || !camp)
       return { success: false, message: 'campaign_not_found', error: cErr };
 
-    const { data: jobs, error: jErr } = await supabase
-      .from('campaign_jobs')
-      .select(
-        'id, group_jid, template_id, status, scheduled_at, sent_at, error',
-      )
-      .eq('campaign_id', campaignId)
-      .order('scheduled_at', { ascending: true })
-      .limit(JOBS_SELECT_LIMIT);
+    const { data: jobs, error: jErr, truncated } =
+      await this.fetchCampaignJobsAll(campaignId);
 
     if (jErr) {
       return {
@@ -1819,6 +1848,7 @@ export class CampaignsService {
       overload_factor: overload.factor,
       done,
       jobs: jobs ?? [],
+      truncated,
     };
   }
 
@@ -2950,11 +2980,13 @@ export class CampaignsService {
     const { data: dataTemplates, error: errTemplates } = await supabase
       .from('message_templates')
       .select(
-        'id, title, text, media_url, enabled, "order", wa_speed_factor, tg_speed_factor, wa_default_send_time, tg_default_send_time, wa_between_groups_sec_min, wa_between_groups_sec_max, tg_between_groups_sec_min, tg_between_groups_sec_max',
+        'id, title, text, media_url, enabled, "order", created_at, updated_at, wa_speed_factor, tg_speed_factor, wa_default_send_time, tg_default_send_time, wa_between_groups_sec_min, wa_between_groups_sec_max, tg_between_groups_sec_min, tg_between_groups_sec_max',
       )
       .eq('user_id', userId)
       .eq('enabled', true)
-      .order('order', { ascending: true });
+      .order('order', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true, nullsFirst: false })
+      .order('id', { ascending: true });
 
     if (!errTemplates) {
       templates = dataTemplates ?? [];
@@ -3071,21 +3103,28 @@ export class CampaignsService {
     let tgActiveAccountKey: string | null = null;
 
     if (params.channel === 'wa') {
-      const { data: groups, error: gErr } = await supabase
-        .from('whatsapp_groups')
-        .select('wa_group_id, is_announcement, is_selected, send_time')
-        .eq('user_id', params.userId)
-        .eq('is_selected', true)
-        .limit(GROUPS_SELECT_LIMIT);
+      const groups: any[] = [];
+      for (let offset = 0; offset < GROUPS_SELECT_LIMIT; offset += SELECT_PAGE_SIZE) {
+        const { data: page, error: gErr } = await supabase
+          .from('whatsapp_groups')
+          .select('wa_group_id, is_announcement, is_selected, send_time')
+          .eq('user_id', params.userId)
+          .eq('is_selected', true)
+          .range(offset, offset + SELECT_PAGE_SIZE - 1);
 
-      if (gErr)
-        return {
-          success: false,
-          message: 'supabase_groups_error',
-          error: gErr,
-        };
+        if (gErr)
+          return {
+            success: false,
+            message: 'supabase_groups_error',
+            error: gErr,
+          };
 
-      usableGroups = (groups ?? [])
+        const rows = page ?? [];
+        groups.push(...rows);
+        if (rows.length < SELECT_PAGE_SIZE) break;
+      }
+
+      usableGroups = groups
         .filter((g: any) => !g.is_announcement)
         .map((g: any) => ({
           jid: String(g.wa_group_id),
@@ -3105,25 +3144,35 @@ export class CampaignsService {
           details: { channel: 'tg' },
         };
       }
-      let q = supabase
-        .from('telegram_groups')
-        .select(
-          'tg_chat_id, is_selected, send_time, quarantine_until, quarantine_reason, tg_phone',
-        )
-        .eq('user_id', params.userId)
-        .eq('is_selected', true);
-      q = applyTelegramGroupsTgPhoneScope(q, tgActiveAccountKey);
-      const { data: groups, error: gErr } = await q.limit(GROUPS_SELECT_LIMIT);
+      const groups: any[] = [];
+      for (let offset = 0; offset < GROUPS_SELECT_LIMIT; offset += SELECT_PAGE_SIZE) {
+        let q = supabase
+          .from('telegram_groups')
+          .select(
+            'tg_chat_id, is_selected, send_time, quarantine_until, quarantine_reason, tg_phone',
+          )
+          .eq('user_id', params.userId)
+          .eq('is_selected', true);
+        q = applyTelegramGroupsTgPhoneScope(q, tgActiveAccountKey);
+        const { data: page, error: gErr } = await q.range(
+          offset,
+          offset + SELECT_PAGE_SIZE - 1,
+        );
 
-      if (gErr)
-        return {
-          success: false,
-          message: 'supabase_groups_error',
-          error: gErr,
-        };
+        if (gErr)
+          return {
+            success: false,
+            message: 'supabase_groups_error',
+            error: gErr,
+          };
+
+        const rows = page ?? [];
+        groups.push(...rows);
+        if (rows.length < SELECT_PAGE_SIZE) break;
+      }
 
       const nowMs = Date.now();
-      usableGroups = (groups ?? [])
+      usableGroups = groups
         .filter((g: any) => {
           const reason = String((g as any).quarantine_reason || '');
           if (reason.startsWith('stale_not_in_dialogs')) return false;
@@ -3196,6 +3245,7 @@ export class CampaignsService {
     const runTargetsQuery = async (opts: {
       includeTgAccountKeyFilter: boolean;
       includeTgAccountKeyColumn: boolean;
+      offset: number;
     }) => {
       const sel =
         params.channel === 'tg' && opts.includeTgAccountKeyColumn
@@ -3217,32 +3267,44 @@ export class CampaignsService {
           LEGACY_TEMPLATE_TG_ACCOUNT_KEY,
         ]);
       }
-      return q.limit(TARGETS_SELECT_LIMIT);
+      return q.range(opts.offset, opts.offset + SELECT_PAGE_SIZE - 1);
     };
 
     let errLinks: any = null;
-    let dataLinks: any[] | null = null;
-    const first = await runTargetsQuery({
-      includeTgAccountKeyFilter: params.channel === 'tg',
-      includeTgAccountKeyColumn: params.channel === 'tg',
-    });
-    dataLinks = first.data ?? null;
-    errLinks = first.error;
-    if (
-      errLinks &&
-      params.channel === 'tg' &&
-      isMissingTgAccountKeyColumn(errLinks)
-    ) {
-      const second = await runTargetsQuery({
-        includeTgAccountKeyFilter: false,
-        includeTgAccountKeyColumn: false,
+    const dataLinks: any[] = [];
+    let includeTgAccountKeyFilter = params.channel === 'tg';
+    let includeTgAccountKeyColumn = params.channel === 'tg';
+    for (let offset = 0; offset < TARGETS_SELECT_LIMIT; offset += SELECT_PAGE_SIZE) {
+      const first = await runTargetsQuery({
+        includeTgAccountKeyFilter,
+        includeTgAccountKeyColumn,
+        offset,
       });
-      dataLinks = second.data ?? null;
-      errLinks = second.error;
+      let page = first.data ?? null;
+      errLinks = first.error;
+      if (
+        errLinks &&
+        params.channel === 'tg' &&
+        isMissingTgAccountKeyColumn(errLinks)
+      ) {
+        includeTgAccountKeyFilter = false;
+        includeTgAccountKeyColumn = false;
+        const second = await runTargetsQuery({
+          includeTgAccountKeyFilter,
+          includeTgAccountKeyColumn,
+          offset,
+        });
+        page = second.data ?? null;
+        errLinks = second.error;
+      }
+      if (errLinks) break;
+      const rows = page ?? [];
+      dataLinks.push(...rows);
+      if (rows.length < SELECT_PAGE_SIZE) break;
     }
 
     if (!errLinks) {
-      links = dataLinks ?? [];
+      links = dataLinks;
     } else {
       const errMsg = String(errLinks?.message ?? '');
       const missingColumn =
@@ -3385,16 +3447,20 @@ export class CampaignsService {
 
       // ✅ группы, выбранные для этого шаблона
       const selected = targetsMap.get(String(template.id));
+      const hasExplicitTargetsForTemplate = !!selected && selected.size > 0;
 
-      const targetGroups = selected
+      const targetGroups = hasExplicitTargetsForTemplate
         ? usableGroups.filter((g) => {
-            if (params.channel !== 'tg') return selected.has(String(g.jid));
+            if (params.channel !== 'tg') return selected!.has(String(g.jid));
             const key = normalizeTgChatIdKey(g.jid);
-            return !!key && selected.has(key);
+            return !!key && selected!.has(key);
           })
-        : hasAnyTargets
-          ? []
-          : usableGroups;
+        : usableGroups;
+      if (!hasExplicitTargetsForTemplate && hasAnyTargets) {
+        this.logger.warn(
+          `[Campaigns] createWaveAndEnqueue: template has no enabled ${params.channel} targets, fallback to all selected channel groups userId=${params.userId}, campaignId=${params.campaignId}, templateId=${String(template.id)}`,
+        );
+      }
       // ✅ если НЕТ вообще ни одной настройки targets — шлём во все группы (как раньше)
 
       // ✅ если для шаблона не выбрано ни одной группы — не создаём jobs
@@ -3632,17 +3698,23 @@ export class CampaignsService {
       };
     }
 
-    const { data: inserted, error: jErr } = await supabase
-      .from('campaign_jobs')
-      .insert(jobsToInsert)
-      .select('id, user_id, group_jid, template_id, scheduled_at, channel');
+    const inserted: any[] = [];
+    const insertChunkSize = 500;
+    for (let i = 0; i < jobsToInsert.length; i += insertChunkSize) {
+      const chunk = jobsToInsert.slice(i, i + insertChunkSize);
+      const { data, error: jErr } = await supabase
+        .from('campaign_jobs')
+        .insert(chunk)
+        .select('id, user_id, group_jid, template_id, scheduled_at, channel');
 
-    if (jErr || !inserted?.length) {
-      return {
-        success: false,
-        message: 'supabase_jobs_insert_error',
-        error: jErr,
-      };
+      if (jErr || !data?.length) {
+        return {
+          success: false,
+          message: 'supabase_jobs_insert_error',
+          error: jErr,
+        };
+      }
+      inserted.push(...data);
     }
 
     await this.enqueueRows(inserted);

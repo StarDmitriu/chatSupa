@@ -13,13 +13,13 @@ const DEFAULT_BETWEEN_TEMPLATES_MIN = (2 + 3) / 2
 
 export function formatRepeatSummaryShort(adv: AdvSettings): string {
 	if (!adv.repeatEnabled) return 'выключен'
-	return 'следующий календарный день в начале окна'
+	return 'каждые 2–3 часа'
 }
 
 /** Интервал между стартами волн для прогнозов в планировщике (приблизительно). */
 export function repeatPlanSpacingSec(adv: AdvSettings): { minSec: number; maxSec: number } {
 	if (!adv.repeatEnabled) return { minSec: 60, maxSec: 60 }
-	return { minSec: 24 * 3600, maxSec: 24 * 3600 }
+	return { minSec: 120 * 60, maxSec: 180 * 60 }
 }
 
 export type CapacityResult = {

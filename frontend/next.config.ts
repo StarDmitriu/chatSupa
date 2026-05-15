@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  turbopack: { root: process.cwd() },
   output: "standalone", // один бандл для запуска — не нужен второй npm ci в Docker
   // Отключено: React Compiler в связке с RSC даёт ReferenceError: returnNaN is not defined
   // reactCompiler: true,

@@ -44,9 +44,6 @@ import dayjs from 'dayjs'
 const BACKEND_URL =
 	process.env.NEXT_PUBLIC_BACKEND_URL || '/api'
 
-/** Лимит символов в одном сообщении (Telegram и WhatsApp) */
-const MAX_MESSAGE_CHARS = 4096
-
 const TEMPLATE_SAVE_TIMEOUT_MS = 90_000
 
 function isVideoUrl(url: string | null) {
@@ -881,7 +878,6 @@ export default function TemplateCreatePage() {
 								>
 									<TemplateRichEditor
 										value={textValue}
-										maxChars={MAX_MESSAGE_CHARS}
 										onChange={next => {
 											setTextValue(next)
 											form.setFieldsValue({ text: next })
@@ -889,7 +885,7 @@ export default function TemplateCreatePage() {
 									/>
 								</Form.Item>
 								<div className='tedit-field__hint'>
-									Макс. {MAX_MESSAGE_CHARS} символов (лимит Telegram и WhatsApp). Поддерживается форматирование и эмодзи.
+									Поддерживается форматирование и эмодзи.
 								</div>
 							</div>
 							{/* Загрузка */}

@@ -12,7 +12,7 @@ type Props = {
 
 function repeatLine(w: TimingPageLocalWave): string {
 	if (!w.repeatEnabled) return 'выкл.'
-	return 'вкл., на следующий календарный день в начале окна'
+	return 'вкл., каждые 2–3 часа'
 }
 
 /**

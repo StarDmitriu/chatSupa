@@ -177,10 +177,10 @@ function TimingHubAdvancedTabInner(p: TimingHubAdvancedTabProps) {
 					<span className='timing-hub-advanced__sectionTitle'>Повтор волны</span>
 				</div>
 				<p className='timing-hub-advanced__sectionHint'>
-					Если включено — после волны планируется следующий проход на <b>следующий календарный день</b> в начале окна.
+					Если включено — после волны планируется следующий проход через <b>2–3 часа</b>, когда предыдущая волна завершилась.
 				</p>
 				<div className='timing-hub-advanced__repeatRow'>
-					<span>Ежедневно повторять рассылки</span>
+					<span>Повторять рассылки каждые 2–3 часа</span>
 					<Switch
 						disabled={p.smartEnabled}
 						checked={wave.adv.repeatEnabled}

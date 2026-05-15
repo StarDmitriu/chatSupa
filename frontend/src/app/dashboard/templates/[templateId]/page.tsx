@@ -47,10 +47,8 @@ import { pluralRuGroups } from '@/lib/pluralRu'
 const BACKEND_URL =
 	process.env.NEXT_PUBLIC_BACKEND_URL || '/api'
 
-/** Лимит символов в одном сообщении (Telegram и WhatsApp) */
-const MAX_MESSAGE_CHARS = 4096
-
 /** Длинные тела (текст + много групп) — стандартный 20s таймаут даёт ложную «ошибку сети». */
+const MAX_MESSAGE_CHARS = Number.MAX_SAFE_INTEGER
 const TEMPLATE_SAVE_TIMEOUT_MS = 90_000
 
 /** URL картинки эмодзи через Twemoji CDN (все смайлики как графика) */
@@ -1733,7 +1731,7 @@ export default function TemplateEditPage() {
 									</Form.Item>
 									<div className='tedit-char-count'>
 										<span className='tedit-char-count__nums'>
-											Символов: <strong>{editorCharCount}</strong> / {MAX_MESSAGE_CHARS}
+											Символов: <strong>{editorCharCount}</strong>
 										</span>
 										{channel === 'tg' && tgPremiumStatus && (
 											<span className='tedit-char-count__tg'>

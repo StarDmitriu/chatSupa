@@ -4,8 +4,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { message } from 'antd'
 import { htmlToMarkdown, markdownToHtml } from '@/lib/templateEditorMarkdown'
 
-const MAX_DEFAULT_CHARS = 4000
-
 type Props = {
   /** Текст шаблона в виде "псевдо‑markdown" (*жирный*, _курсив_, ~подчёркнутый~, списки). */
   value: string
@@ -13,7 +11,7 @@ type Props = {
   maxChars?: number
 }
 
-export function TemplateRichEditor({ value, onChange, maxChars = MAX_DEFAULT_CHARS }: Props) {
+export function TemplateRichEditor({ value, onChange, maxChars }: Props) {
 	const editorRef = useRef<HTMLDivElement>(null)
 	/** Последнее значение, которое мы отправили в onChange — не перезаписываем редактор этим же значением после асинхронного обновления родителя (иначе теряются переносы строк на 4+ шаблоне) */
 	const lastEmittedRef = useRef<string | null>(null)
@@ -26,6 +24,7 @@ export function TemplateRichEditor({ value, onChange, maxChars = MAX_DEFAULT_CHA
 		unorderedList: false,
 		orderedList: false,
 	})
+	const hasMaxChars = typeof maxChars === 'number' && Number.isFinite(maxChars) && maxChars > 0
 
 	// Синхронизируем редактор из value только когда значение пришло извне (начальная загрузка, смена шаблона).
 	// Не перезаписываем, пока пользователь вводит (фокус в редакторе) — иначе на 4+ шаблоне теряются переносы из-за race: родитель отстаёт с обновлением value.
@@ -93,7 +92,7 @@ export function TemplateRichEditor({ value, onChange, maxChars = MAX_DEFAULT_CHA
 			!(e.ctrlKey || e.metaKey) &&
 			e.key.length === 1
 
-		if (isAdding && len >= maxChars) {
+		if (hasMaxChars && isAdding && len >= maxChars!) {
 			e.preventDefault()
 			message.warning(`Лимит сообщения — ${maxChars} символов`)
 			return
@@ -141,8 +140,8 @@ export function TemplateRichEditor({ value, onChange, maxChars = MAX_DEFAULT_CHA
 
 		const currentLen = (editor.innerText || '').length
 		let text = e.clipboardData.getData('text/plain')
-		if (currentLen + text.length > maxChars) {
-			text = text.slice(0, maxChars - currentLen)
+		if (hasMaxChars && currentLen + text.length > maxChars!) {
+			text = text.slice(0, maxChars! - currentLen)
 			message.warning(`Лимит сообщения — ${maxChars} символов, вставлено до лимита`)
 		}
 		document.execCommand('insertText', false, text)
@@ -222,10 +221,9 @@ export function TemplateRichEditor({ value, onChange, maxChars = MAX_DEFAULT_CHA
 
 			<div className='tedit-char-count'>
 				<span className='tedit-char-count__nums'>
-					Символов: <strong>{charCount}</strong> / {maxChars}
+					Символов: <strong>{charCount}</strong>{hasMaxChars ? ` / ${maxChars}` : ''}
 				</span>
 			</div>
 		</div>
 	)
 }
-
