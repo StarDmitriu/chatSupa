@@ -336,6 +336,7 @@ export class CampaignsService {
     { expiresAtMs: number; payload: any }
   >();
   private readonly autoHealLastRunByCampaign = new Map<string, number>();
+  private readonly orphanRequeueLogLastAt = new Map<string, number>();
   private readonly tgForcedSyncLastRunByUser = new Map<string, number>();
   private runtimeHealModeOverride: 'normal' | 'incident' | null = null;
   private runtimeHealModeUntilMs = 0;
@@ -4615,9 +4616,14 @@ export class CampaignsService {
         seconds: toEnqueue.length,
       });
     }
-    this.logger.warn(
-      `[Campaigns] orphan pending requeue: scanned=${rows.length}, orphaned=${orphanedRows.length}, requeued=${toEnqueue.length}, user=${uid || 'all'}, channel=${params?.channelHint ?? 'all'}`,
-    );
+    const logScope = `${uid || 'all'}:${params?.channelHint ?? 'all'}`;
+    const lastLogAt = this.orphanRequeueLogLastAt.get(logScope) ?? 0;
+    if (Date.now() - lastLogAt >= 60_000) {
+      this.orphanRequeueLogLastAt.set(logScope, Date.now());
+      this.logger.warn(
+        `[Campaigns] orphan pending requeue: scanned=${rows.length}, orphaned=${orphanedRows.length}, requeued=${toEnqueue.length}, user=${uid || 'all'}, channel=${params?.channelHint ?? 'all'}`,
+      );
+    }
 
     return {
       success: true,

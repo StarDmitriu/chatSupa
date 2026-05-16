@@ -74,7 +74,7 @@ export class TelegramQrService implements OnModuleDestroy {
   }
 
   private newClient(sessionStr = '') {
-    return new TelegramClient(
+    const client = new TelegramClient(
       new StringSession(sessionStr),
       this.apiId(),
       this.apiHash(),
@@ -83,6 +83,8 @@ export class TelegramQrService implements OnModuleDestroy {
         retryDelay: 1000,
       } as any,
     );
+    (client as any).setLogLevel?.('none');
+    return client;
   }
 
   private async withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
@@ -189,45 +191,16 @@ export class TelegramQrService implements OnModuleDestroy {
           return { success: true, status: cached.status };
         }
 
-        // Валидация через TelegramService: один клиент и один lock на userId,
-        // иначе второй connect с тем же tg_session даёт AUTH_KEY_DUPLICATED.
-        const sessionStr = String((user as any).tg_session);
-        try {
-          const v = await this.telegramService.validateSavedSessionForQrPoll(
-            userId,
-            sessionStr,
-          );
-
-          if (v.connected) {
-            this.tgStatusCache.set(userId, {
-              status: 'connected',
-              expiresAt: Date.now() + this.TG_STATUS_VALIDATE_TTL_MS,
-            });
-            return { success: true, status: 'connected' as TgQrStatus };
-          }
-
-          if (v.errorDetail) {
-            this.logger.warn(
-              `[TG-QR] status validate not connected userId=${userId}: ${v.errorDetail}`,
-            );
-          }
-
-          this.tgStatusCache.set(userId, {
-            status: 'not_connected',
-            expiresAt: Date.now() + this.TG_STATUS_VALIDATE_TTL_MS,
-          });
-          return { success: true, status: 'not_connected' as TgQrStatus };
-        } catch (e: any) {
-          const msg = String(e?.message ?? e);
-          this.logger.warn(`[TG-QR] status validate failed userId=${userId}: ${msg}`);
-
-          this.tgStatusCache.set(userId, {
-            status: 'not_connected',
-            expiresAt: Date.now() + this.TG_STATUS_VALIDATE_TTL_MS,
-          });
-
-          return { success: true, status: 'not_connected' as TgQrStatus };
-        }
+        // Не открываем TelegramClient на обычный status poll:
+        // это забирает TG lease у воркера рассылки.
+        const st = await this.telegramService.getStatus(userId);
+        const status: TgQrStatus =
+          st?.status === 'connected' ? 'connected' : 'not_connected';
+        this.tgStatusCache.set(userId, {
+          status,
+          expiresAt: Date.now() + this.TG_STATUS_VALIDATE_TTL_MS,
+        });
+        return { success: true, status };
       }
 
       const p = this.pending.get(userId);

@@ -898,6 +898,17 @@ export class TelegramService implements OnModuleDestroy {
     return v;
   }
 
+  private newTelegramClient(session: StringSession, options: any = {}) {
+    const client = new TelegramClient(
+      session,
+      this.apiId(),
+      this.apiHash(),
+      options,
+    );
+    (client as any).setLogLevel?.('none');
+    return client;
+  }
+
   // Graceful shutdown
   async onModuleDestroy() {
     for (const userId of this.sessionLeaseTimers.keys()) {
@@ -1191,7 +1202,7 @@ export class TelegramService implements OnModuleDestroy {
     }
 
     const session = new StringSession(sessionStr);
-    const client = new TelegramClient(session, this.apiId(), this.apiHash(), {
+    const client = this.newTelegramClient(session, {
       connectionRetries: 5,
       retryDelay: 1000,
     });
@@ -1434,7 +1445,7 @@ export class TelegramService implements OnModuleDestroy {
       }
 
       const session = new StringSession('');
-      const client = new TelegramClient(session, this.apiId(), this.apiHash(), {
+      const client = this.newTelegramClient(session, {
         connectionRetries: 2,
       });
 
