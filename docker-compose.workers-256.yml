@@ -1,0 +1,150 @@
+services:
+  backend:
+    environment:
+      CAMPAIGN_SEND_SHARD_COUNT: ${CAMPAIGN_SEND_SHARD_COUNT:-256}
+      CAMPAIGN_SEND_MAX_SHARD_COUNT: ${CAMPAIGN_SEND_MAX_SHARD_COUNT:-256}
+
+  backend_scheduler:
+    environment:
+      CAMPAIGN_SEND_SHARD_COUNT: ${CAMPAIGN_SEND_SHARD_COUNT:-256}
+      CAMPAIGN_SEND_MAX_SHARD_COUNT: ${CAMPAIGN_SEND_MAX_SHARD_COUNT:-256}
+
+  backend_worker:
+    cpus: "0.75"
+    mem_limit: 1536m
+    environment:
+      SERVICE_INSTANCE_ID: worker-1
+      CAMPAIGN_SEND_SHARD_COUNT: ${CAMPAIGN_SEND_SHARD_COUNT:-256}
+      CAMPAIGN_SEND_MAX_SHARD_COUNT: ${CAMPAIGN_SEND_MAX_SHARD_COUNT:-256}
+      CAMPAIGN_SEND_WORKER_SHARD_START: 0
+      CAMPAIGN_SEND_WORKER_SHARD_END: 63
+      CAMPAIGN_SEND_WORKER_LEGACY_DRAIN: "true"
+
+  backend_worker_2:
+    image: chatrassylka_backend_runtime:latest
+    container_name: chatrassylka_backend_worker_2
+    env_file:
+      - ./.env.prod
+    environment:
+      NODE_ENV: production
+      APP_RUNTIME_ROLE: worker
+      SERVICE_INSTANCE_ID: worker-2
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+      TELEGRAM_AUTOCONNECT: "false"
+      CAMPAIGN_REPEAT_ENABLED: "false"
+      CAMPAIGN_REPEAT_LEADER_TTL_MS: ${CAMPAIGN_REPEAT_LEADER_TTL_MS:-30000}
+      CAMPAIGN_SEND_SHARD_COUNT: ${CAMPAIGN_SEND_SHARD_COUNT:-256}
+      CAMPAIGN_SEND_MAX_SHARD_COUNT: ${CAMPAIGN_SEND_MAX_SHARD_COUNT:-256}
+      CAMPAIGN_SEND_WORKER_SHARD_START: 64
+      CAMPAIGN_SEND_WORKER_SHARD_END: 127
+      CAMPAIGN_SEND_WORKER_LEGACY_DRAIN: "false"
+      WA_SESSION_LEASE_TTL_MS: ${WA_SESSION_LEASE_TTL_MS:-45000}
+      WA_SESSION_LEASE_RENEW_MS: ${WA_SESSION_LEASE_RENEW_MS:-15000}
+      WA_SESSION_IDLE_RELEASE_MS: ${WA_SESSION_IDLE_RELEASE_MS:-300000}
+      TG_SESSION_LEASE_TTL_MS: ${TG_SESSION_LEASE_TTL_MS:-45000}
+      TG_SESSION_LEASE_RENEW_MS: ${TG_SESSION_LEASE_RENEW_MS:-15000}
+      TG_SESSION_IDLE_RELEASE_MS: ${TG_SESSION_IDLE_RELEASE_MS:-300000}
+      TG_AUTH_PENDING_IDLE_RELEASE_MS: ${TG_AUTH_PENDING_IDLE_RELEASE_MS:-900000}
+      DEFAULT_TZ: Europe/Moscow
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - wa_auth_data:/app/wa_auth
+    restart: unless-stopped
+    stop_grace_period: 45s
+    cpus: "0.75"
+    mem_limit: 1536m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  backend_worker_3:
+    image: chatrassylka_backend_runtime:latest
+    container_name: chatrassylka_backend_worker_3
+    env_file:
+      - ./.env.prod
+    environment:
+      NODE_ENV: production
+      APP_RUNTIME_ROLE: worker
+      SERVICE_INSTANCE_ID: worker-3
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+      TELEGRAM_AUTOCONNECT: "false"
+      CAMPAIGN_REPEAT_ENABLED: "false"
+      CAMPAIGN_REPEAT_LEADER_TTL_MS: ${CAMPAIGN_REPEAT_LEADER_TTL_MS:-30000}
+      CAMPAIGN_SEND_SHARD_COUNT: ${CAMPAIGN_SEND_SHARD_COUNT:-256}
+      CAMPAIGN_SEND_MAX_SHARD_COUNT: ${CAMPAIGN_SEND_MAX_SHARD_COUNT:-256}
+      CAMPAIGN_SEND_WORKER_SHARD_START: 128
+      CAMPAIGN_SEND_WORKER_SHARD_END: 191
+      CAMPAIGN_SEND_WORKER_LEGACY_DRAIN: "false"
+      WA_SESSION_LEASE_TTL_MS: ${WA_SESSION_LEASE_TTL_MS:-45000}
+      WA_SESSION_LEASE_RENEW_MS: ${WA_SESSION_LEASE_RENEW_MS:-15000}
+      WA_SESSION_IDLE_RELEASE_MS: ${WA_SESSION_IDLE_RELEASE_MS:-300000}
+      TG_SESSION_LEASE_TTL_MS: ${TG_SESSION_LEASE_TTL_MS:-45000}
+      TG_SESSION_LEASE_RENEW_MS: ${TG_SESSION_LEASE_RENEW_MS:-15000}
+      TG_SESSION_IDLE_RELEASE_MS: ${TG_SESSION_IDLE_RELEASE_MS:-300000}
+      TG_AUTH_PENDING_IDLE_RELEASE_MS: ${TG_AUTH_PENDING_IDLE_RELEASE_MS:-900000}
+      DEFAULT_TZ: Europe/Moscow
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - wa_auth_data:/app/wa_auth
+    restart: unless-stopped
+    stop_grace_period: 45s
+    cpus: "0.75"
+    mem_limit: 1536m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  backend_worker_4:
+    image: chatrassylka_backend_runtime:latest
+    container_name: chatrassylka_backend_worker_4
+    env_file:
+      - ./.env.prod
+    environment:
+      NODE_ENV: production
+      APP_RUNTIME_ROLE: worker
+      SERVICE_INSTANCE_ID: worker-4
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379
+      TELEGRAM_AUTOCONNECT: "false"
+      CAMPAIGN_REPEAT_ENABLED: "false"
+      CAMPAIGN_REPEAT_LEADER_TTL_MS: ${CAMPAIGN_REPEAT_LEADER_TTL_MS:-30000}
+      CAMPAIGN_SEND_SHARD_COUNT: ${CAMPAIGN_SEND_SHARD_COUNT:-256}
+      CAMPAIGN_SEND_MAX_SHARD_COUNT: ${CAMPAIGN_SEND_MAX_SHARD_COUNT:-256}
+      CAMPAIGN_SEND_WORKER_SHARD_START: 192
+      CAMPAIGN_SEND_WORKER_SHARD_END: 255
+      CAMPAIGN_SEND_WORKER_LEGACY_DRAIN: "false"
+      WA_SESSION_LEASE_TTL_MS: ${WA_SESSION_LEASE_TTL_MS:-45000}
+      WA_SESSION_LEASE_RENEW_MS: ${WA_SESSION_LEASE_RENEW_MS:-15000}
+      WA_SESSION_IDLE_RELEASE_MS: ${WA_SESSION_IDLE_RELEASE_MS:-300000}
+      TG_SESSION_LEASE_TTL_MS: ${TG_SESSION_LEASE_TTL_MS:-45000}
+      TG_SESSION_LEASE_RENEW_MS: ${TG_SESSION_LEASE_RENEW_MS:-15000}
+      TG_SESSION_IDLE_RELEASE_MS: ${TG_SESSION_IDLE_RELEASE_MS:-300000}
+      TG_AUTH_PENDING_IDLE_RELEASE_MS: ${TG_AUTH_PENDING_IDLE_RELEASE_MS:-900000}
+      DEFAULT_TZ: Europe/Moscow
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - wa_auth_data:/app/wa_auth
+    restart: unless-stopped
+    stop_grace_period: 45s
+    cpus: "0.75"
+    mem_limit: 1536m
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"

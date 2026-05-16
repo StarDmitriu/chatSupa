@@ -543,6 +543,39 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
     private readonly campaignVip: CampaignVipService,
   ) {}
 
+  private parseWorkerShardRange(shards: number): {
+    start: number;
+    end: number;
+    partitioned: boolean;
+  } {
+    const parseBound = (raw: string | undefined, fallback: number): number => {
+      const n = Number(String(raw ?? '').trim());
+      return Number.isFinite(n) ? Math.floor(n) : fallback;
+    };
+
+    const hasStart = String(process.env.CAMPAIGN_SEND_WORKER_SHARD_START ?? '').trim() !== '';
+    const hasEnd = String(process.env.CAMPAIGN_SEND_WORKER_SHARD_END ?? '').trim() !== '';
+    const start = Math.max(
+      0,
+      Math.min(shards - 1, parseBound(process.env.CAMPAIGN_SEND_WORKER_SHARD_START, 0)),
+    );
+    const end = Math.max(
+      start,
+      Math.min(
+        shards - 1,
+        parseBound(process.env.CAMPAIGN_SEND_WORKER_SHARD_END, shards - 1),
+      ),
+    );
+
+    return { start, end, partitioned: hasStart || hasEnd };
+  }
+
+  private workerShouldDrainLegacyQueue(): boolean {
+    return String(process.env.CAMPAIGN_SEND_WORKER_LEGACY_DRAIN ?? 'true')
+      .trim()
+      .toLowerCase() !== 'false';
+  }
+
   onModuleInit() {
     if (!runtimeHasCapability('worker')) {
       this.logger.log(
@@ -577,12 +610,22 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
         `BullMQ campaign-send: single queue "${CAMPAIGN_SEND_QUEUE_LEGACY}" (CAMPAIGN_SEND_SHARD_COUNT=1)`,
       );
     } else {
-      this.workers = names.map(
+      const range = this.parseWorkerShardRange(shards);
+      const shardPrefix = `${CAMPAIGN_SEND_QUEUE_LEGACY}-`;
+      const legacyDrain = this.workerShouldDrainLegacyQueue();
+      const workerNames = names.filter((name) => {
+        if (name === CAMPAIGN_SEND_QUEUE_LEGACY) return legacyDrain;
+        if (!name.startsWith(shardPrefix)) return false;
+        const n = Number(name.slice(shardPrefix.length));
+        return Number.isInteger(n) && n >= range.start && n <= range.end;
+      });
+
+      this.workers = workerNames.map(
         (name) => new Worker<SendJobData>(name, processor, workerOpts),
       );
-      const sharded = names.filter((n) => n !== CAMPAIGN_SEND_QUEUE_LEGACY);
+      const sharded = workerNames.filter((n) => n !== CAMPAIGN_SEND_QUEUE_LEGACY);
       this.logger.log(
-        `BullMQ campaign-send: ${sharded.length} sharded queues + legacy drain; names=[${names.join(', ')}]; up to ~${shards} parallel user lanes`,
+        `BullMQ campaign-send: listening ${sharded.length}/${shards} sharded queues${legacyDrain ? ' + legacy drain' : ''}; shardRange=${range.start}-${range.end}; partitioned=${range.partitioned}; names=[${workerNames.join(', ')}]`,
       );
     }
 
