@@ -133,7 +133,8 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
   // Мягкий retry для WA-коннекта: не ставим всю кампанию на паузу из-за краткого обрыва.
   private static readonly WA_CONNECTIVITY_RETRY_MAX_ATTEMPTS = 8;
   private static readonly TG_CONNECTIVITY_RETRY_MAX_ATTEMPTS = 8;
-  private static readonly CONNECTIVITY_RETRY_MAX_WINDOW_MS_DEFAULT = 45 * 60_000;
+  private static readonly CONNECTIVITY_RETRY_MAX_WINDOW_MS_DEFAULT =
+    24 * 60 * 60_000;
   private parseWaConnectivityRetryAttempt(errorText: string | null | undefined): number {
     const raw = String(errorText || '').trim();
     const m = raw.match(/^wa_connect_retry_(\d+)$/i);
@@ -257,7 +258,7 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
     if (!Number.isFinite(raw) || raw <= 0) {
       return CampaignBullWorker.CONNECTIVITY_RETRY_MAX_WINDOW_MS_DEFAULT;
     }
-    return Math.max(60_000, Math.min(12 * 60 * 60 * 1000, Math.floor(raw)));
+    return Math.max(60_000, Math.min(24 * 60 * 60 * 1000, Math.floor(raw)));
   }
 
   private tgConnectivityRetryMaxWindowMs(): number {
@@ -267,7 +268,7 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
     if (!Number.isFinite(raw) || raw <= 0) {
       return CampaignBullWorker.CONNECTIVITY_RETRY_MAX_WINDOW_MS_DEFAULT;
     }
-    return Math.max(60_000, Math.min(12 * 60 * 60 * 1000, Math.floor(raw)));
+    return Math.max(60_000, Math.min(24 * 60 * 60 * 1000, Math.floor(raw)));
   }
 
   private async enqueueRetryJob(

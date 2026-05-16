@@ -1469,8 +1469,9 @@ export class WhatsappService {
     const authDir = this.getAuthDir(userId);
     const credsPath = path.join(authDir, 'creds.json');
     const hasCreds = fs.existsSync(credsPath);
+    const isWorker = runtimeHasCapability('worker');
     const allowCredsConnectedFallback =
-      hasCreds && !runtimeHasCapability('worker');
+      hasCreds && !isWorker;
     const shared = await this.runtimeCoordinationService.readMessengerState<SessionInfo>(
       this.channel,
       userId,
@@ -1484,7 +1485,7 @@ export class WhatsappService {
         s?.sock,
     );
     if (!s) {
-      if (shared && shared.status !== 'pending_qr') return shared;
+      if (!isWorker && shared && shared.status !== 'pending_qr') return shared;
       if (allowCredsConnectedFallback) {
         return {
           status: 'connected',
@@ -1526,6 +1527,7 @@ export class WhatsappService {
 
     if (status.status !== 'connected') {
       if (
+        !isWorker &&
         shared?.status &&
         shared.status !== 'not_connected' &&
         (shared.status !== 'pending_qr' || sharedIsUsablePendingQr)
@@ -1960,6 +1962,12 @@ export class WhatsappService {
         this.channel,
         userId,
       );
+      if (runtimeHasCapability('worker')) {
+        return {
+          status: 'connecting',
+          lastError: 'session_owned_by_other_runtime',
+        };
+      }
       return (
         shared ?? {
           status: 'connecting',
@@ -3288,6 +3296,16 @@ export class WhatsappService {
       throw new Error('whatsapp_session_busy');
     }
     const s = this.ensureSession(userId);
+
+    if (!s.sock || s.info.status !== 'connected') {
+      if (!s.starting) {
+        s.starting = this.startInternal(userId).finally(() => {
+          s.starting = undefined;
+        });
+      }
+      await s.starting.catch(() => undefined);
+      await this.waitForConnectedSession(userId, 20_000);
+    }
 
     if (!s.sock || s.info.status !== 'connected') {
       this.logger.warn(

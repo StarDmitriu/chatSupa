@@ -18,6 +18,7 @@ const TG_PERMANENT_PATTERNS: Array<{ re: RegExp; code: string }> = [
 const TG_TRANSIENT_PATTERNS: Array<{ re: RegExp; code: string }> = [
   { re: /A wait of \d+ seconds is required/i, code: 'TG_FLOOD_WAIT' },
   { re: /^telegram_not_connected$/i, code: 'TG_NOT_CONNECTED' },
+  { re: /^tg_connectivity_retry_exhausted$/i, code: 'TG_CONNECT_RETRY_EXHAUSTED' },
   { re: /^send_timeout$/i, code: 'SEND_TIMEOUT' },
   { re: /^tg_connect_retry_\d+$/i, code: 'TG_CONNECT_RETRY' },
   { re: /^tg_flood_wait_\d+s$/i, code: 'TG_FLOOD_WAIT' },
@@ -92,4 +93,3 @@ export function classifyDeliveryError(
     shouldAutoUnselectTarget: false,
   };
 }
-
