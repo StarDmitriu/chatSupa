@@ -433,9 +433,11 @@ export class TelegramService implements OnModuleDestroy {
           this.stopSessionLeaseTimer(userId);
           void client.disconnect().catch(() => undefined);
           this.sessions.delete(userId);
+          // Idle release only frees the socket. The saved TG session is still valid
+          // and can be re-opened by the next send, so do not poison shared status.
           void this.publishRuntimeState({
             userId,
-            status: 'not_connected',
+            status: 'connected',
           });
           void this.runtimeCoordinationService
             .releaseMessengerLease(this.channel, userId)
@@ -1125,6 +1127,24 @@ export class TelegramService implements OnModuleDestroy {
   }
 
   // ---------- status ----------
+  private async hasSavedSession(userId: string): Promise<boolean> {
+    const supabase = this.supabaseService.getClient();
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, tg_session')
+      .eq('id', userId)
+      .maybeSingle();
+
+    return !error && Boolean((user as any)?.tg_session);
+  }
+
+  private isHardNotConnectedState(lastError?: string | null): boolean {
+    if (!lastError) return false;
+    return /tg_saved_session_invalid|AUTH_KEY|SESSION_REVOKED|SESSION_PASSWORD_NEEDED|USER_DEACTIVATED|PHONE_NUMBER/i.test(
+      lastError,
+    );
+  }
+
   async getStatus(userId: string) {
     if (this.sessions.has(userId)) {
       await this.publishRuntimeState({
@@ -1162,6 +1182,18 @@ export class TelegramService implements OnModuleDestroy {
       cooldownSeconds?: number | null;
     }>(this.channel, userId);
     if (shared?.status) {
+      if (
+        shared.status === 'not_connected' &&
+        !this.isHardNotConnectedState(shared.lastError) &&
+        (await this.hasSavedSession(userId))
+      ) {
+        await this.publishRuntimeState({
+          userId,
+          status: 'connected',
+        });
+        return { success: true, status: 'connected' as TgStatus };
+      }
+
       return {
         success: shared.success !== false,
         status: shared.status,
@@ -1171,14 +1203,7 @@ export class TelegramService implements OnModuleDestroy {
     }
 
     // если есть сохранённая сессия — пробуем авто-коннект
-    const supabase = this.supabaseService.getClient();
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, tg_session')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (!error && (user as any)?.tg_session) {
+    if (await this.hasSavedSession(userId)) {
       return { success: true, status: 'connected' as TgStatus };
     }
 
