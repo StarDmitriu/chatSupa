@@ -730,6 +730,10 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
     if (dbJob.status !== 'pending') return;
     if ((dbJob as any).sent_at) return;
 
+    const effectiveTemplateId = String(
+      data.templateId || (dbJob as any).template_id || '',
+    ).trim();
+
     const campaignId = (dbJob as any).campaign_id;
     const scheduledAtMs = new Date(
       String((dbJob as any).scheduled_at || ''),
@@ -808,7 +812,7 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
       .select(
         'id, text, media_url, send_media_as_file, enabled',
       )
-      .eq('id', data.templateId)
+      .eq('id', effectiveTemplateId)
       .maybeSingle();
 
     let tpl = tplRes.data;
@@ -822,7 +826,7 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
         const fallback = await supabase
           .from('message_templates')
           .select('id, text, media_url, enabled')
-          .eq('id', data.templateId)
+          .eq('id', effectiveTemplateId)
           .maybeSingle();
         if (!fallback.error && fallback.data)
           tpl = {
@@ -946,7 +950,7 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
         dbJob as any,
         'wa',
         delayMs,
-        data.templateId,
+        effectiveTemplateId,
       );
 
       await this.persistLimitLearningEvent({
@@ -1021,7 +1025,7 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
         dbJob as any,
         'tg',
         delayMs,
-        data.templateId,
+        effectiveTemplateId,
       );
 
       await this.persistLimitLearningEvent({
@@ -1180,7 +1184,7 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
 
     try {
       this.logger.warn(
-        `### ROUTE job=${dbJob.id} channel=${channel} group=${dbJob.group_jid} tpl=${data.templateId} ###`,
+        `### ROUTE job=${dbJob.id} channel=${channel} group=${dbJob.group_jid} tpl=${effectiveTemplateId} ###`,
       );
       if (channel === 'tg') {
         // TG FloodWait может ждать до 60+ сек — увеличиваем таймаут
@@ -1341,7 +1345,7 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
               dbJob as any,
               'tg',
               delayMs,
-              data.templateId,
+              effectiveTemplateId,
             );
 
             await this.persistLimitLearningEvent({

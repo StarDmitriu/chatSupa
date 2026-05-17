@@ -9,6 +9,7 @@ import { TelegramService } from '../telegram/telegram.service';
 import { applyTelegramGroupsTgPhoneScope } from '../telegram/telegram-groups-phone-scope';
 import { SubscriptionsService } from '../subscriptions/subscriptions.service';
 import { DateTime } from 'luxon';
+import { runtimeHasCapability } from '../runtime/runtime-role';
 
 /**
  * Нормализация TG chat id для сопоставления "123" и "-100123".
@@ -2689,14 +2690,21 @@ export class CampaignsService {
     if (channel === 'wa') {
       let waStatus = await this.whatsappService.getStatus(String(c.user_id));
       if (waStatus.status !== 'connected') {
-        try {
-          await this.whatsappService.startSession(String(c.user_id));
-        } catch {
-          // best-effort
+        const canOwnWaSession = runtimeHasCapability('worker');
+        if (canOwnWaSession) {
+          try {
+            await this.whatsappService.startSession(String(c.user_id));
+          } catch {
+            // best-effort
+          }
+          waStatus = await this.whatsappService.getStatus(String(c.user_id));
+        } else {
+          this.logger.log(
+            `[Campaigns] repeat preflight delegated WA reconnect to worker (campaign=${campaignId}, userId=${c.user_id}, status=${waStatus.status})`,
+          );
         }
-        waStatus = await this.whatsappService.getStatus(String(c.user_id));
       }
-      if (waStatus.status !== 'connected') {
+      if (waStatus.status !== 'connected' && runtimeHasCapability('worker')) {
         this.logger.warn(
           `[Campaigns] repeat preflight deferred: WA not connected (campaign=${campaignId}, userId=${c.user_id})`,
         );
@@ -4124,6 +4132,12 @@ export class CampaignsService {
       if (batchWa.length) {
         let waStatus = await this.whatsappService.getStatus(userId);
         if (waStatus.status !== 'connected') {
+          if (!runtimeHasCapability('worker')) {
+            this.logger.log(
+              `[Campaigns] skip scheduler-owned WA reconnect during paused resume: campaign=${campaignId}, userId=${userId}, status=${waStatus.status}`,
+            );
+            continue;
+          }
           try {
             await this.whatsappService.startSession(userId);
           } catch {
@@ -5091,6 +5105,7 @@ export class CampaignsService {
       if (channel === 'wa') {
         let st = await this.whatsappService.getStatus(userId);
         if (st.status !== 'connected') {
+          if (!runtimeHasCapability('worker')) continue;
           try {
             await this.whatsappService.startSession(userId);
           } catch {
