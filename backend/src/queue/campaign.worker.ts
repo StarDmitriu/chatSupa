@@ -549,7 +549,9 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
     partitioned: boolean;
   } {
     const parseBound = (raw: string | undefined, fallback: number): number => {
-      const n = Number(String(raw ?? '').trim());
+      const trimmed = String(raw ?? '').trim();
+      if (!trimmed) return fallback;
+      const n = Number(trimmed);
       return Number.isFinite(n) ? Math.floor(n) : fallback;
     };
 
