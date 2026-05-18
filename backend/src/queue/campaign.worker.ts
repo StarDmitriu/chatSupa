@@ -578,6 +578,25 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
       .toLowerCase() !== 'false';
   }
 
+  private maxUnpartitionedShardListeners(): number {
+    const raw = Number(
+      String(
+        process.env.CAMPAIGN_SEND_WORKER_MAX_UNPARTITIONED_SHARDS ?? '64',
+      ).trim(),
+    );
+    if (!Number.isFinite(raw) || raw < 1) return 64;
+    return Math.max(1, Math.min(1024, Math.floor(raw)));
+  }
+
+  private allowLargeUnpartitionedWorker(): boolean {
+    return String(
+      process.env.CAMPAIGN_SEND_WORKER_ALLOW_UNPARTITIONED_LARGE_SHARDS ??
+        'false',
+    )
+      .trim()
+      .toLowerCase() === 'true';
+  }
+
   onModuleInit() {
     if (!runtimeHasCapability('worker')) {
       this.logger.log(
@@ -613,6 +632,22 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
       );
     } else {
       const range = this.parseWorkerShardRange(shards);
+      const maxUnpartitioned = this.maxUnpartitionedShardListeners();
+      if (
+        !range.partitioned &&
+        shards > maxUnpartitioned &&
+        !this.allowLargeUnpartitionedWorker()
+      ) {
+        const message =
+          `CAMPAIGN_SEND_SHARD_COUNT=${shards} requires explicit ` +
+          `CAMPAIGN_SEND_WORKER_SHARD_START/END ranges when shard count is ` +
+          `above ${maxUnpartitioned}. Use docker-compose.workers-256.yml, ` +
+          `docker-compose.workers-512.yml, docker-compose.workers-1024.yml, ` +
+          `or set CAMPAIGN_SEND_WORKER_ALLOW_UNPARTITIONED_LARGE_SHARDS=true ` +
+          `for a deliberate single-worker rollout.`;
+        this.logger.error(message);
+        throw new Error(message);
+      }
       const shardPrefix = `${CAMPAIGN_SEND_QUEUE_LEGACY}-`;
       const legacyDrain = this.workerShouldDrainLegacyQueue();
       const workerNames = names.filter((name) => {

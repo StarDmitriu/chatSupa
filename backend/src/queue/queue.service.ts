@@ -14,7 +14,7 @@ export const CAMPAIGN_SEND_QUEUE_LEGACY = 'campaign-send';
 export const CAMPAIGN_SEND_DEFAULT_SHARD_COUNT = 20;
 
 /** Верхняя граница шардов (переопределение: CAMPAIGN_SEND_MAX_SHARD_COUNT). */
-export const CAMPAIGN_SEND_SHARD_CAP_DEFAULT = 64;
+export const CAMPAIGN_SEND_SHARD_CAP_DEFAULT = 1024;
 /** Абсолютный защитный лимит (можно переопределять env, но не выше этого порога). */
 export const CAMPAIGN_SEND_SHARD_HARD_CAP = 1024;
 

@@ -128,12 +128,40 @@ Then scale in this order:
 3. Increase `CAMPAIGN_SEND_SHARD_COUNT`
 4. Re-run load tests before changing lease timings
 
-## Next architecture phase
+## Worker shard overlays
 
-The next mandatory step for true multi-hundred active senders is session-owner sharding:
+Production has ready Docker Compose overlays for larger sender capacity:
 
-- deterministic user-to-runtime ownership for WA/TG sessions
-- explicit separation between API traffic and session-heavy messenger runtime
-- load tests for `300` simultaneous sending users with repeat waves and group sync pressure
+- `docker-compose.workers-256.yml`: 4 workers, 64 shards each
+- `docker-compose.workers-512.yml`: 4 workers, 128 shards each
+- `docker-compose.workers-1024.yml`: 8 workers, 128 shards each
 
-This phase removes the last major architectural dependency on opportunistic per-request session acquisition.
+Use them together with the base release compose file:
+
+```bash
+docker compose \
+  -f docker-compose.release.yml \
+  -f docker-compose.workers-512.yml \
+  up -d --no-deps --force-recreate backend backend_worker backend_worker_2 backend_worker_3 backend_worker_4 backend_scheduler
+```
+
+For `1024`, use `docker-compose.workers-1024.yml` and include `backend_worker_5` ... `backend_worker_8` in the recreate command.
+
+The worker process has a safety guard: if `CAMPAIGN_SEND_SHARD_COUNT` is above `CAMPAIGN_SEND_WORKER_MAX_UNPARTITIONED_SHARDS` (default `64`) and no `CAMPAIGN_SEND_WORKER_SHARD_START/END` range is configured, the worker refuses to start. This prevents an accidental single-container rollout with hundreds of BullMQ listeners.
+
+Emergency override:
+
+```env
+CAMPAIGN_SEND_WORKER_ALLOW_UNPARTITIONED_LARGE_SHARDS=true
+```
+
+Use that only for a deliberate temporary rollout. Normal scaling should use explicit shard ranges.
+
+## Capacity targets
+
+- Small / current VPS: `CAMPAIGN_SEND_SHARD_COUNT=20`, one `backend_worker`.
+- 100-300 active senders: `docker-compose.workers-256.yml`, then increase CPU/RAM if queues grow.
+- 300-600 active senders: `docker-compose.workers-512.yml`.
+- 600-1000 active senders: `docker-compose.workers-1024.yml`, enough CPU/RAM, Redis headroom, and close monitoring of messenger limits.
+
+Scaling above this still should not require code changes, but it may require splitting workers onto separate hosts and pointing them to the same Redis/Supabase environment.

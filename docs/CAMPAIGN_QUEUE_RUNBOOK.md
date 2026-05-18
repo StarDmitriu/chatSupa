@@ -110,6 +110,50 @@ UPDATE public.users SET campaign_send_vip = true WHERE id = '<uuid>';
 
 ---
 
+## 4.1. Ready Docker scaling profiles
+
+Use the release compose file plus one worker overlay:
+
+```bash
+docker compose -f docker-compose.release.yml -f docker-compose.workers-256.yml up -d --no-deps --force-recreate backend backend_worker backend_worker_2 backend_worker_3 backend_worker_4 backend_scheduler
+```
+
+For 512 shards:
+
+```bash
+docker compose -f docker-compose.release.yml -f docker-compose.workers-512.yml up -d --no-deps --force-recreate backend backend_worker backend_worker_2 backend_worker_3 backend_worker_4 backend_scheduler
+```
+
+For 1024 shards:
+
+```bash
+docker compose -f docker-compose.release.yml -f docker-compose.workers-1024.yml up -d --no-deps --force-recreate backend backend_worker backend_worker_2 backend_worker_3 backend_worker_4 backend_worker_5 backend_worker_6 backend_worker_7 backend_worker_8 backend_scheduler
+```
+
+Expected worker log lines:
+
+```text
+BullMQ campaign-send: listening 128/512 sharded queues + legacy drain; shardRange=0-127; partitioned=true
+BullMQ campaign-send: listening 128/512 sharded queues; shardRange=128-255; partitioned=true
+```
+
+Safety guard:
+
+- `CAMPAIGN_SEND_MAX_SHARD_COUNT` defaults to `1024`.
+- `CAMPAIGN_SEND_WORKER_MAX_UNPARTITIONED_SHARDS` defaults to `64`.
+- If `CAMPAIGN_SEND_SHARD_COUNT` is higher than the guard and a worker has no explicit `CAMPAIGN_SEND_WORKER_SHARD_START/END`, the worker fails fast.
+- `CAMPAIGN_SEND_WORKER_ALLOW_UNPARTITIONED_LARGE_SHARDS=true` is only for a temporary emergency rollout.
+
+After changing profiles, verify:
+
+```bash
+curl -sS -H "X-Internal-Metrics-Key: $INTERNAL_METRICS_KEY" \
+  https://chatrassylka.ru/api/health/campaign-queues \
+  | jq '.shardCount, .maxShardCount, .summary.totals, .skew'
+```
+
+---
+
 ## 5. Safe cleanup проблемных TG-целей (операционный скрипт)
 
 Для пользователя Натальи добавлен безопасный скрипт:
