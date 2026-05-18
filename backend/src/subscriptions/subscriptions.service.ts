@@ -48,12 +48,12 @@ export class SubscriptionsService {
     const { user, sub } = await this.getUserAndSub(userId);
 
     // Админ всегда считается с активной подпиской (и в UI, и для проверок доступа)
-    if ((user as any)?.is_admin === true) {
+    if ((user as any)?.is_admin === true && !sub) {
       const farFuture = this.addDaysIso(365);
       return {
         success: true,
         isBlocked: false,
-        subscription: sub || { status: 'active', plan_code: 'wa_tg' },
+        subscription: { status: 'active', plan_code: 'wa_tg' },
         status: 'active' as SubStatus,
         trialDaysLeft: 0,
         paidDaysLeft: 365,
