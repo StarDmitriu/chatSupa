@@ -284,13 +284,19 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
   ) {
     const q = this.queueService.getCampaignSendQueueForUser(String(dbJob.user_id));
     const retryQueueJobId = `retry__${dbJob.id}`;
-    const existing = await q.getJob(retryQueueJobId);
-    if (existing) {
-      await existing.remove().catch(() => undefined);
-    }
-    const legacyExisting = await q.getJob(`retry:${dbJob.id}`);
-    if (legacyExisting) {
-      await legacyExisting.remove().catch(() => undefined);
+    const queuesToClean =
+      q === this.queueService.campaignQueue
+        ? [q]
+        : [q, this.queueService.campaignQueue];
+    for (const queue of queuesToClean) {
+      const existing = await queue.getJob(retryQueueJobId);
+      if (existing) {
+        await existing.remove().catch(() => undefined);
+      }
+      const legacyExisting = await queue.getJob(`retry:${dbJob.id}`);
+      if (legacyExisting) {
+        await legacyExisting.remove().catch(() => undefined);
+      }
     }
     await q.add(
       'send',
@@ -811,13 +817,24 @@ export class CampaignBullWorker implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    const { error: lockErr } = await supabase
+    const { data: lockedJob, error: lockErr } = await supabase
       .from('campaign_jobs')
       .update({ status: 'processing', error: null })
       .eq('id', dbJob.id)
-      .eq('status', 'pending');
+      .eq('status', 'pending')
+      .select('id')
+      .maybeSingle();
 
-    if (lockErr) return;
+    if (lockErr) {
+      this.logger.warn(
+        `[CampaignBullWorker] job lock failed jobId=${data.jobId}: ${
+          (lockErr as any)?.message ?? lockErr
+        }`,
+      );
+      return;
+    }
+
+    if (!lockedJob) return;
 
     // Повторная проверка после блокировки: пользователь мог нажать «Остановить» пока job ждал в очереди
     if (campaignId) {

@@ -3811,12 +3811,18 @@ export class CampaignsService {
         String(row.user_id),
       );
 
-      const existing = await q.getJob(deterministicJobId);
-      if (existing) await existing.remove();
-      const retryExisting = await q.getJob(retryJobId);
-      if (retryExisting) await retryExisting.remove();
-      const retryLegacyExisting = await q.getJob(retryLegacyJobId);
-      if (retryLegacyExisting) await retryLegacyExisting.remove();
+      const queuesToClean =
+        q === this.queueService.campaignQueue
+          ? [q]
+          : [q, this.queueService.campaignQueue];
+      for (const queue of queuesToClean) {
+        const existing = await queue.getJob(deterministicJobId);
+        if (existing) await existing.remove();
+        const retryExisting = await queue.getJob(retryJobId);
+        if (retryExisting) await retryExisting.remove();
+        const retryLegacyExisting = await queue.getJob(retryLegacyJobId);
+        if (retryLegacyExisting) await retryLegacyExisting.remove();
+      }
 
       // Защита от кратких сбоев Redis/BullMQ на этапе add после remove:
       // пробуем несколько раз, чтобы уменьшить риск "осиротевшего pending".
