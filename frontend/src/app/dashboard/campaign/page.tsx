@@ -401,18 +401,21 @@ function CampaignInner() {
 	}, [tg])
 
 	// Задачи в таблице: последние по времени сверху (сначала недавно отправленные/запланированные)
-	const sortJobsNewestFirst = (jobs: Job[]) =>
+	const sortJobsQueueOrder = (jobs: Job[]) =>
 		[...jobs].sort((a, b) => {
-			const ta = new Date(a.sent_at || a.scheduled_at || 0).getTime()
-			const tb = new Date(b.sent_at || b.scheduled_at || 0).getTime()
-			return tb - ta
+			const ta = new Date(a.scheduled_at || a.sent_at || 0).getTime()
+			const tb = new Date(b.scheduled_at || b.sent_at || 0).getTime()
+			if (ta !== tb) return ta - tb
+			const sa = new Date(a.sent_at || 0).getTime()
+			const sb = new Date(b.sent_at || 0).getTime()
+			return sa - sb
 		})
 	const waJobsSorted = useMemo(
-		() => (wa && (wa as any).success ? sortJobsNewestFirst((wa as ProgressOk).jobs) : []),
+		() => (wa && (wa as any).success ? sortJobsQueueOrder((wa as ProgressOk).jobs) : []),
 		[wa]
 	)
 	const tgJobsSorted = useMemo(
-		() => (tg && (tg as any).success ? sortJobsNewestFirst((tg as ProgressOk).jobs) : []),
+		() => (tg && (tg as any).success ? sortJobsQueueOrder((tg as ProgressOk).jobs) : []),
 		[tg]
 	)
 
