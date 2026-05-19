@@ -225,6 +225,7 @@ type WaRepairDiagnostics = {
   repairedSubjectCount: number;
   repairedParticipantsCount: number;
   remainingMissingSubject: number;
+  remainingMissingParticipants: number;
   failures: number;
   rateLimitHits: number;
 };
@@ -1092,6 +1093,7 @@ export class WhatsappService {
         repairedSubjectCount: 0,
         repairedParticipantsCount: 0,
         remainingMissingSubject: 0,
+        remainingMissingParticipants: 0,
         failures: 0,
         rateLimitHits: 0,
       };
@@ -1212,9 +1214,14 @@ export class WhatsappService {
       if (!s) return true;
       return this.isPlaceholderSubject(s);
     }).length;
+    const remainingMissingParticipants = repairedRows.filter((row) => {
+      return !(
+        typeof row.participants_count === 'number' && row.participants_count > 0
+      );
+    }).length;
 
     this.logger.log(
-      `[WA syncGroups] groupMetadata repair for userId=${userId}: attempted=${candidates.length}, deferred=${deferred}, repairedSubject=${repairedSubjectCount}, repairedParticipants=${repairedParticipantsCount}, failures=${failures}, rateLimitHits=${rateLimitHits}, remainingMissingSubject=${remainingMissingSubject}`,
+      `[WA syncGroups] groupMetadata repair for userId=${userId}: attempted=${candidates.length}, deferred=${deferred}, repairedSubject=${repairedSubjectCount}, repairedParticipants=${repairedParticipantsCount}, failures=${failures}, rateLimitHits=${rateLimitHits}, remainingMissingSubject=${remainingMissingSubject}, remainingMissingParticipants=${remainingMissingParticipants}`,
     );
 
     return {
@@ -1224,6 +1231,7 @@ export class WhatsappService {
       repairedSubjectCount,
       repairedParticipantsCount,
       remainingMissingSubject,
+      remainingMissingParticipants,
       failures,
       rateLimitHits,
     };
@@ -1246,7 +1254,9 @@ export class WhatsappService {
             'wa_group_id, subject, participants_count, is_announcement, is_restricted, is_selected, send_time',
           )
           .eq('user_id', userId)
-          .or('subject.is.null,subject.eq.,subject.like.Без названия%')
+          .or(
+            'subject.is.null,subject.eq.,subject.like.Без названия%,participants_count.is.null,participants_count.eq.0',
+          )
           .order('wa_group_id', { ascending: true })
           .limit(Math.max(this.GROUP_METADATA_BACKGROUND_BATCH_SIZE * 8, 200));
 
@@ -1262,7 +1272,7 @@ export class WhatsappService {
         if (candidateRows.length === 0) {
           this.backgroundHydrationCursorByUser.delete(userId);
           this.logger.log(
-            `[WA bgHydrator] no missing subjects left for userId=${userId}`,
+            `[WA bgHydrator] no missing group metadata left for userId=${userId}`,
           );
           return;
         }
@@ -2484,7 +2494,11 @@ export class WhatsappService {
       );
     }
 
-    if (repaired.remainingMissingSubject > 0) {
+    if (
+      repaired.remainingMissingSubject > 0 ||
+      repaired.remainingMissingParticipants > 0 ||
+      repaired.deferred > 0
+    ) {
       if (shouldReleaseOwnershipAfterSync) {
         deferOwnershipReleaseToBackgroundHydration = true;
         this.deferOwnershipReleaseAfterBackgroundHydration(
@@ -2504,6 +2518,7 @@ export class WhatsappService {
       repairedSubject: repaired.repairedSubjectCount,
       repairedParticipants: repaired.repairedParticipantsCount,
       remainingMissingSubject: repaired.remainingMissingSubject,
+      remainingMissingParticipants: repaired.remainingMissingParticipants,
     });
   }
 
