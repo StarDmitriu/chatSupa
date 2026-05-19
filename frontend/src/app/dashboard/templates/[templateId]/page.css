@@ -1420,6 +1420,16 @@
   min-width: 0;
 }
 
+.tedit-group-row-inner--wa {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  row-gap: 8px;
+}
+
+.tedit-group-row-inner--wa .tedit-group-row-main {
+  flex: 1 1 100%;
+}
+
 .tedit-group-avatar-wrap {
   width: 40px;
   height: 40px;
@@ -1586,6 +1596,12 @@
   white-space: nowrap;
   text-align: right;
   flex-shrink: 0;
+}
+
+.tedit-group-row-inner--wa .tedit-group-row-count {
+  margin-left: 0;
+  width: 100%;
+  text-align: left;
 }
 
 .tedit-table-row.rowDisabled {

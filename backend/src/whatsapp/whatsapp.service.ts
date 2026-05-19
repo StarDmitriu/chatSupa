@@ -2556,11 +2556,13 @@ export class WhatsappService {
           : null;
       const isSelected = existingSelected ?? true;
 
-      const participantsCount = Array.isArray(gAny?.participants)
-        ? gAny.participants.length
-        : typeof existing?.participants_count === 'number'
-          ? existing.participants_count
-          : null;
+      const normalizedMetadata = this.normalizeGroupMetadata(gAny);
+      const participantsCount =
+        normalizedMetadata.participantsCount != null
+          ? normalizedMetadata.participantsCount
+          : typeof existing?.participants_count === 'number'
+            ? existing.participants_count
+            : null;
 
       const announceRaw = gAny?.announce;
       const restrictRaw = gAny?.restrict;

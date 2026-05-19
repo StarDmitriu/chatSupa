@@ -117,6 +117,11 @@ function normalizeTgChatId(jid: string): string {
 	return s
 }
 
+function normalizeParticipantsCount(value: unknown): number | null {
+	const n = Number(value)
+	return Number.isFinite(n) && n > 0 ? n : null
+}
+
 export default function TemplateEditPage() {
 	const router = useRouter()
 	const params = useParams()
@@ -278,7 +283,7 @@ export default function TemplateEditPage() {
 			const mapped: GroupRow[] = usable.map((g: any) => ({
 				jid: String(g.wa_group_id),
 				title: g.subject ?? null,
-				participants_count: g.participants_count ?? null,
+				participants_count: normalizeParticipantsCount(g.participants_count),
 				is_restricted: g.is_restricted ?? false,
 				updated_at: g.updated_at,
 				send_time: g.send_time ?? null,
@@ -1068,7 +1073,7 @@ export default function TemplateEditPage() {
 				render: (_: any, row: GroupRow) => {
 					const checked = selectedGroupJids.includes(row.jid)
 					return (
-						<div className='tedit-group-row-inner'>
+						<div className={channel === 'wa' ? 'tedit-group-row-inner tedit-group-row-inner--wa' : 'tedit-group-row-inner'}>
 							<div className='tedit-group-row-main'>
 								<div
 									className={`tedit-custom-checkbox ${checked ? 'checked' : ''}`}
