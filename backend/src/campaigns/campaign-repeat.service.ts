@@ -184,7 +184,18 @@ export class CampaignRepeatService implements OnModuleInit, OnModuleDestroy {
     // 1) Восстанавливаем paused-jobs после реконнекта WA/TG (best-effort).
     // Делается в каждом тике, чтобы рестарты/краткие reconnection'ы не ломали рассылки.
     try {
-      await this.campaignsService.autoResumeDisconnectedJobs();
+      await this.campaignsService.autoResumeDisconnectedJobs({
+        batchSizePerCampaign: 2,
+        channelHint: 'wa',
+        maxJobsScan: 120,
+        stepDelayMs: 15000,
+      });
+      await this.campaignsService.autoResumeDisconnectedJobs({
+        batchSizePerCampaign: 120,
+        channelHint: 'tg',
+        maxJobsScan: 2000,
+        stepDelayMs: 1500,
+      });
     } catch {
       // best-effort
     }

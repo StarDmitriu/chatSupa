@@ -725,7 +725,12 @@ export class WhatsappService {
             });
             if (!campaigns) return;
             void campaigns
-              .autoResumeDisconnectedJobsForUser(userId, { channelHint: 'wa' })
+              .autoResumeDisconnectedJobsForUser(userId, {
+                channelHint: 'wa',
+                batchSizePerCampaign: 8,
+                maxJobs: 64,
+                stepDelayMs: 6000,
+              })
               .then((r) => {
                 if (r.resumed > 0) {
                   this.logger.log(
@@ -742,6 +747,8 @@ export class WhatsappService {
             void campaigns
               .autoWakeConnectivityRetryJobsForUser(userId, {
                 channelHint: 'wa',
+                maxJobs: 4,
+                stepDelayMs: 4000,
               })
               .then((r) => {
                 if (r.woken > 0) {

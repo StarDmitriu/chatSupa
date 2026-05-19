@@ -4963,6 +4963,7 @@ export class CampaignsService {
    */
   async autoResumeDisconnectedJobs(params?: {
     batchSizePerCampaign?: number;
+    channelHint?: 'wa' | 'tg';
     maxJobsScan?: number;
     stepDelayMs?: number;
   }) {
@@ -4985,7 +4986,7 @@ export class CampaignsService {
     let pausedRows: any[] | null = null;
     let error: any = null;
     if (this.pausedJobStatusSupported !== false) {
-      const first = await supabase
+      let query = supabase
         .from('campaign_jobs')
         .select(
           'id, campaign_id, user_id, group_jid, template_id, channel, scheduled_at, error',
@@ -4993,6 +4994,12 @@ export class CampaignsService {
         .eq('status', 'paused')
         .in('error', ['wa_not_connected', 'telegram_not_connected'])
         .limit(maxJobsScan);
+      if (params?.channelHint === 'wa') {
+        query = query.eq('error', 'wa_not_connected');
+      } else if (params?.channelHint === 'tg') {
+        query = query.eq('error', 'telegram_not_connected');
+      }
+      const first = await query;
       pausedRows = first.data;
       error = first.error;
       if (error && this.isPausedJobStatusUnsupportedError(error)) {
@@ -5013,6 +5020,7 @@ export class CampaignsService {
     const { resumed: resumedTotal, campaigns: campaignsTouched } =
       await this.resumeDisconnectedPausedRows(pausedRows, {
         batchSizePerCampaign,
+        channelHint: params?.channelHint,
         stepDelayMs,
       });
 
